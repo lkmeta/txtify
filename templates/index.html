@@ -4,11 +4,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>YouSub</title>
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 
 <body>
+    <div class="navbar">
+        <a href="#"><img src="/static/logo.jpg" alt="YouSub" style="height: 40px;"></a>
+        <a href="#about">About</a>
+        <a href="https://github.com/yourrepo" target="_blank">GitHub Repo</a>
+        <a href="#contact">Contact</a>
+    </div>
+    <!-- TODO Fix bug from theme -->
+    <button class="theme-toggle" onclick="toggleTheme()">🌞</button>
+    <div class="container">
+        <h1>Audio to Text for FREE using AI</h1>
+        <div class="description">
+            Welcome to YouSub! Easily turn your <a style="color: var(--primary-color);">audio and video to text for
+                free</a>. Provide a YouTube URL or upload your own files and use AI to ensure fast and accurate
+            transcriptions.
+            <br>
+            Want more control? Self-host YouSub with full features—check <a href="https://lkmeta.com" target="_blank"
+                style="color: var(--primary-color);">GitHub</a> repo for instructions. Or, use this limited version
+            directly.
+            Enjoy!
+        </div>
+        <div class="switch-case">
+            <button id="youtube-button" class="active" onclick="showInput('youtube')">YouTube URL</button>
+            <button id="upload-button" onclick="showInput('upload')">Upload Video</button>
+        </div>
+        <div id="youtube-input" class="input-group">
+            <label for="youtube-url">YouTube URL:</label>
+            <small>Enter the URL of the YouTube video you want to transcribe.</small>
+            <input type="text" id="youtube-url" placeholder="Enter YouTube URL">
+        </div>
+        <div id="upload-input" class="input-group" style="display: none;">
+            <label for="video-upload">Upload Video:</label>
+            <small>Upload a video file from your device to transcribe.</small>
+            <input type="file" id="video-upload" accept="video/*">
+        </div>
+        <div class="input-group">
+            <label for="language-choice">Choose Language:</label>
+            <small>Select the language spoken in the video.</small>
+            <select id="language-choice">
+                <option value="en">English</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+                <option value="de">German</option>
+                <option value="zh">Chinese</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="file-export">File Export Type:</label>
+            <small>Choose the format for the transcribed text.</small>
+            <select id="file-export">
+                <option value="txt">Text File (.txt)</option>
+                <option value="pdf">PDF (.pdf)</option>
+                <option value="docx">Word Document (.docx)</option>
+                <option value="srt">SubRip Subtitle (.srt)</option>
+                <option value="vtt">WebVTT (.vtt)</option>
+                <option value="ass">Advanced SubStation Alpha (.ass)</option>
+                <option value="ssa">SubStation Alpha (.ssa)</option>
+                <option value="sbv">YouTube Captions (.sbv)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="stt-model">Speech-to-Text Model:</label>
+            <small>Select the AI model to use for speech recognition.</small>
+            <select id="stt-model">
+                <option value="whisper">OpenAI Whisper</option>
+                <option value="google">Google Speech-to-Text</option>
+                <option value="aws">AWS Transcribe</option>
+                <option value="azure">Azure Speech Service</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="translation">Translation:</label>
+            <small>Enable translation of the transcribed text (requires DeepL API key).</small>
+            <select id="translation">
+                <option value="deepl">DeepL Translation</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="language-translation">Choose Language Translation:</label>
+            <small>Select the language to translate the transcribed text.</small>
+            <select id="language-translation">
+                <option value="en">English</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+                <option value="de">German</option>
+                <option value="zh">Chinese</option>
+            </select>
+        </div>
 
+        <div class="actions">
+            <button onclick="transcribe()">Transcribe</button>
+        </div>
+    </div>
+    <div class="footer">
+        &copy; 2024 <a href="https://lkmeta.com" target="_blank">lkmeta</a>. All rights reserved.
+    </div>
+
+    <!-- Alert Box Structure -->
+    <div class="alert-overlay" id="alertOverlay">
+        <div class="alert-box">
+            <h2 id="alertTitle">Alert</h2>
+            <p id="alertMessage">This is an alert message.</p>
+            <button onclick="closeAlert()">OK</button>
+        </div>
+    </div>
+    <script src="/static/scripts.js"></script>
 </body>
 
 </html>
