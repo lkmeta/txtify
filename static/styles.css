@@ -1,23 +1,27 @@
 :root {
+    --width: 50px;
+    /* Normal size for the toggle button */
+    --height: 25px;
+    /* Normal size for the toggle button */
     --background-color-dark: rgba(0, 0, 0, 0.9);
     --background-color-light: rgba(255, 255, 255, 0.9);
     --text-color-dark: #f2f2f2;
     --text-color-light: #333;
+    --nav-color: #f2f2f2;
     --primary-color: #ff0000;
-    /* YouTube red */
     --secondary-color-dark: #444;
     --secondary-color-light: #ddd;
 }
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: monaco, sans-serif;
     margin: 0;
     padding: 0;
     display: flex;
     justify-content: center;
     align-items: center;
     flex-direction: column;
-    height: 100vh;
+    min-height: 100vh;
     background: url('/static/background.png') no-repeat center center fixed;
     background-size: cover;
     background-color: rgba(0, 0, 0, 0.85);
@@ -28,8 +32,8 @@ body {
 
 .light-theme {
     --background-color-dark: rgba(255, 255, 255, 0.9);
-    --text-color-dark: #333;
-    --secondary-color-dark: #ddd;
+    --text-color-dark: #000;
+    --secondary-color-dark: #ccc;
 }
 
 .dark-theme {
@@ -42,17 +46,28 @@ body {
     width: 100%;
     display: flex;
     justify-content: center;
+    align-items: center;
     position: fixed;
     top: 0;
-    padding: 20px 0;
+    padding: 15px 0;
     z-index: 1000;
+    /* background-color: var(--background-color-dark); */
+}
+
+.navbar-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 500px;
+    padding: 0 20px;
 }
 
 .navbar a,
 .navbar span {
-    color: var(--text-color-dark);
+    color: var(--nav-color);
     text-decoration: none;
-    padding: 14px 20px;
+    padding: 10px 15px;
     font-size: 18px;
     transition: color 0.3s, transform 0.3s;
 }
@@ -62,27 +77,125 @@ body {
     transform: scale(1.1);
 }
 
+.navbar .logo {
+    font-size: 22px;
+    font-weight: bold;
+    background: linear-gradient(90deg, white 50%, red 50%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-decoration: none;
+}
+
+.theme-toggle-wrapper {
+    position: absolute;
+    right: 20px;
+    top: 10px;
+    display: flex;
+}
+
+.theme-toggle {
+    position: relative;
+    width: var(--width);
+    height: var(--height);
+}
+
+.theme-toggle input[type="checkbox"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    z-index: 1;
+    width: var(--width);
+    height: var(--height);
+}
+
+.theme-toggle .toggle-body {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--width);
+    height: var(--height);
+    border: 2px solid #080808;
+    border-radius: var(--height);
+    transition: all 80ms ease-in-out;
+}
+
+.theme-toggle input[type="checkbox"]~.toggle-body {
+    background: #1d1d1d;
+    background-size: cover;
+}
+
+.theme-toggle input[type="checkbox"]:checked~.toggle-body {
+    background: #fff;
+    background-size: cover;
+    border-color: #fff;
+}
+
+.theme-toggle input[type="checkbox"]~.celestial-body {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #fff08e;
+    border-radius: 100%;
+    background: #fff5c4;
+    transition: all 80ms ease-in-out;
+}
+
+.theme-toggle input[type="checkbox"]:not(:checked)~.celestial-body {
+    top: 3px;
+    left: 3px;
+}
+
+.theme-toggle input[type="checkbox"]:checked~.celestial-body {
+    top: 3px;
+    left: calc(100% - 23px);
+    background: #ff9900;
+    border-color: #ddceb1;
+}
+
+.theme-toggle input[type="checkbox"]~.celestial-body::after {
+    content: " ";
+    opacity: 0;
+    position: absolute;
+    left: -20px;
+    transition: left 0.13s ease-in, opacity 0.15s ease-out;
+}
+
+.theme-toggle input[type="checkbox"]:checked~.celestial-body::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: -10px;
+    display: block;
+    opacity: 1;
+    width: 18px;
+    height: 18px;
+    background-size: contain;
+    background-position: left;
+    background-repeat: no-repeat;
+}
+
 .container {
     background: var(--background-color-dark);
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    padding: 30px;
+    padding: 25px;
     max-width: 600px;
     width: 90%;
     text-align: center;
-    margin-top: 100px;
+    margin-top: 40px;
     transition: background-color 0.8s;
 }
 
 h1 {
     margin-bottom: 20px;
-    font-size: 28px;
+    font-size: 24px;
     color: var(--primary-color);
 }
 
 .description {
     margin-bottom: 20px;
-    font-size: 15px;
+    font-size: 14px;
     color: var(--text-color-dark);
     opacity: 0.9;
 }
@@ -101,7 +214,8 @@ h1 {
 .input-group small {
     display: block;
     margin-bottom: 5px;
-    color: #ccc;
+    color: var(--text-color-dark);
+    opacity: 0.8;
 }
 
 .input-group input,
@@ -113,6 +227,12 @@ h1 {
     box-sizing: border-box;
     background-color: #222;
     color: var(--text-color-dark);
+}
+
+.light-theme .input-group input,
+.light-theme .input-group select {
+    background-color: #fff;
+    color: #000;
 }
 
 .input-group input[type="file"] {
@@ -183,52 +303,6 @@ h1 {
     text-decoration: underline;
 }
 
-.theme-toggle {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 24px;
-    color: var(--text-color-dark);
-    transition: color 0.3s, transform 0.3s;
-}
-
-.theme-toggle:hover {
-    transform: rotate(30deg);
-}
-
-@media (max-width: 600px) {
-    .navbar {
-        padding: 10px 0;
-    }
-
-    .navbar a,
-    .navbar span {
-        padding: 10px;
-        font-size: 16px;
-    }
-
-    .container {
-        padding: 20px;
-        margin-top: 80px;
-    }
-
-    h1 {
-        font-size: 24px;
-    }
-
-    .actions button {
-        padding: 10px 20px;
-    }
-
-    .theme-toggle {
-        font-size: 20px;
-    }
-}
-
-/* Alert box styling */
 .alert-overlay {
     position: fixed;
     top: 0;
@@ -278,4 +352,46 @@ h1 {
 .alert-box button:hover {
     background-color: #d00000;
     transform: scale(1.05);
+}
+
+@media (max-width: 600px) {
+    .navbar {
+        padding: 10px 0;
+    }
+
+    .navbar-content {
+        flex-direction: column;
+    }
+
+    .navbar a,
+    .navbar span {
+        padding: 5px;
+        font-size: 14px;
+    }
+
+    .theme-toggle-wrapper {
+        top: 10px;
+        right: 10px;
+    }
+
+    .container {
+        padding: 15px;
+        margin-top: 60px;
+    }
+
+    h1 {
+        font-size: 20px;
+    }
+
+    .description {
+        font-size: 12px;
+    }
+
+    .actions button {
+        padding: 8px 16px;
+    }
+
+    .theme-toggle {
+        font-size: 18px;
+    }
 }

@@ -7,13 +7,18 @@ function showInput(type) {
 
 function toggleTheme() {
     document.body.classList.toggle('light-theme');
-    const themeToggle = document.querySelector('.theme-toggle');
-    themeToggle.textContent = document.body.classList.contains('light-theme') ? '🌙' : '🌞';
+    document.body.classList.toggle('dark-theme');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const themeToggle = document.querySelector('.theme-toggle');
-    themeToggle.textContent = document.body.classList.contains('light-theme') ? '🌙' : '🌞';
+    const themeToggle = document.getElementById('themeToggle');
+    themeToggle.addEventListener('change', toggleTheme);
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+        themeToggle.checked = true;
+        document.body.classList.add('light-theme');
+    } else {
+        document.body.classList.add('dark-theme');
+    }
 });
 
 function showAlert(title, message) {
