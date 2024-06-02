@@ -8,15 +8,26 @@
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 
-<body>
+<body class="dark-theme"> <!-- Start with dark theme -->
     <div class="navbar">
-        <a href="#"><img src="/static/logo.jpg" alt="YouSub" style="height: 40px;"></a>
-        <a href="#about">About</a>
-        <a href="https://github.com/yourrepo" target="_blank">GitHub Repo</a>
-        <a href="#contact">Contact</a>
+        <div class="navbar-content">
+            <a href="/" class="logo">YouSub</a>
+            <nav>
+                <a href="/">Home</a>
+                <a href="#about">About</a>
+                <a href="https://github.com/yourrepo" target="_blank">GitHub</a>
+                <a href="#contact">Contact</a>
+            </nav>
+
+        </div>
+
+        <div class="theme-toggle" style="cursor: pointer;">
+            <input type="checkbox" id="themeToggle" style="cursor: pointer;">
+            <div class="toggle-body" style="cursor: pointer;"></div>
+            <div class="celestial-body" style="cursor: pointer;"></div>
+        </div>
+
     </div>
-    <!-- TODO Fix bug from theme -->
-    <button class="theme-toggle" onclick="toggleTheme()">🌞</button>
     <div class="container">
         <h1>Audio to Text for FREE using AI</h1>
         <div class="description">
@@ -24,7 +35,8 @@
                 free</a>. Provide a YouTube URL or upload your own files and use AI to ensure fast and accurate
             transcriptions.
             <br>
-            Want more control? Self-host YouSub with full features—check <a href="https://lkmeta.com" target="_blank"
+            <br>
+            Want more control? Self-host YouSub with full features—check <a href="https://lkmeta.me" target="_blank"
                 style="color: var(--primary-color);">GitHub</a> repo for instructions. Or, use this limited version
             directly.
             Enjoy!
@@ -102,7 +114,7 @@
         </div>
     </div>
     <div class="footer">
-        &copy; 2024 <a href="https://lkmeta.com" target="_blank">lkmeta</a>. All rights reserved.
+        &copy; 2024 <a href="https://lkmeta.me" target="_blank">lkmeta</a>. All rights reserved.
     </div>
 
     <!-- Alert Box Structure -->
