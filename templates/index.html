@@ -8,42 +8,39 @@
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 
-<body class="dark-theme"> <!-- Start with dark theme -->
+<body class="dark-theme">
     <div class="navbar">
         <div class="navbar-content">
             <a href="/" class="logo">YouSub</a>
-            <nav>
-                <a href="/">Home</a>
-                <a href="#about">About</a>
-                <a href="https://github.com/yourrepo" target="_blank">GitHub</a>
-                <a href="#contact">Contact</a>
-            </nav>
-
+            <a href="/">Home</a>
+            <a href="#about">About</a>
+            <a href="https://github.com/yourrepo" target="_blank">GitHub</a>
+            <a href="#contact">Contact</a>
+            <div class="theme-toggle-wrapper">
+                <label class="theme-toggle">
+                    <input type="checkbox" id="themeToggle">
+                    <div class="toggle-body"></div>
+                    <div class="celestial-body"></div>
+                </label>
+            </div>
         </div>
-
-        <div class="theme-toggle" style="cursor: pointer;">
-            <input type="checkbox" id="themeToggle" style="cursor: pointer;">
-            <div class="toggle-body" style="cursor: pointer;"></div>
-            <div class="celestial-body" style="cursor: pointer;"></div>
-        </div>
-
     </div>
     <div class="container">
-        <h1>Audio to Text for FREE using AI</h1>
+        <h1>Audio and Video to Text for FREE using AI</h1>
         <div class="description">
             Welcome to YouSub! Easily turn your <a style="color: var(--primary-color);">audio and video to text for
                 free</a>. Provide a YouTube URL or upload your own files and use AI to ensure fast and accurate
             transcriptions.
             <br>
             <br>
-            Want more control? Self-host YouSub with full features—check <a href="https://lkmeta.me" target="_blank"
+            Want more control? Self-host YouSub with full features—check <a href="https://lkmeta.com" target="_blank"
                 style="color: var(--primary-color);">GitHub</a> repo for instructions. Or, use this limited version
             directly.
             Enjoy!
         </div>
         <div class="switch-case">
             <button id="youtube-button" class="active" onclick="showInput('youtube')">YouTube URL</button>
-            <button id="upload-button" onclick="showInput('upload')">Upload Video</button>
+            <button id="upload-button" onclick="showInput('upload')">Upload Audio/Video</button>
         </div>
         <div id="youtube-input" class="input-group">
             <label for="youtube-url">YouTube URL:</label>
@@ -51,43 +48,26 @@
             <input type="text" id="youtube-url" placeholder="Enter YouTube URL">
         </div>
         <div id="upload-input" class="input-group" style="display: none;">
-            <label for="video-upload">Upload Video:</label>
-            <small>Upload a video file from your device to transcribe.</small>
-            <input type="file" id="video-upload" accept="video/*">
+            <label for="media-upload">Upload Audio/Video:</label>
+            <small>Upload an audio or video file from your device to transcribe (MP4, MP3).</small>
+            <input type="file" id="media-upload" accept=".mp4,.mp3">
         </div>
         <div class="input-group">
             <label for="language-choice">Choose Language:</label>
-            <small>Select the language spoken in the video.</small>
+            <small>Select the language spoken in the media.</small>
             <select id="language-choice">
                 <option value="en">English</option>
                 <option value="es">Spanish</option>
                 <option value="fr">French</option>
                 <option value="de">German</option>
-                <option value="zh">Chinese</option>
             </select>
         </div>
         <div class="input-group">
-            <label for="file-export">File Export Type:</label>
-            <small>Choose the format for the transcribed text.</small>
-            <select id="file-export">
-                <option value="txt">Text File (.txt)</option>
-                <option value="pdf">PDF (.pdf)</option>
-                <option value="docx">Word Document (.docx)</option>
-                <option value="srt">SubRip Subtitle (.srt)</option>
-                <option value="vtt">WebVTT (.vtt)</option>
-                <option value="ass">Advanced SubStation Alpha (.ass)</option>
-                <option value="ssa">SubStation Alpha (.ssa)</option>
-                <option value="sbv">YouTube Captions (.sbv)</option>
-            </select>
-        </div>
-        <div class="input-group">
-            <label for="stt-model">Speech-to-Text Model:</label>
+            <label for="stt-model">Speech-to-Text AI Model:</label>
             <small>Select the AI model to use for speech recognition.</small>
             <select id="stt-model">
                 <option value="whisper">OpenAI Whisper</option>
-                <option value="google">Google Speech-to-Text</option>
-                <option value="aws">AWS Transcribe</option>
-                <option value="azure">Azure Speech Service</option>
+                <option value="m4t">Facebook SeamlessM4T</option>
             </select>
         </div>
         <div class="input-group">
@@ -105,7 +85,17 @@
                 <option value="es">Spanish</option>
                 <option value="fr">French</option>
                 <option value="de">German</option>
-                <option value="zh">Chinese</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="file-export">File Export Type:</label>
+            <small>Choose the format for the transcribed text.</small>
+            <select id="file-export">
+                <option value="txt">Text File (.txt)</option>
+                <option value="pdf">PDF (.pdf)</option>
+                <option value="srt">SubRip Subtitle (.srt)</option>
+                <option value="vtt">WebVTT (.vtt)</option>
+                <option value="sbv">YouTube Captions (.sbv)</option>
             </select>
         </div>
 
@@ -125,6 +115,27 @@
             <button onclick="closeAlert()">OK</button>
         </div>
     </div>
+
+    <!-- Progress Window Structure -->
+    <div class="progress-overlay" id="progressOverlay">
+        <div class="progress-box">
+            <h2>Transcription Progress</h2>
+            <div class="progress-animation">
+                <div class="spinner">
+                    <div class="progress-percentage" id="progressPercentage">0%</div>
+                </div>
+            </div>
+            <p id="progressPhase">Initializing...</p>
+            <div class="stats">
+                <p id="statsModel"></p>
+                <p id="statsLanguage"></p>
+                <p id="statsTranslation"></p>
+                <p id="statsTime"></p>
+            </div>
+            <button class="cancel-button" onclick="cancelTranscription()">Cancel</button>
+        </div>
+    </div>
+
     <script src="/static/scripts.js"></script>
 </body>
 
