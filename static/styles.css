@@ -422,8 +422,6 @@ h1 {
     color: var(--primary-color);
     font-size: 14px;
     font-weight: bold;
-    transform: rotate(0deg);
-    /* Counteract the rotation of the spinner */
 }
 
 @keyframes spin {

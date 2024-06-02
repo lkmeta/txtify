@@ -122,8 +122,9 @@
             <h2>Transcription Progress</h2>
             <div class="progress-animation">
                 <div class="spinner">
-                    <div class="progress-percentage" id="progressPercentage">0%</div>
+                    <!-- <div class="progress-percentage" id="progressPercentage">0%</div> -->
                 </div>
+                <div class="progress-percentage" id="progressPercentage">0%</div>
             </div>
             <p id="progressPhase">Initializing...</p>
             <div class="stats">
@@ -133,6 +134,12 @@
                 <p id="statsTime"></p>
             </div>
             <button class="cancel-button" onclick="cancelTranscription()">Cancel</button>
+
+            <!-- create hidden download button
+            <button class="download-button" id="downloadButton" style="display: none;"
+                onclick="cancelTranscription()">Download</button> -->
+
+
         </div>
     </div>
 

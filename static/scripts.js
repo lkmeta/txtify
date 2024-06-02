@@ -83,6 +83,23 @@ function simulateTranscription(model, language, translation, languageTranslation
             progress += 10;
             document.getElementById('progressPercentage').innerText = `${progress}%`;
             document.getElementById('progressPhase').innerText = getPhase(progress);
+
+            if (progress === 100) {
+                // TODO
+
+
+                // // Stop the rotation animation
+                // document.getElementById('progressSpinner').style.animation = 'none';
+                // document.getElementById('progressSpinner').offsetHeight; // Trigger reflow
+                // document.getElementById('progressSpinner').style.animation = null;
+
+                // // Show download button
+                // document.getElementById('progressDownload').style.display = 'block';
+                // // make downloadButton visible and clickable
+                // document.getElementById('downloadButton').style.display = 'block';
+                // // make downloadButton clickable
+                // document.getElementById('downloadButton').href = 'static/transcription.txt';
+            }
         }
 
         // Update stats
