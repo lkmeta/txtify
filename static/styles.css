@@ -1,8 +1,6 @@
 :root {
     --width: 50px;
-    /* Normal size for the toggle button */
     --height: 25px;
-    /* Normal size for the toggle button */
     --background-color-dark: rgba(0, 0, 0, 0.9);
     --background-color-light: rgba(255, 255, 255, 0.9);
     --text-color-dark: #f2f2f2;
@@ -32,12 +30,14 @@ body {
 
 .light-theme {
     --background-color-dark: rgba(255, 255, 255, 0.9);
+    /* Light theme background */
     --text-color-dark: #000;
     --secondary-color-dark: #ccc;
 }
 
 .dark-theme {
     --background-color-dark: rgba(0, 0, 0, 0.9);
+    /* Dark theme background */
     --text-color-dark: #f2f2f2;
     --secondary-color-dark: #444;
 }
@@ -195,7 +195,7 @@ h1 {
 
 .description {
     margin-bottom: 20px;
-    font-size: 14px;
+    font-size: 15px;
     color: var(--text-color-dark);
     opacity: 0.9;
 }
@@ -259,6 +259,8 @@ h1 {
 
 .switch-case button.active {
     background-color: #d00000;
+    transform: scale(1.05);
+    transition: background-color 0.3s, transform 0.3s;
 }
 
 .switch-case button:hover {
@@ -291,6 +293,7 @@ h1 {
     color: #ccc;
     font-size: 12px;
     text-align: center;
+    margin-bottom: 20px;
 }
 
 .footer a {
@@ -350,6 +353,114 @@ h1 {
 }
 
 .alert-box button:hover {
+    background-color: #d00000;
+    transform: scale(1.05);
+}
+
+.progress-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1100;
+}
+
+.progress-box {
+    background: var(--background-color-dark);
+    color: var(--text-color-dark);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    max-width: 400px;
+    width: 90%;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.progress-box h2 {
+    margin: 0 0 10px;
+    font-size: 24px;
+    color: var(--primary-color);
+}
+
+.progress-box p {
+    margin: 0 0 20px;
+    font-size: 16px;
+}
+
+.progress-animation {
+    width: 100%;
+    height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.spinner {
+    border: 4px solid var(--primary-color);
+    border-top: 4px solid var(--text-color-dark);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 4s linear infinite;
+    /* Slower animation */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.progress-percentage {
+    position: absolute;
+    color: var(--primary-color);
+    font-size: 14px;
+    font-weight: bold;
+    transform: rotate(0deg);
+    /* Counteract the rotation of the spinner */
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.stats {
+    margin-top: 10px;
+}
+
+.stats p {
+    margin: 5px 0;
+    text-align: left;
+}
+
+.stats .stat-title {
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.cancel-button {
+    padding: 10px 20px;
+    border: none;
+    background-color: #ff0000;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+.cancel-button:hover {
     background-color: #d00000;
     transform: scale(1.05);
 }
