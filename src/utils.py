@@ -1,9 +1,12 @@
 import os
-import time
 import re
+import time
 import yt_dlp
 from loguru import logger
-from pydub import AudioSegment
+from pydub import AudioSegment  # Audio conversion
+from fpdf import FPDF  # PDF generation
+import srt  # SRT generation
+import webvtt  # VTT generation
 
 # Global dictionary to store transcription status
 transcription_status = {
@@ -114,13 +117,26 @@ def get_phase(progress: int) -> str:
 
 def convert_to_mp3(file_path: str) -> str:
     file_extension = file_path.split(".")[-1].lower()
+
     if file_extension != "mp3":
         audio = AudioSegment.from_file(file_path)
         mp3_file_path = file_path.rsplit(".", 1)[0] + ".mp3"
         audio.export(mp3_file_path, format="mp3")
         os.remove(file_path)
+
+        logger.info(f"File converted to MP3: {mp3_file_path}")
+
         return mp3_file_path
+
     return file_path
+
+
+def clean_filename(filename: str) -> str:
+    """
+    Clean filename by removing special characters
+    such as spaces, quotes, and slashes.
+    """
+    return re.sub(r"[^a-zA-Z0-9_.-]", "", filename)
 
 
 def get_transcription_status():
@@ -133,3 +149,63 @@ def update_transcription_status(new_status: dict):
 
 def cancel_transcription_task():
     transcription_status["canceled"] = True
+
+
+def convert_to_formats(transcription_text, base_file_path, export_format):
+    """
+    Convert the transcription text to various formats such as PDF, SRT, VTT, etc.
+    """
+    if export_format == "pdf":
+        convert_to_pdf(transcription_text, base_file_path + ".pdf")
+    elif export_format == "srt":
+        convert_to_srt(transcription_text, base_file_path + ".srt")
+    elif export_format == "vtt":
+        convert_to_vtt(transcription_text, base_file_path + ".vtt")
+    elif export_format == "sbv":
+        convert_to_sbv(transcription_text, base_file_path + ".sbv")
+
+
+def convert_to_pdf(text, file_path):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", size=12)
+
+    for line in text.split("\n"):
+        pdf.cell(200, 10, txt=line, ln=True, align="L")
+
+    pdf.output(file_path)
+    logger.info(f"Transcription saved to PDF: {file_path}")
+
+
+def convert_to_srt(text, file_path):
+    subs = []
+    for i, line in enumerate(text.split("\n")):
+        start_time, end_time, content = line.split("\t")
+        subs.append(
+            srt.Subtitle(index=i + 1, start=start_time, end=end_time, content=content)
+        )
+
+    with open(file_path, "w") as f:
+        f.write(srt.compose(subs))
+    logger.info(f"Transcription saved to SRT: {file_path}")
+
+
+def convert_to_vtt(text, file_path):
+    vtt = webvtt.WebVTT()
+    for line in text.split("\n"):
+        start_time, end_time, content = line.split("\t")
+        caption = webvtt.Caption(start_time, end_time, content)
+        vtt.captions.append(caption)
+
+    vtt.save(file_path)
+    logger.info(f"Transcription saved to VTT: {file_path}")
+
+
+def convert_to_sbv(text, file_path):
+    with open(file_path, "w") as f:
+        for line in text.split("\n"):
+            start_time, end_time, content = line.split("\t")
+            f.write(f"{start_time},{end_time}\n{content}\n")
+
+    logger.info(f"Transcription saved to SBV: {file_path}")
