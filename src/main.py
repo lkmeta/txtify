@@ -185,24 +185,3 @@ async def download():
     if file_path and os.path.exists(file_path):
         return FileResponse(path=file_path, filename=os.path.basename(file_path))
     return JSONResponse(content={"message": "File not found"}, status_code=404)
-
-
-# @app.exception_handler(StarletteHTTPException)
-# async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
-#     return templates.TemplateResponse(
-#         "error.html",
-#         {"request": request, "message": exc.detail},
-#         status_code=exc.status_code,
-#     )
-
-
-# @app.exception_handler(RequestValidationError)
-# async def validation_exception_handler(request: Request, exc: RequestValidationError):
-#     return templates.TemplateResponse(
-#         "error.html", {"request": request, "message": exc.errors()}, status_code=400
-#     )
-
-
-# Conda execute cmd: uvicorn main:app --reload --port 5000
-# python -m uvicorn main:app --reload --port 5000
-#

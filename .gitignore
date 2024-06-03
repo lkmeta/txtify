@@ -13,3 +13,5 @@ output/
 # Environments
 .env
 
+# Random test
+test.txt
