@@ -1,3 +1,15 @@
+# TODOs:
+# 1. Add all models on index.html, including translation models
+# 2. Add button to download the transcribed file on index.html
+# 3. Add all available languages on index.html
+
+# 4. Returns process ID when project is started and save it in the DB
+# 5. Create new process to run the transcription process
+# 6. When cancel the transcription process should kill the process
+
+
+#######################################################################
+
 import os
 from fastapi import FastAPI, Request, Form, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
