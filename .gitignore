@@ -1,0 +1,17 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs and databases
+*.db
+
+# VS Code specific
+.vscode/
+
+# Output directories
+output/
+
+# Environments
+.env
+
