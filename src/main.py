@@ -6,6 +6,7 @@
 # 4. Returns process ID when project is started and save it in the DB
 # 5. Create new process to run the transcription process
 # 6. When cancel the transcription process should kill the process
+# 7. Fix the bug with the name and the spaces, should be replaced with underscore
 
 
 #######################################################################

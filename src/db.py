@@ -1,6 +1,7 @@
 import sqlite3
 
 
+# Database class
 class transcriptionsDB:
     def __init__(self, db_path: str):
         """
