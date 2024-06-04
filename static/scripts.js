@@ -102,7 +102,7 @@ function startStatusCheck() {
                     document.getElementById('progressPhase').innerText = 'Completed successfully! Download your file below.';
                     document.querySelector('.cancel-button').style.display = 'none';
                     document.querySelector('.download-button').style.display = 'inline-block';
-                    document.querySelector('.exit-button').style.display = 'inline-block';
+                    document.querySelector('.close-button').style.display = 'inline-block';
                 }
             }
         };
@@ -146,134 +146,12 @@ function cancelTranscription() {
 document.getElementById('transcribeButton').addEventListener('click', transcribe);
 document.querySelector('.cancel-button').addEventListener('click', cancelTranscription);
 document.querySelector('.download-button').addEventListener('click', downloadFile);
-document.querySelector('.exit-button').addEventListener('click', exitProgress);
+document.querySelector('.close-button').addEventListener('click', closeProgress);
 
 function downloadFile() {
     // Implement download functionality
 }
 
-function exitProgress() {
+function closeProgress() {
     document.getElementById('progressOverlay').style.display = 'none';
 }
-
-
-
-
-// function showInput(type) {
-//     const youtubeInput = document.getElementById('youtube-input');
-//     const uploadInput = document.getElementById('upload-input');
-//     const youtubeButton = document.getElementById('youtube-button');
-//     const uploadButton = document.getElementById('upload-button');
-
-//     if (type === 'youtube') {
-//         youtubeInput.style.display = 'block';
-//         uploadInput.style.display = 'none';
-//         youtubeButton.classList.add('active');
-//         uploadButton.classList.remove('active');
-//     } else if (type === 'upload') {
-//         youtubeInput.style.display = 'none';
-//         uploadInput.style.display = 'block';
-//         youtubeButton.classList.remove('active');
-//         uploadButton.classList.add('active');
-//     }
-// }
-
-// function toggleTheme() {
-//     document.body.classList.toggle('light-theme');
-//     document.body.classList.toggle('dark-theme');
-// }
-
-// document.getElementById('themeToggle').addEventListener('change', toggleTheme);
-
-// function showAlert(title, message) {
-//     document.getElementById('alertTitle').innerText = title;
-//     document.getElementById('alertMessage').innerText = message;
-//     document.getElementById('alertOverlay').style.display = 'flex';
-// }
-
-// function closeAlert() {
-//     document.getElementById('alertOverlay').style.display = 'none';
-// }
-
-// function transcribe() {
-//     const youtubeUrl = document.getElementById('youtube-url').value;
-//     const mediaUpload = document.getElementById('media-upload').files[0];
-//     const languageChoice = document.getElementById('language-choice').value;
-//     const sttModel = document.getElementById('stt-model').value;
-//     const translation = document.getElementById('translation').value;
-//     const languageTranslation = document.getElementById('language-translation').value;
-//     const fileExport = document.getElementById('file-export').value;
-
-//     // Validate YouTube URL
-//     if (youtubeUrl && !isValidYoutubeUrl(youtubeUrl)) {
-//         showAlert('Invalid URL', 'Please enter a valid YouTube URL.');
-//         return;
-//     }
-
-//     // Validate file upload
-//     if (mediaUpload && !isValidMediaFile(mediaUpload)) {
-//         showAlert('Invalid File', 'Please upload a valid MP4 or MP3 file.');
-//         return;
-//     }
-
-//     // Show progress overlay
-//     document.getElementById('progressOverlay').style.display = 'flex';
-
-//     // Simulate transcription process
-//     simulateTranscription(sttModel, languageChoice, translation, languageTranslation, fileExport);
-// }
-
-// function isValidYoutubeUrl(url) {
-//     const regex = /^(https?\:\/\/)?(www\.youtube\.com|youtu\.be)\/.+$/;
-//     return regex.test(url);
-// }
-
-// function isValidMediaFile(file) {
-//     const validExtensions = ['mp4', 'mp3'];
-//     const fileExtension = file.name.split('.').pop().toLowerCase();
-//     return validExtensions.includes(fileExtension);
-// }
-
-// function simulateTranscription(model, language, translation, languageTranslation, fileExport) {
-//     let progress = 0;
-//     const interval = setInterval(() => {
-//         if (progress >= 100) {
-//             clearInterval(interval);
-//             document.getElementById('progressPhase').innerText = 'Completed successfully! Download your file below.';
-
-//             // TODO: Implement file export
-//             // Show download button and Transcribe Again button if file export is enabled
-//             // Hide cancel button
-
-
-//         } else {
-//             progress += 10;
-//             document.getElementById('progressPercentage').innerText = `${progress}%`;
-//             document.getElementById('progressPhase').innerText = getPhase(progress);
-//         }
-
-//         // Update stats
-//         document.getElementById('statsModel').innerHTML = `<span class="stat-title">Model:</span> ${model}`;
-//         document.getElementById('statsLanguage').innerHTML = `<span class="stat-title">Language:</span> ${language}`;
-//         document.getElementById('statsTranslation').innerHTML = `<span class="stat-title">Translation:</span> ${translation}`;
-//         document.getElementById('statsTime').innerHTML = `<span class="stat-title">Time Taken:</span> ${progress / 10}s`;
-//     }, 1000);
-// }
-
-// function getPhase(progress) {
-//     if (progress < 20) {
-//         return 'Uploading file...';
-//     } else if (progress < 40) {
-//         return 'Processing file...';
-//     } else if (progress < 60) {
-//         return 'Transcribing...';
-//     } else if (progress < 80) {
-//         return 'Translating...';
-//     } else {
-//         return 'Finalizing...';
-//     }
-// }
-
-// function cancelTranscription() {
-//     document.getElementById('progressOverlay').style.display = 'none';
-// }
