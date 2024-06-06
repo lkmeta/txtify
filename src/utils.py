@@ -54,26 +54,32 @@ def handle_transcription(
             ydl_opts = {
                 "format": "bestaudio/best",
                 "outtmpl": os.path.join(OUTPUT_DIR, "%(title)s.%(ext)s"),
+                "restrictfilenames": True,
                 "postprocessors": [
                     {
                         "key": "FFmpegExtractAudio",
                         "preferredcodec": "mp3",
                         "preferredquality": "192",
+                        # "nopostoverwrites": False,
                     }
                 ],
+                # "progress_hooks": [clean_and_rename],
             }
 
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info_dict = ydl.extract_info(youtube_url, download=True)
                 output_file = ydl.prepare_filename(info_dict)
-                output_file = convert_to_mp3(output_file)
+                # output_file = convert_to_mp3(output_file)
 
         elif media:
-            media_file_path = os.path.join(OUTPUT_DIR, media.filename)
+            media_filename = clean_filename(media.filename)
+            media_file_path = os.path.join(OUTPUT_DIR, media_filename)
             with open(media_file_path, "wb") as buffer:
                 buffer.write(media.file.read())
             output_file = media_file_path
             output_file = convert_to_mp3(output_file)
+
+        logger.info(f"Transcription started for: {output_file}")
 
         # Simulate transcription process
         for progress in range(0, 101, 10):
@@ -100,6 +106,13 @@ def handle_transcription(
         transcription_status["phase"] = "Error"
         transcription_status["progress"] = 0
         logger.error(f"Transcription failed: {str(e)}")
+
+
+def clean_and_rename(d: dict):
+    if d["status"] == "finished":
+        file_path = d["filename"]
+        clean_path = rename_file_with_underscores(file_path)
+        os.rename(file_path, clean_path)
 
 
 def get_phase(progress: int) -> str:
@@ -137,6 +150,17 @@ def clean_filename(filename: str) -> str:
     such as spaces, quotes, and slashes.
     """
     return re.sub(r"[^a-zA-Z0-9_.-]", "", filename)
+
+
+def rename_file_with_underscores(file_path: str) -> str:
+    """
+    Rename the file by replacing spaces with underscores.
+    """
+    directory, filename = os.path.split(file_path)
+    new_filename = filename.replace(" ", "_")
+    new_file_path = os.path.join(directory, new_filename)
+    os.rename(file_path, new_file_path)
+    return new_file_path
 
 
 def get_transcription_status():
