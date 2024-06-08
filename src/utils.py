@@ -21,7 +21,7 @@ transcription_status = {
     "canceled": False,
 }
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "../output")
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..\output")
 
 
 def is_valid_youtube_url(url: str) -> bool:
@@ -51,25 +51,35 @@ def handle_transcription(
 
     try:
         if youtube_url:
+
+            # Options for downloading the YouTube video
             ydl_opts = {
                 "format": "bestaudio/best",
-                "outtmpl": os.path.join(OUTPUT_DIR, "%(title)s.%(ext)s"),
-                "restrictfilenames": True,
                 "postprocessors": [
                     {
                         "key": "FFmpegExtractAudio",
                         "preferredcodec": "mp3",
                         "preferredquality": "192",
-                        # "nopostoverwrites": False,
                     }
                 ],
-                # "progress_hooks": [clean_and_rename],
             }
 
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info_dict = ydl.extract_info(youtube_url, download=True)
+                info_dict = ydl.extract_info(youtube_url, download=False)
+                sanitized_title = clean_filename(info_dict["title"])
+
+                info_dict["title"] = sanitized_title
+
+            ydl_opts["outtmpl"] = os.path.join(OUTPUT_DIR, sanitized_title + ".%(ext)s")
+
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([youtube_url])
+
+                # Get output file path
                 output_file = ydl.prepare_filename(info_dict)
-                # output_file = convert_to_mp3(output_file)
+                output_file = output_file.replace(".webm", ".mp3")
+
+                logger.info(f"Downloaded video: {output_file}")
 
         elif media:
             media_filename = clean_filename(media.filename)
@@ -108,13 +118,6 @@ def handle_transcription(
         logger.error(f"Transcription failed: {str(e)}")
 
 
-def clean_and_rename(d: dict):
-    if d["status"] == "finished":
-        file_path = d["filename"]
-        clean_path = rename_file_with_underscores(file_path)
-        os.rename(file_path, clean_path)
-
-
 def get_phase(progress: int) -> str:
     if progress < 20:
         return "Uploading file..."
@@ -149,7 +152,14 @@ def clean_filename(filename: str) -> str:
     Clean filename by removing special characters
     such as spaces, quotes, and slashes.
     """
-    return re.sub(r"[^a-zA-Z0-9_.-]", "", filename)
+
+    # Remove special characters
+    filename = re.sub(r"[^a-zA-Z0-9_.-]", "_", filename)
+
+    # Remove multiple underscores in a row
+    filename = re.sub(r"__+", "_", filename)
+
+    return filename
 
 
 def rename_file_with_underscores(file_path: str) -> str:
