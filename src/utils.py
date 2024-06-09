@@ -122,7 +122,7 @@ def handle_transcription(
         # Check if PID is valid
         if pid:
             # Update the transcription status
-            DB.update_transcription_pid("processing", pid)
+            DB.update_transcription_pid("Processing...", pid)
             transcription_status["phase"] = "Processing..."
             transcription_status["progress"] = 10
             transcription_status["pid"] = pid
@@ -137,18 +137,7 @@ def handle_transcription(
         transcription_status["progress"] = 0
         logger.error(f"Transcription failed: {str(e)}")
 
-
-def get_phase(progress: int) -> str:
-    if progress < 20:
-        return "Uploading file..."
-    elif progress < 40:
-        return "Processing file..."
-    elif progress < 60:
-        return "Transcribing..."
-    elif progress < 80:
-        return "Translating..."
-    else:
-        return "Finalizing..."
+        return None
 
 
 def convert_to_mp3(file_path: str) -> str:

@@ -118,7 +118,7 @@ class transcriptionsDB:
             """,
             (pid,),
         )
-        return self.cursor.fetchone
+        return self.cursor.fetchone()
 
     def update_transcription_status_by_pid(
         self, status: str, completed_at: str, progress: int, pid: int

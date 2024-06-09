@@ -3,13 +3,11 @@
 # 2. Add button to download the transcribed file on index.html
 # 3. Add all available languages on index.html
 
-# 4. Returns process ID when project is started and save it in the DB
-# 5. Create new process to run the transcription process
-# 6. When cancel the transcription process should kill the process
-# 7. Fix the bug with the name and the spaces, should be replaced with underscore
 
+# 6. When cancel the transcription process should kill the process
 
 #######################################################################
+
 
 import os
 from fastapi import FastAPI, Request, Form, UploadFile, File
@@ -37,7 +35,7 @@ TEMPLATES_PATH = os.path.join(os.path.dirname(__file__), "../templates")
 templates = Jinja2Templates(directory=TEMPLATES_PATH)
 
 # Initialize the defined requests
-DEFINED_REQUESTS = ["/", "/transcribe", "/status", "/download"]
+DEFINED_REQUESTS = ["/", "/transcribe", "/status", "/cancel", "/download"]
 
 # Define the routes
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "../output")
@@ -117,21 +115,6 @@ async def transcribe(
                 content={"message": "Invalid file type"}, status_code=400
             )
 
-    # Initialize the status
-    update_transcription_status(
-        {
-            "progress": 0,
-            "phase": "Initializing...",
-            "model": model,
-            "language": language,
-            "translation": translation,
-            "time_taken": 0,
-            "completed": False,
-            "file_path": None,
-            "canceled": False,
-        }
-    )
-
     # Add the transcription task to the database
     DB.insert_transcription(
         youtube_url,
@@ -141,13 +124,15 @@ async def transcribe(
         translation,
         language_translation,
         file_export,
-        "processing",
+        "Processing...",
         str(time.time()),
         None,
+        0,
+        0,
     )
 
     # Start the transcription process
-    handle_transcription(
+    pid = handle_transcription(
         youtube_url,
         media,
         language,
@@ -157,34 +142,89 @@ async def transcribe(
         file_export,
     )
 
-    return {"message": "Transcription started successfully."}
+    # Update the transcription status in the database
+    DB.update_transcription_status_by_pid("Processing...", "", 10, pid)
+
+    return {"message": "Transcription started successfully.", "pid": pid}
 
 
 @app.get("/status", response_class=JSONResponse)
-async def status():
+async def status(pid: int = None):
     """
     Get the status of the transcription process
     Returns:
         JSONResponse: The response containing the transcription status
     """
-    return get_transcription_status()
+
+    logger.info(f"Getting status for process ID: {pid}")
+
+    if pid:
+        status = DB.get_transcription_by_pid(pid)
+        if not status:
+            return JSONResponse(
+                content={"message": "Transcription not found"}, status_code=404
+            )
+
+        logger.info(f"Transcription status: {status}")
+
+        # time taken is the status[9] - status[8] if status[9] else "(In progress)"
+
+        if status[11] < 100:
+            time_taken = "In Progress"
+        else:
+            try:
+
+                # Calculate the time taken for the transcription process using the timestamps
+                time_taken = (
+                    str(round(float(status[10]) - float(status[9]), 2))
+                    if status[9]
+                    else "In Progress"
+                )
+            except ValueError:
+                time_taken = "Invalid data"
+
+        json_status = {
+            "progress": str(status[11]),
+            "phase": status[8],
+            "model": status[4],
+            "language": status[3],
+            "translation": status[5],
+            "time_taken": time_taken,
+        }
+
+        return json_status
+
+    else:
+        return {"message": "Process ID is required."}
 
 
 @app.post("/cancel", response_class=JSONResponse)
-async def cancel_transcription():
+async def cancel_transcription(pid: int = None):
     """
     Cancel the transcription process
     Returns:
         JSONResponse: The response containing the message
     """
-    cancel_transcription_task()
+
+    # Get the transcription status by process ID
+    status = DB.get_transcription_by_pid(pid)
+    if not status:
+        return JSONResponse(
+            content={"message": "Transcription not found"}, status_code=404
+        )
+
+    # Kill the transcription process
+    cancel = cancel_transcription_task(pid)
+
+    if not cancel:
+        return JSONResponse(
+            content={"message": "Failed to cancel transcription"}, status_code=500
+        )
 
     # Update the transcription status in the database
-    DB.update_transcription_status(
-        1, "canceled", str(time.time())
-    )  # Update the status of the first record
+    DB.update_transcription_status_by_pid("canceled", str(time.time(), 0, pid))
 
-    return {"message": "Transcription canceled"}
+    return {"message": "Transcription canceled successfully!"}
 
 
 @app.get("/download", response_class=FileResponse)
@@ -194,7 +234,33 @@ async def download():
     Returns:
         FileResponse: The response containing the file to download
     """
-    file_path = get_transcription_status().get("file_path")
+
+    pid = get_transcription_status().get("pid")
+    if not pid:
+        return JSONResponse(
+            content={"message": "Transcription not found"}, status_code=404
+        )
+
+    file_path = DB.get_transcription_by_pid(pid)[1]
+
+    logger.info(f"Downloading file: {file_path}")
+
     if file_path and os.path.exists(file_path):
         return FileResponse(path=file_path, filename=os.path.basename(file_path))
     return JSONResponse(content={"message": "File not found"}, status_code=404)
+
+
+@app.get("/{request}", response_class=HTMLResponse)
+async def catch_all(request: Request):
+    """
+    Catch all route
+    Args:
+        request (Request): The request object
+    Returns:
+        HTMLResponse: The response containing the error message
+    """
+
+    if request.url.path not in DEFINED_REQUESTS:
+        return templates.TemplateResponse("error.html", {"request": request})
+
+    return templates.TemplateResponse("index.html", {"request": request})
