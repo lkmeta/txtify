@@ -5,7 +5,7 @@ function showInput(type) {
     const uploadButton = document.getElementById('upload-button');
 
     if (type === 'youtube') {
-        youtubeInput.style.display = 'block';
+        youtubeInput.style.display = 'flex';
         uploadInput.style.display = 'none';
         youtubeButton.classList.add('active');
         uploadButton.classList.remove('active');
@@ -80,7 +80,7 @@ function transcribe() {
     xhr.onload = function () {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
-            startStatusCheck(response.task_id);  // Assuming the response contains a task_id to check status
+            startStatusCheck(response.pid);
         } else {
             showAlert('Error', 'Failed to transcribe the media.');
             document.getElementById('progressOverlay').style.display = 'none';
@@ -89,21 +89,24 @@ function transcribe() {
     xhr.send(formData);
 }
 
-function startStatusCheck() {
+function startStatusCheck(pid) {
+
     transcriptionInterval = setInterval(() => {
         const xhr = new XMLHttpRequest();
-        xhr.open('GET', `/status`, true);
+        xhr.open('GET', `/status?pid=${pid}`, true);
         xhr.onload = function () {
             if (xhr.status === 200) {
                 const response = JSON.parse(xhr.responseText);
+                console.log(response);
+
                 updateProgress(response.progress, response.phase, response.model, response.language, response.translation, response.time_taken);
                 if (response.progress >= 100) {
                     clearInterval(transcriptionInterval);
                     document.getElementById('progressPhase').innerText = 'Completed successfully! Download your file below.';
-                    document.querySelector('.cancel-button').style.display = 'none';
-                    document.querySelector('.download-button').style.display = 'inline-block';
-                    document.querySelector('.close-button').style.display = 'inline-block';
                 }
+            } else {
+                showAlert('Error', 'Failed to check the transcription status.');
+                console.log(xhr.responseText);
             }
         };
         xhr.send();
@@ -127,17 +130,39 @@ function updateProgress(progress, phase, model, language, translation, timeTaken
     document.getElementById('statsModel').innerHTML = `<span class="stat-title">Model:</span> ${model}`;
     document.getElementById('statsLanguage').innerHTML = `<span class="stat-title">Language:</span> ${language}`;
     document.getElementById('statsTranslation').innerHTML = `<span class="stat-title">Translation:</span> ${translation}`;
-    document.getElementById('statsTime').innerHTML = `<span class="stat-title">Time Taken:</span> ${timeTaken}s`;
+
+    // if "In Progress" then show "Time Taken: In Progress"
+    if (timeTaken === 'In Progress') {
+        document.getElementById('statsTime').innerHTML = `<span class="stat-title">Time Taken:</span> ${timeTaken}`;
+    } else {
+        document.getElementById('statsTime').innerHTML = `<span class="stat-title">Time Taken:</span> ${timeTaken} seconds`;
+    }
+
+
+    // If phase is not "Initializing..." then unhide the cancel button
+    if (phase !== 'Initializing...') {
+        document.querySelector('.cancel-button').classList.remove('hidden');
+    }
+
+    // If progress is 100% then hide the cancel button and unhide the download and close buttons
+    if (progress >= 100) {
+        document.querySelector('.cancel-button').style.display = 'none';
+        document.querySelector('.download-button').classList.remove('hidden');
+        document.querySelector('.close-button').classList.remove('hidden');
+    }
+
 }
 
 function cancelTranscription() {
     clearInterval(transcriptionInterval);
     document.getElementById('progressOverlay').style.display = 'none';
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/cancel', true);
+    xhr.open('POST', `/cancel?pid=${pid}`, true);
     xhr.onload = function () {
         if (xhr.status !== 200) {
             showAlert('Error', 'Failed to cancel the transcription.');
+        } else {
+            showAlert('Success', 'Transcription has been cancelled.');
         }
     };
     xhr.send();
@@ -149,9 +174,28 @@ document.querySelector('.download-button').addEventListener('click', downloadFil
 document.querySelector('.close-button').addEventListener('click', closeProgress);
 
 function downloadFile() {
-    // Implement download functionality
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', `/download?pid=${transcriptionInterval}`, true);
+    xhr.responseType = 'blob';
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            const url = window.URL.createObjectURL(xhr.response);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'transcription.txt';  // File name // TODO here
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } else {
+            showAlert('Error', 'Failed to download the file.');
+        }
+    };
+    xhr.send();
 }
 
 function closeProgress() {
+
+    // TODO clear window from the previous transcription
+
     document.getElementById('progressOverlay').style.display = 'none';
 }

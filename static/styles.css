@@ -448,6 +448,11 @@ h1 {
     color: var(--primary-color);
 }
 
+.hidden {
+    display: none;
+}
+
+
 .cancel-button {
     padding: 10px 20px;
     border: none;
@@ -459,6 +464,37 @@ h1 {
 }
 
 .cancel-button:hover {
+    background-color: #d00000;
+    transform: scale(1.05);
+}
+
+
+.download-button {
+    padding: 10px 20px;
+    border: none;
+    background-color: #28a745;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+.download-button:hover {
+    background-color: #218838;
+    transform: scale(1.05);
+}
+
+.close-button {
+    padding: 10px 20px;
+    border: none;
+    background-color: #ff0000;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+.close-button:hover {
     background-color: #d00000;
     transform: scale(1.05);
 }
