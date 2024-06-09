@@ -7,6 +7,8 @@ from pydub import AudioSegment  # Audio conversion
 from fpdf import FPDF  # PDF generation
 import srt  # SRT generation
 import webvtt  # VTT generation
+import subprocess
+from db import transcriptionsDB
 
 # Global dictionary to store transcription status
 transcription_status = {
@@ -19,9 +21,12 @@ transcription_status = {
     "completed": False,
     "file_path": None,
     "canceled": False,
+    "pid": None,
 }
 
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..\output")
+
+DB = transcriptionsDB(os.path.join(OUTPUT_DIR, "transcriptions.db"))
 
 
 def is_valid_youtube_url(url: str) -> bool:
@@ -91,26 +96,41 @@ def handle_transcription(
 
         logger.info(f"Transcription started for: {output_file}")
 
-        # Simulate transcription process
-        for progress in range(0, 101, 10):
-            if transcription_status["canceled"]:
-                transcription_status["phase"] = "Canceled"
-                transcription_status["progress"] = 0
-                return
+        # Start the transcription process as a separate subprocess within the conda environment
+        conda_env = "yousub"
 
-            time.sleep(1)  # Simulate time delay for processing
-            transcription_status["progress"] = progress
-            transcription_status["phase"] = get_phase(progress)
-
-        # Transcribe the audio
-        transcribe_audio(
-            output_file, language, model, translation, language_translation, file_export
+        process = subprocess.Popen(
+            [
+                "conda",
+                "run",
+                "--name",
+                conda_env,
+                "python",
+                "transcribe_process.py",
+                output_file,
+                language,
+                model,
+                translation,
+                language_translation,
+                file_export,
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
+        pid = process.pid
 
-        # Set the completed status
-        transcription_status["completed"] = True
-        transcription_status["time_taken"] = round(time.time() - start_time, 2)
-        transcription_status["file_path"] = output_file
+        # Check if PID is valid
+        if pid:
+            # Update the transcription status
+            DB.update_transcription_pid("processing", pid)
+            transcription_status["phase"] = "Processing..."
+            transcription_status["progress"] = 10
+            transcription_status["pid"] = pid
+            logger.info(f"Transcription process started with PID: {pid}")
+        else:
+            raise Exception("Failed to start transcription process")
+
+        return pid
 
     except Exception as e:
         transcription_status["phase"] = "Error"
@@ -181,8 +201,19 @@ def update_transcription_status(new_status: dict):
     transcription_status.update(new_status)
 
 
-def cancel_transcription_task():
-    transcription_status["canceled"] = True
+def cancel_transcription_task(process_id: int) -> bool:
+    """
+    Cancel the transcription task by killing the process.
+    """
+    try:
+        process = subprocess.Popen(["taskkill", "/F", "/T", "/PID", str(process_id)])
+        process.wait()
+        transcription_status["canceled"] = True
+        logger.info(f"Transcription process canceled: {process_id}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to cancel transcription process: {str(e)}")
+        return False
 
 
 def convert_to_formats(transcription_text, base_file_path, export_format):
