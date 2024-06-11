@@ -10,6 +10,8 @@ import webvtt  # VTT generation
 import subprocess
 from db import transcriptionsDB
 import psutil
+from datetime import timedelta
+
 
 # Global dictionary to store transcription status
 transcription_status = {
@@ -197,6 +199,12 @@ def convert_to_formats(transcription_text, base_file_path, export_format):
         convert_to_vtt(transcription_text, base_file_path + ".vtt")
     elif export_format == "sbv":
         convert_to_sbv(transcription_text, base_file_path + ".sbv")
+    elif export_format == "all":
+        base_file_path = base_file_path.rsplit(".", 1)[0]
+        convert_to_pdf(transcription_text, base_file_path + ".pdf")
+        convert_to_srt(transcription_text, base_file_path + ".srt")
+        convert_to_vtt(transcription_text, base_file_path + ".vtt")
+        convert_to_sbv(transcription_text, base_file_path + ".sbv")
 
 
 def convert_to_pdf(text, file_path):
@@ -212,34 +220,150 @@ def convert_to_pdf(text, file_path):
     logger.info(f"Transcription saved to PDF: {file_path}")
 
 
-def convert_to_srt(text, file_path):
-    subs = []
-    for i, line in enumerate(text.split("\n")):
-        start_time, end_time, content = line.split("\t")
-        subs.append(
-            srt.Subtitle(index=i + 1, start=start_time, end=end_time, content=content)
-        )
+# def convert_to_srt(text, file_path):
+#     subs = []
+#     lines = text.split("\n")
+#     for i in range(0, len(lines), 2):
+#         if i + 1 < len(lines):
+#             try:
+#                 start_time, end_time = lines[i].split(" --> ")
+#                 content = lines[i + 1]
+#                 start_time = srt.srt_timestamp_to_timedelta(start_time.strip())
+#                 end_time = srt.srt_timestamp_to_timedelta(end_time.strip())
+#                 subs.append(
+#                     srt.Subtitle(
+#                         index=(i // 2) + 1,
+#                         start=start_time,
+#                         end=end_time,
+#                         content=content.strip(),
+#                     )
+#                 )
+#             except ValueError as e:
+#                 warning_message = (
+#                     f"Skipping lines {i + 1} and {i + 2}: {lines[i]} {lines[i + 1]}"
+#                 )
+#                 # logger.warning(warning_message)
+#                 continue
 
-    with open(file_path, "w") as f:
-        f.write(srt.compose(subs))
+#     with open(file_path, "w") as f:
+#         f.write(srt.compose(subs))
+#     logger.info(f"Transcription saved to SRT: {file_path}")
+
+
+def convert_to_srt(text, file_path):
+    current_section = 0
+
+    def convertMillisToTc(millis: int) -> str:
+        # Utility function to convert milliseconds to timeCode hh:mm:ss,mmm
+        milliseconds, seconds = divmod(millis, 1000)
+        minutes, seconds = divmod(seconds, 60)
+        hours, minutes = divmod(minutes, 60)
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
+
+    def time_to_millis(time_str: str) -> int:
+        hours, minutes, seconds = 0, 0, 0
+        if "." in time_str:
+            seconds, millis = map(float, time_str.split("."))
+        else:
+            seconds, millis = float(time_str), 0
+        millis = int(millis * 1000)
+        total_millis = int((hours * 3600 + minutes * 60 + seconds) * 1000) + millis
+        return total_millis
+
+    def makeSubRipStr(rawText: str, initialTimeCode: str, endTimeCode: str) -> str:
+        nonlocal current_section
+        current_section += 1  # Increment the current section counter
+        initialTimeCodeInMillis = time_to_millis(initialTimeCode)
+        endTimeCodeInMillis = time_to_millis(endTimeCode)
+        finalTimeCode = convertMillisToTc(endTimeCodeInMillis)
+        initialTimeCode = convertMillisToTc(initialTimeCodeInMillis)
+        formattedText = (
+            f"{current_section}\n{initialTimeCode} --> {finalTimeCode}\n{rawText}\n\n"
+        )
+        return formattedText
+
+    # Create the SRT file and write the formatted entries
+    with open(file_path, mode="w", encoding="utf-8") as subFile:
+        lines = text.strip().split("\n")
+        for i in range(0, len(lines), 2):
+            if i + 1 < len(lines):
+                start_end_times = lines[i].strip().split(" --> ")
+                if len(start_end_times) == 2:
+                    start_time, end_time = start_end_times
+                    raw_text = lines[i + 1].strip()
+                    subFile.write(makeSubRipStr(raw_text, start_time, end_time))
+
     logger.info(f"Transcription saved to SRT: {file_path}")
 
 
 def convert_to_vtt(text, file_path):
-    vtt = webvtt.WebVTT()
-    for line in text.split("\n"):
-        start_time, end_time, content = line.split("\t")
-        caption = webvtt.Caption(start_time, end_time, content)
-        vtt.captions.append(caption)
+    def convertMillisToTc(millis: int) -> str:
+        # Utility function to convert milliseconds to timeCode hh:mm:ss.mmm
+        milliseconds, seconds = divmod(millis, 1000)
+        minutes, seconds = divmod(seconds, 60)
+        hours, minutes = divmod(minutes, 60)
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
 
-    vtt.save(file_path)
+    def time_to_millis(time_str: str) -> int:
+        hours, minutes, seconds = 0, 0, 0
+        if "." in time_str:
+            seconds, millis = map(float, time_str.split("."))
+        else:
+            seconds, millis = float(time_str), 0
+        millis = int(millis * 1000)
+        total_millis = int((hours * 3600 + minutes * 60 + seconds) * 1000) + millis
+        return total_millis
+
+    def makeVttStr(rawText: str, initialTimeCode: str, endTimeCode: str) -> str:
+        initialTimeCodeInMillis = time_to_millis(initialTimeCode)
+        endTimeCodeInMillis = time_to_millis(endTimeCode)
+        finalTimeCode = convertMillisToTc(endTimeCodeInMillis)
+        initialTimeCode = convertMillisToTc(initialTimeCodeInMillis)
+        formattedText = f"{initialTimeCode} --> {finalTimeCode}\n{rawText}\n\n"
+        return formattedText
+
+    # Create the VTT file and write the formatted entries
+    with open(file_path, mode="w", encoding="utf-8") as vttFile:
+        vttFile.write("WEBVTT\n\n")  # VTT files start with the WEBVTT header
+        lines = text.strip().split("\n")
+        for i in range(0, len(lines), 2):
+            if i + 1 < len(lines):
+                start_end_times = lines[i].strip().split(" --> ")
+                if len(start_end_times) == 2:
+                    start_time, end_time = start_end_times
+                    raw_text = lines[i + 1].strip()
+                    vttFile.write(makeVttStr(raw_text, start_time, end_time))
+
     logger.info(f"Transcription saved to VTT: {file_path}")
 
 
 def convert_to_sbv(text, file_path):
-    with open(file_path, "w") as f:
-        for line in text.split("\n"):
-            start_time, end_time, content = line.split("\t")
-            f.write(f"{start_time},{end_time}\n{content}\n")
+    def convertMillisToTc(millis: float) -> str:
+        # Utility function to convert seconds to SBV timeCode hh:mm:ss.mmm
+        millis = int(millis * 1000)
+        milliseconds = millis % 1000
+        seconds = (millis // 1000) % 60
+        minutes = (millis // (1000 * 60)) % 60
+        hours = (millis // (1000 * 60 * 60)) % 24
+        return f"{hours}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
+
+    def makeSbvStr(rawText: str, initialTimeCode: str, endTimeCode: str) -> str:
+        initialTimeCodeFormatted = convertMillisToTc(float(initialTimeCode))
+        endTimeCodeFormatted = convertMillisToTc(float(endTimeCode))
+        formattedText = (
+            f"{initialTimeCodeFormatted},{endTimeCodeFormatted}\n{rawText}\n\n"
+        )
+        return formattedText
+
+    # Create the SBV file and write the formatted entries
+    with open(file_path, mode="w", encoding="utf-8") as sbvFile:
+        lines = text.strip().split("\n")
+        for i in range(0, len(lines), 2):
+            if i + 1 < len(lines):
+                start_end_times = lines[i].strip().split(" --> ")
+                if len(start_end_times) == 2:
+                    start_time, end_time = start_end_times
+                    raw_text = lines[i + 1].strip()
+                    sbvFile.write(makeSbvStr(raw_text, start_time, end_time))
 
     logger.info(f"Transcription saved to SBV: {file_path}")
