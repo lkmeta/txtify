@@ -172,40 +172,6 @@ def clean_filename(filename: str) -> str:
     return filename
 
 
-def rename_file_with_underscores(file_path: str) -> str:
-    """
-    Rename the file by replacing spaces with underscores.
-    """
-    directory, filename = os.path.split(file_path)
-    new_filename = filename.replace(" ", "_")
-    new_file_path = os.path.join(directory, new_filename)
-    os.rename(file_path, new_file_path)
-    return new_file_path
-
-
-def get_transcription_status():
-    return transcription_status
-
-
-def update_transcription_status(new_status: dict):
-    transcription_status.update(new_status)
-
-
-# def cancel_transcription_task(process_id: int) -> bool:
-#     """
-#     Cancel the transcription task by killing the process.
-#     """
-#     try:
-#         process = subprocess.Popen(["taskkill", "/F", "/T", "/PID", str(process_id)])
-#         process.wait()
-#         transcription_status["canceled"] = True
-#         logger.info(f"Transcription process canceled: {process_id}")
-#         return True
-#     except Exception as e:
-#         logger.error(f"Failed to cancel transcription process: {str(e)}")
-#         return False
-
-
 def kill_process_by_pid(pid):
     """
     Kill the process by process ID.

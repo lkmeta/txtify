@@ -1,10 +1,7 @@
 # TODOs:
 # 1. Add all models on index.html, including translation models
-# 2. Add button to download the transcribed file on index.html
 # 3. Add all available languages on index.html
 
-
-# 6. When cancel the transcription process should kill the process
 
 #######################################################################
 
@@ -22,7 +19,7 @@ from utils import (
     is_valid_youtube_url,
     is_valid_media_file,
     handle_transcription,
-    get_transcription_status,
+    # get_transcription_status,
     kill_process_by_pid,
 )
 
@@ -166,8 +163,6 @@ async def status(pid: int = None):
 
         logger.info(f"Transcription status: {status}")
 
-        # time taken is the status[9] - status[8] if status[9] else "(In progress)"
-
         if status[11] < 100:
             time_taken = "In Progress"
         else:
@@ -221,26 +216,31 @@ async def cancel_transcription(pid: int = None):
         )
 
     # Update the transcription status in the database
-    DB.update_transcription_status_by_pid("canceled", str(time.time()), 0, pid)
+    DB.update_transcription_status_by_pid("Canceled", str(time.time()), 0, pid)
 
     return {"message": "Transcription canceled successfully!"}
 
 
 @app.get("/download", response_class=FileResponse)
-async def download():
+async def download(pid: int = None):
     """
     Download the transcribed file
     Returns:
         FileResponse: The response containing the file to download
     """
 
-    pid = get_transcription_status().get("pid")
-    if not pid:
+    # Check if PID is valid on the database by searching for progress
+    pid_progress = DB.get_transcription_by_pid(pid)[11]
+
+    if pid_progress < 100:
         return JSONResponse(
-            content={"message": "Transcription not found"}, status_code=404
+            content={"message": "Transcription in progress or not found."},
+            status_code=404,
         )
 
-    file_path = DB.get_transcription_by_pid(pid)[1]
+    # TODO here with folder structure and all possible file formats
+    file_extension = DB.get_transcription_by_pid(pid)[7]
+    file_path = os.path.join(OUTPUT_DIR, f"{pid}_transcription.{file_extension}")
 
     logger.info(f"Downloading file: {file_path}")
 

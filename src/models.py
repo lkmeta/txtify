@@ -130,7 +130,8 @@ def transcribe_audio(
             )
 
         # Save the transcription to a file
-        output_file = file_path.rsplit(".", 1)[0] + f".{file_export}"
+        # output_file = file_path.rsplit(".", 1)[0] + f".{file_export}"
+        output_file = os.path.join(OUTPUT_DIR, f"{pid}_transcription.{file_export}")
         with open(output_file, "w") as f:
             f.write(transcription)
 
@@ -140,6 +141,8 @@ def transcribe_audio(
         DB.update_transcription_status_by_pid("Exporting transcription...", "", 90, pid)
 
         convert_to_formats(transcription, file_path.rsplit(".", 1)[0], file_export)
+
+        # convert_to_formats(transcription, file_path.rsplit(".", 1)[0], file_export)
 
         # update_transcription_status(
         #     {
