@@ -240,7 +240,7 @@ async def download(pid: int = None):
 
     # TODO here with folder structure and all possible file formats
     file_extension = DB.get_transcription_by_pid(pid)[7]
-    file_path = os.path.join(OUTPUT_DIR, f"{pid}_transcription.{file_extension}")
+    file_path = os.path.join(OUTPUT_DIR + f"\\{pid}\\transcription.{file_extension}")
 
     logger.info(f"Downloading file: {file_path}")
 

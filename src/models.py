@@ -131,7 +131,13 @@ def transcribe_audio(
 
         # Save the transcription to a file
         # output_file = file_path.rsplit(".", 1)[0] + f".{file_export}"
-        output_file = os.path.join(OUTPUT_DIR, f"{pid}_transcription.{file_export}")
+
+        # Save the transcription files on a folder with the process ID
+        # Generate the output folder
+        if not os.path.exists(OUTPUT_DIR + f"\\{pid}"):
+            os.makedirs(OUTPUT_DIR + f"\\{pid}")
+
+        output_file = os.path.join(OUTPUT_DIR, f"{pid}\\transcription.txt")
         with open(output_file, "w") as f:
             f.write(transcription)
 
@@ -140,17 +146,9 @@ def transcribe_audio(
         )
         DB.update_transcription_status_by_pid("Exporting transcription...", "", 90, pid)
 
-        convert_to_formats(transcription, file_path.rsplit(".", 1)[0], file_export)
-
         # convert_to_formats(transcription, file_path.rsplit(".", 1)[0], file_export)
 
-        # update_transcription_status(
-        #     {
-        #         "file_path": output_file,
-        #         "phase": "Completed successfully!",
-        #         "progress": 100,
-        #     }
-        # )
+        convert_to_formats(transcription, output_file, "all")
 
         logger.info(f"Transcribing audio phase: Completed successfully! Progress: 100%")
         DB.update_transcription_status_by_pid(
