@@ -1,3 +1,6 @@
+let transcriptionInterval;
+let currentPid = null;  // Global variable to store the PID
+
 function showInput(type) {
     const youtubeInput = document.getElementById('youtube-input');
     const uploadInput = document.getElementById('upload-input');
@@ -33,8 +36,6 @@ function showAlert(title, message) {
 function closeAlert() {
     document.getElementById('alertOverlay').style.display = 'none';
 }
-
-let transcriptionInterval;
 
 function transcribe() {
     const youtubeUrl = document.getElementById('youtube-url').value;
@@ -80,7 +81,8 @@ function transcribe() {
     xhr.onload = function () {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
-            startStatusCheck(response.pid);
+            currentPid = response.pid;  // Store the PID
+            startStatusCheck(currentPid);
         } else {
             showAlert('Error', 'Failed to transcribe the media.');
             document.getElementById('progressOverlay').style.display = 'none';
@@ -90,7 +92,6 @@ function transcribe() {
 }
 
 function startStatusCheck(pid) {
-
     transcriptionInterval = setInterval(() => {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', `/status?pid=${pid}`, true);
@@ -103,6 +104,9 @@ function startStatusCheck(pid) {
                 if (response.progress >= 100) {
                     clearInterval(transcriptionInterval);
                     document.getElementById('progressPhase').innerText = 'Completed successfully! Download your file below.';
+                    document.querySelector('.cancel-button').style.display = 'none';
+                    document.querySelector('.download-button').classList.remove('hidden');
+                    document.querySelector('.close-button').classList.remove('hidden');
                 }
             } else {
                 showAlert('Error', 'Failed to check the transcription status.');
@@ -138,7 +142,6 @@ function updateProgress(progress, phase, model, language, translation, timeTaken
         document.getElementById('statsTime').innerHTML = `<span class="stat-title">Time Taken:</span> ${timeTaken} seconds`;
     }
 
-
     // If phase is not "Initializing..." then unhide the cancel button
     if (phase !== 'Initializing...') {
         document.querySelector('.cancel-button').classList.remove('hidden');
@@ -150,14 +153,13 @@ function updateProgress(progress, phase, model, language, translation, timeTaken
         document.querySelector('.download-button').classList.remove('hidden');
         document.querySelector('.close-button').classList.remove('hidden');
     }
-
 }
 
 function cancelTranscription() {
     clearInterval(transcriptionInterval);
     document.getElementById('progressOverlay').style.display = 'none';
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `/cancel?pid=${pid}`, true);
+    xhr.open('POST', `/cancel?pid=${currentPid}`, true);
     xhr.onload = function () {
         if (xhr.status !== 200) {
             showAlert('Error', 'Failed to cancel the transcription.');
@@ -169,13 +171,10 @@ function cancelTranscription() {
 }
 
 document.getElementById('transcribeButton').addEventListener('click', transcribe);
-document.querySelector('.cancel-button').addEventListener('click', cancelTranscription);
-document.querySelector('.download-button').addEventListener('click', downloadFile);
-document.querySelector('.close-button').addEventListener('click', closeProgress);
 
 function downloadFile() {
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', `/download?pid=${transcriptionInterval}`, true);
+    xhr.open('GET', `/download?pid=${currentPid}`, true);
     xhr.responseType = 'blob';
     xhr.onload = function () {
         if (xhr.status === 200) {
@@ -194,8 +193,9 @@ function downloadFile() {
 }
 
 function closeProgress() {
-
-    // TODO clear window from the previous transcription
-
     document.getElementById('progressOverlay').style.display = 'none';
 }
+
+document.querySelector('.cancel-button').addEventListener('click', cancelTranscription);
+document.querySelector('.download-button').addEventListener('click', downloadFile);
+document.querySelector('.close-button').addEventListener('click', closeProgress);
