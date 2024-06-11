@@ -1,6 +1,10 @@
 # TODOs:
 # 1. Add all models on index.html, including translation models
-# 3. Add all available languages on index.html
+# 2. Add all available languages on index.html
+
+# 3. Fix style preview on index.html, css
+# 4. Preview error when pressed sbv then txt
+# 4. Kill process by PID when it's done!
 
 
 #######################################################################
@@ -31,7 +35,7 @@ TEMPLATES_PATH = os.path.join(os.path.dirname(__file__), "../templates")
 templates = Jinja2Templates(directory=TEMPLATES_PATH)
 
 # Initialize the defined requests
-DEFINED_REQUESTS = ["/", "/transcribe", "/status", "/cancel", "/download"]
+DEFINED_REQUESTS = ["/", "/transcribe", "/status", "/cancel", "/download", "/preview"]
 
 # Define the routes
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "../output")
@@ -247,6 +251,48 @@ async def download(pid: int = None):
     if file_path and os.path.exists(file_path):
         return FileResponse(path=file_path, filename=os.path.basename(file_path))
     return JSONResponse(content={"message": "File not found"}, status_code=404)
+
+
+@app.get("/preview", response_class=JSONResponse)
+async def preview(pid: int):
+    """
+    Get the preview content of the transcribed files
+    Args:
+        pid (int): Process ID
+    Returns:
+        JSONResponse: The response containing the preview content
+    """
+
+    FILES_DIR = os.path.join(OUTPUT_DIR, str(pid))
+
+    txt_path = f"{FILES_DIR}/transcription.txt"
+    srt_path = f"{FILES_DIR}/transcription.srt"
+    vtt_path = f"{FILES_DIR}/transcription.vtt"
+    sbv_path = f"{FILES_DIR}/transcription.sbv"
+
+    try:
+        with open(txt_path, "r") as txt_file:
+            txt_content = txt_file.read()
+        with open(srt_path, "r") as srt_file:
+            srt_content = srt_file.read()
+        with open(vtt_path, "r") as vtt_file:
+            vtt_content = vtt_file.read()
+        with open(sbv_path, "r") as sbv_file:
+            sbv_content = sbv_file.read()
+
+        return JSONResponse(
+            content={
+                "txt": txt_content,
+                "srt": srt_content,
+                "vtt": vtt_content,
+                "sbv": sbv_content,
+            }
+        )
+    except Exception as e:
+        return JSONResponse(
+            content={"message": f"Failed to fetch the preview: {str(e)}"},
+            status_code=500,
+        )
 
 
 @app.get("/{request}", response_class=HTMLResponse)
