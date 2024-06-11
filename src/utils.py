@@ -9,6 +9,7 @@ import srt  # SRT generation
 import webvtt  # VTT generation
 import subprocess
 from db import transcriptionsDB
+import psutil
 
 # Global dictionary to store transcription status
 transcription_status = {
@@ -190,18 +191,31 @@ def update_transcription_status(new_status: dict):
     transcription_status.update(new_status)
 
 
-def cancel_transcription_task(process_id: int) -> bool:
+# def cancel_transcription_task(process_id: int) -> bool:
+#     """
+#     Cancel the transcription task by killing the process.
+#     """
+#     try:
+#         process = subprocess.Popen(["taskkill", "/F", "/T", "/PID", str(process_id)])
+#         process.wait()
+#         transcription_status["canceled"] = True
+#         logger.info(f"Transcription process canceled: {process_id}")
+#         return True
+#     except Exception as e:
+#         logger.error(f"Failed to cancel transcription process: {str(e)}")
+#         return False
+
+
+def kill_process_by_pid(pid):
     """
-    Cancel the transcription task by killing the process.
+    Kill the process by process ID.
     """
     try:
-        process = subprocess.Popen(["taskkill", "/F", "/T", "/PID", str(process_id)])
-        process.wait()
-        transcription_status["canceled"] = True
-        logger.info(f"Transcription process canceled: {process_id}")
+        process = psutil.Process(pid)
+        for proc in process.children(recursive=True):
+            proc.kill()
         return True
-    except Exception as e:
-        logger.error(f"Failed to cancel transcription process: {str(e)}")
+    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
         return False
 
 

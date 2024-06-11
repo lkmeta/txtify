@@ -23,8 +23,7 @@ from utils import (
     is_valid_media_file,
     handle_transcription,
     get_transcription_status,
-    update_transcription_status,
-    cancel_transcription_task,
+    kill_process_by_pid,
 )
 
 app = FastAPI()
@@ -214,7 +213,7 @@ async def cancel_transcription(pid: int = None):
         )
 
     # Kill the transcription process
-    cancel = cancel_transcription_task(pid)
+    cancel = kill_process_by_pid(pid)
 
     if not cancel:
         return JSONResponse(
@@ -222,7 +221,7 @@ async def cancel_transcription(pid: int = None):
         )
 
     # Update the transcription status in the database
-    DB.update_transcription_status_by_pid("canceled", str(time.time(), 0, pid))
+    DB.update_transcription_status_by_pid("canceled", str(time.time()), 0, pid)
 
     return {"message": "Transcription canceled successfully!"}
 
