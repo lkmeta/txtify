@@ -2,7 +2,6 @@
 # 1. Add all models on index.html, including translation models
 # 2. Add all available languages on index.html
 
-# 3. Fix style preview on index.html, css
 # 4. Preview error when pressed sbv then txt
 # 4. Kill process by PID when it's done!
 
@@ -124,7 +123,7 @@ async def transcribe(
         translation,
         language_translation,
         file_export,
-        "Processing...",
+        "Processing request...",
         str(time.time()),
         None,
         0,
@@ -143,7 +142,7 @@ async def transcribe(
     )
 
     # Update the transcription status in the database
-    DB.update_transcription_status_by_pid("Processing...", "", 10, pid)
+    DB.update_transcription_status_by_pid("Processing request...", "", 10, pid)
 
     return {"message": "Transcription started successfully.", "pid": pid}
 
@@ -178,6 +177,13 @@ async def status(pid: int = None):
                     if status[9]
                     else "In Progress"
                 )
+
+                # Kill the transcription process when it's done
+                done = kill_process_by_pid(pid)
+
+                if done:
+                    logger.info(f"Transcription process {pid} is done!")
+
             except ValueError:
                 time_taken = "Invalid data"
 
@@ -245,6 +251,43 @@ async def download(pid: int = None):
     # TODO here with folder structure and all possible file formats
     file_extension = DB.get_transcription_by_pid(pid)[7]
     file_path = os.path.join(OUTPUT_DIR + f"\\{pid}\\transcription.{file_extension}")
+
+    logger.info(f"Downloading file: {file_path}")
+
+    if file_path and os.path.exists(file_path):
+        return FileResponse(path=file_path, filename=os.path.basename(file_path))
+    return JSONResponse(content={"message": "File not found"}, status_code=404)
+
+
+@app.get("/downloadPreview", response_class=FileResponse)
+async def downloadPreview(pid: int, format: str):
+    """
+    Download the transcribed file preview
+    Args:
+        pid (int): Process ID
+        format (str): The file format to download
+    Returns:
+        FileResponse: The response containing the file to download
+    """
+
+    # Check if the file format is valid
+    if format is "Text":
+        format = format.lower()
+        format = "txt"
+
+    if format not in ["txt", "srt", "vtt", "sbv"]:
+        return JSONResponse(content={"message": "Invalid file format"}, status_code=400)
+
+    # Check if PID is valid on the database by searching for progress
+    pid_progress = DB.get_transcription_by_pid(pid)[11]
+
+    if pid_progress < 100:
+        return JSONResponse(
+            content={"message": "Transcription in progress or not found."},
+            status_code=404,
+        )
+
+    file_path = os.path.join(OUTPUT_DIR + f"\\{pid}\\transcription.{format}")
 
     logger.info(f"Downloading file: {file_path}")
 

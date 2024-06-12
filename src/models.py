@@ -55,7 +55,7 @@ def transcribe_audio(
     if not stt_model:
         # update_transcription_status({"phase": "Error", "progress": 0})
         logger.error(f"Invalid model: {model}. Progress: 0%")
-        DB.update_transcription_status_by_pid("Error", "", 0, pid)
+        DB.update_transcription_status_by_pid("Error:Invalid model.", "", 0, pid)
         return
 
     try:
@@ -63,7 +63,9 @@ def transcribe_audio(
         logger.info(
             f"Transcribing audio phase: Loading model and processor... . Progress: 30%"
         )
-        DB.update_transcription_status_by_pid("Transcribing...", "", 30, pid)
+        DB.update_transcription_status_by_pid(
+            "Loading transcription model...", "", 30, pid
+        )
 
         # Load the model and processor
         model = AutoModelForSpeechSeq2Seq.from_pretrained(

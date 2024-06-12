@@ -53,7 +53,7 @@ def handle_transcription(
 ):
     from models import transcribe_audio
 
-    start_time = time.time()
+    # start_time = time.time()
 
     output_file = None
 
@@ -125,8 +125,8 @@ def handle_transcription(
         # Check if PID is valid
         if pid:
             # Update the transcription status
-            DB.update_transcription_pid("Processing...", pid)
-            transcription_status["phase"] = "Processing..."
+            DB.update_transcription_pid("Processing request...", pid)
+            transcription_status["phase"] = "Processing request..."
             transcription_status["progress"] = 10
             transcription_status["pid"] = pid
             logger.info(f"Transcription process started with PID: {pid}")
