@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouSub</title>
     <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
 </head>
 
 <body class="dark-theme">
@@ -116,37 +118,54 @@
         </div>
     </div>
 
+
+
+
     <!-- Progress Window Structure -->
     <div class="progress-overlay" id="progressOverlay">
         <div class="progress-box">
             <h2>Transcription Progress</h2>
             <div class="progress-animation">
-                <div class="spinner">
-                </div>
+                <div class="spinner"></div>
                 <div class="progress-percentage" id="progressPercentage">0%</div>
-
             </div>
-            <p id="progressPhase">Initializing...</p>
+            <p id="progressPhase">Downloading audio locally...Transcription will begin shortly.</p>
             <div class="stats">
                 <p id="statsModel"></p>
                 <p id="statsLanguage"></p>
                 <p id="statsTranslation"></p>
                 <p id="statsTime"></p>
             </div>
+            <div class="preview-container hidden" id="previewContainer">
+                <div class="tabs">
+                    <button class="tab-button active" onclick="showPreview('txt')">.txt</button>
+                    <button class="tab-button" onclick="showPreview('srt')">.srt</button>
+                    <button class="tab-button" onclick="showPreview('vtt')">.vtt</button>
+                    <button class="tab-button" onclick="showPreview('sbv')">.sbv</button>
+                </div>
+                <div class="preview-content">
+                    <!-- <button class="download-emoji" onclick="downloadCurrentPreview()">📥</button> -->
+                    <button class="download-emoji" onclick="downloadCurrentPreview()"><i
+                            class="fa-solid fa-download"></i></button>
 
+                    <pre id="previewText" class="hidden"></pre>
+                    <pre id="previewSRT" class="hidden"></pre>
+                    <pre id="previewVTT" class="hidden"></pre>
+                    <pre id="previewSBV" class="hidden"></pre>
+                    <!-- <button class="download-emoji" onclick="downloadCurrentPreview()">📥</button> -->
+                </div>
+            </div>
             <div>
                 <br>
                 <button class="cancel-button hidden">Cancel</button>
                 <button class="download-button hidden">Download</button>
                 <button class="close-button hidden">Close</button>
             </div>
-            <!-- 
-            <button class="cancel-button" onclick="cancelTranscription()">Cancel</button>
-            <button class="download-button hidden" onclick="downloadFile()">Download</button>
-            <button class="close-button hidden" onclick="closeProgress()">Close</button> -->
-
         </div>
     </div>
+
+
+
 
     <script src="/static/scripts.js"></script>
 </body>
