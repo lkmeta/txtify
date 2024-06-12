@@ -128,33 +128,6 @@ function isValidMediaFile(file) {
     return validExtensions.includes(fileExtension);
 }
 
-function updateProgress(progress, phase, model, language, translation, timeTaken) {
-    document.getElementById('progressPercentage').innerText = `${progress}%`;
-    document.getElementById('progressPhase').innerText = phase;
-    document.getElementById('statsModel').innerHTML = `<span class="stat-title">Model:</span> ${model}`;
-    document.getElementById('statsLanguage').innerHTML = `<span class="stat-title">Language:</span> ${language}`;
-    document.getElementById('statsTranslation').innerHTML = `<span class="stat-title">Translation:</span> ${translation}`;
-
-    // if "In Progress" then show "Time Taken: In Progress"
-    if (timeTaken === 'In Progress') {
-        document.getElementById('statsTime').innerHTML = `<span class="stat-title">Time Taken:</span> ${timeTaken}`;
-    } else {
-        document.getElementById('statsTime').innerHTML = `<span class="stat-title">Time Taken:</span> ${timeTaken} seconds`;
-    }
-
-    // If phase is not "Initializing..." then unhide the cancel button
-    if (phase !== 'Initializing...') {
-        document.querySelector('.cancel-button').classList.remove('hidden');
-    }
-
-    // If progress is 100% then hide the cancel button and unhide the download and close buttons
-    if (progress >= 100) {
-        document.querySelector('.cancel-button').style.display = 'none';
-        document.querySelector('.download-button').classList.remove('hidden');
-        document.querySelector('.close-button').classList.remove('hidden');
-    }
-}
-
 function cancelTranscription() {
     clearInterval(transcriptionInterval);
     document.getElementById('progressOverlay').style.display = 'none';
@@ -192,10 +165,118 @@ function downloadFile() {
     xhr.send();
 }
 
-function closeProgress() {
-    document.getElementById('progressOverlay').style.display = 'none';
-}
-
 document.querySelector('.cancel-button').addEventListener('click', cancelTranscription);
 document.querySelector('.download-button').addEventListener('click', downloadFile);
 document.querySelector('.close-button').addEventListener('click', closeProgress);
+
+
+// preview section
+function updateProgress(progress, phase, model, language, translation, timeTaken) {
+    document.getElementById('progressPercentage').innerText = `${progress}%`;
+    document.getElementById('progressPhase').innerText = phase;
+    document.getElementById('statsModel').innerHTML = `<span class="stat-title">Model:</span> ${model}`;
+    document.getElementById('statsLanguage').innerHTML = `<span class="stat-title">Language:</span> ${language}`;
+    document.getElementById('statsTranslation').innerHTML = `<span class="stat-title">Translation:</span> ${translation}`;
+    document.getElementById('statsTime').innerHTML = `<span class="stat-title">Time Taken:</span> ${timeTaken} seconds`;
+
+
+    // if "In Progress" then show "Time Taken: In Progress"
+    if (timeTaken === 'In Progress') {
+        document.getElementById('statsTime').innerHTML = `<span class="stat-title">Time Taken:</span> ${timeTaken}`;
+    } else {
+        document.getElementById('statsTime').innerHTML = `<span class="stat-title">Time Taken:</span> ${timeTaken} seconds`;
+    }
+
+    // If phase is not "Initializing..." then unhide the cancel button
+    if (phase !== 'Initializing...') {
+        document.querySelector('.cancel-button').classList.remove('hidden');
+    }
+
+    if (progress >= 100) {
+        document.querySelector('.cancel-button').classList.add('hidden');
+        document.querySelector('.download-button').classList.remove('hidden');
+        document.querySelector('.close-button').classList.remove('hidden');
+        document.getElementById('previewContainer').style.display = 'block';
+        fetchPreview();
+    }
+}
+
+function fetchPreview() {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', `/preview?pid=${currentPid}`, true);
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            document.getElementById('previewText').innerText = response.txt;
+            document.getElementById('previewSRT').innerText = response.srt;
+            document.getElementById('previewVTT').innerText = response.vtt;
+            document.getElementById('previewSBV').innerText = response.sbv;
+            document.getElementById('previewText').classList.remove('hidden');
+        } else {
+            showAlert('Error', 'Failed to fetch the preview.');
+        }
+    };
+    xhr.send();
+}
+
+function showPreview(format) {
+    // Hide all previews
+    document.getElementById('previewText').classList.add('hidden');
+    document.getElementById('previewSRT').classList.add('hidden');
+    document.getElementById('previewVTT').classList.add('hidden');
+    document.getElementById('previewSBV').classList.add('hidden');
+
+    // Remove active class from all tab buttons
+    const tabButtons = document.querySelectorAll('.tab-button');
+    tabButtons.forEach(button => {
+        button.classList.remove('active');
+    });
+
+    // Show the selected preview and set the active tab button
+    switch (format) {
+        case 'txt':
+            document.getElementById('previewText').classList.remove('hidden');
+            document.querySelector('.tab-button[onclick="showPreview(\'txt\')"]').classList.add('active');
+            break;
+        case 'srt':
+            document.getElementById('previewSRT').classList.remove('hidden');
+            document.querySelector('.tab-button[onclick="showPreview(\'srt\')"]').classList.add('active');
+            break;
+        case 'vtt':
+            document.getElementById('previewVTT').classList.remove('hidden');
+            document.querySelector('.tab-button[onclick="showPreview(\'vtt\')"]').classList.add('active');
+            break;
+        case 'sbv':
+            document.getElementById('previewSBV').classList.remove('hidden');
+            document.querySelector('.tab-button[onclick="showPreview(\'sbv\')"]').classList.add('active');
+            break;
+        default:
+            console.error('Unsupported format:', format);
+    }
+}
+
+function downloadCurrentPreview() {
+    const activeTab = document.querySelector('.tab-button.active').innerText.toLowerCase();
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', `/downloadPreview?pid=${currentPid}&format=${activeTab}`, true);
+    xhr.responseType = 'blob';
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            const url = window.URL.createObjectURL(xhr.response);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `transcription.${activeTab}`;  // File name
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } else {
+            showAlert('Error', 'Failed to download the file.');
+        }
+    };
+    xhr.send();
+}
+
+
+function closeProgress() {
+    document.getElementById('progressOverlay').style.display = 'none';
+}
