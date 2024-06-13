@@ -37,7 +37,71 @@ function closeAlert() {
     document.getElementById('alertOverlay').style.display = 'none';
 }
 
+
+function resetTranscription() {
+    // Reset the progress overlay
+    // document.getElementById('progressOverlay').style.display = 'none';
+    document.getElementById('progressPercentage').innerText = '0%';
+    document.getElementById('progressPhase').innerText = 'Downloading audio locally...Transcription will begin shortly.';
+
+    // Reset the spinner color
+    document.querySelector('.spinner').style.borderTop = '4px solid var(--text-color-dark)';
+
+    // Reset the stats
+    document.getElementById('statsModel').innerText = '';
+    document.getElementById('statsLanguage').innerText = '';
+    document.getElementById('statsTranslation').innerText = '';
+    document.getElementById('statsTime').innerText = '';
+
+    // Hide preview content and buttons
+    document.getElementById('previewContent').classList.add('hidden');
+    document.querySelector('.cancel-button').classList.add('hidden');
+    document.querySelector('.download-button').classList.add('hidden');
+    document.querySelector('.close-button').classList.add('hidden');
+
+    // // Hide all preview tabs
+    // document.getElementById('previewText').classList.add('hidden');
+    // document.getElementById('previewSRT').classList.add('hidden');
+    // document.getElementById('previewVTT').classList.add('hidden');
+    // document.getElementById('previewSBV').classList.add('hidden');
+
+    // Check if preview elements exist before setting innerText
+    const previewText = document.getElementById('previewText');
+    if (previewText) previewText.innerText = '';
+
+    const previewSRT = document.getElementById('previewSRT');
+    if (previewSRT) previewSRT.innerText = '';
+
+    const previewVTT = document.getElementById('previewVTT');
+    if (previewVTT) previewVTT.innerText = '';
+
+    const previewSBV = document.getElementById('previewSBV');
+    if (previewSBV) previewSBV.innerText = '';
+
+    // Reset preview content
+    document.getElementById('previewContainer').style.display = 'none';
+
+    // Reset form inputs
+    document.getElementById('youtube-url').value = '';
+    document.getElementById('media-upload').value = '';
+    document.getElementById('language-choice').value = 'en';
+    document.getElementById('stt-model').value = 'whisper';
+    document.getElementById('translation').value = 'deepl';
+    document.getElementById('language-translation').value = 'en';
+    document.getElementById('file-export').value = 'txt';
+
+    // Reset currentPid variable
+    currentPid = null;
+
+    // Clear the transcription interval
+    if (transcriptionInterval) {
+        clearInterval(transcriptionInterval);
+    }
+}
+
 function transcribe() {
+
+    // Get form data
     const youtubeUrl = document.getElementById('youtube-url').value;
     const mediaUpload = document.getElementById('media-upload').files[0];
     const languageChoice = document.getElementById('language-choice').value;
@@ -45,6 +109,13 @@ function transcribe() {
     const translation = document.getElementById('translation').value;
     const languageTranslation = document.getElementById('language-translation').value;
     const fileExport = document.getElementById('file-export').value;
+
+
+    // Check if both fields are empty
+    if (!youtubeUrl && !mediaUpload) {
+        showAlert('Invalid Input', 'Please enter a YouTube URL or upload a media file.');
+        return;
+    }
 
     // Validate YouTube URL
     if (youtubeUrl && !isValidYoutubeUrl(youtubeUrl)) {
@@ -92,6 +163,13 @@ function transcribe() {
 }
 
 function startStatusCheck(pid) {
+
+    // Check if the PID is valid
+    if (!pid) {
+        showAlert('Error', 'Invalid Process. Please try again.');
+        return;
+    }
+
     transcriptionInterval = setInterval(() => {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', `/status?pid=${pid}`, true);
@@ -103,8 +181,9 @@ function startStatusCheck(pid) {
                 updateProgress(response.progress, response.phase, response.model, response.language, response.translation, response.time_taken);
                 if (response.progress >= 100) {
                     clearInterval(transcriptionInterval);
-                    document.getElementById('progressPhase').innerText = 'Completed successfully! Download your file below.';
-                    document.querySelector('.cancel-button').style.display = 'none';
+                    document.getElementById('progressPhase').innerText = 'Completed successfully! Download your files below.';
+                    // document.querySelector('.cancel-button').style.display = 'none';
+                    document.querySelector('.cancel-button').classList.add('hidden');
                     document.querySelector('.download-button').classList.remove('hidden');
                     document.querySelector('.close-button').classList.remove('hidden');
                 }
@@ -197,6 +276,11 @@ function updateProgress(progress, phase, model, language, translation, timeTaken
         document.querySelector('.download-button').classList.remove('hidden');
         document.querySelector('.close-button').classList.remove('hidden');
         document.getElementById('previewContainer').style.display = 'block';
+
+        // Change .spinner variable: border-top: 4px solid var(--text-color-dark) to border-top: 4px solid var(--primary-color)
+        document.querySelector('.spinner').style.borderTop = '4px solid var(--primary-color)';
+
+        // Fetch the preview
         fetchPreview();
     }
 }
@@ -211,7 +295,14 @@ function fetchPreview() {
             document.getElementById('previewSRT').innerText = response.srt;
             document.getElementById('previewVTT').innerText = response.vtt;
             document.getElementById('previewSBV').innerText = response.sbv;
-            document.getElementById('previewText').classList.remove('hidden');
+
+            // if previewContent is hidden, unhide it
+            if (document.getElementById('previewContent').classList.contains('hidden')) {
+                document.getElementById('previewContent').classList.remove('hidden');
+            }
+
+            // Show the text preview by default
+            showPreview('txt'); // Show the text preview by default
         } else {
             showAlert('Error', 'Failed to fetch the preview.');
         }
@@ -278,5 +369,9 @@ function downloadCurrentPreview() {
 
 
 function closeProgress() {
+
+    // Reset Transcription
+    resetTranscription();
+
     document.getElementById('progressOverlay').style.display = 'none';
 }
