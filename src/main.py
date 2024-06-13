@@ -1,9 +1,8 @@
 # TODOs:
+
 # 1. Add all models on index.html, including translation models
 # 2. Add all available languages on index.html
-
-# 4. Preview error when pressed sbv then txt
-# 4. Kill process by PID when it's done!
+# 3. Make download button option to download all files zipped.
 
 
 #######################################################################

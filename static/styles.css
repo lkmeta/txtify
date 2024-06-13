@@ -558,7 +558,7 @@ h1 {
 }
 
 .preview-content {
-    max-height: 200px;
+    max-height: 250px;
     overflow-y: auto;
     border: 1px solid var(--secondary-color-light);
     padding: 10px;
@@ -573,10 +573,6 @@ h1 {
     word-wrap: break-word;
 }
 
-
-.hidden {
-    display: none;
-}
 
 #previewContainer {
     display: none;
