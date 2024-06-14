@@ -599,6 +599,23 @@ h1 {
 }
 
 
+
+.homepage-button {
+    padding: 10px 20px;
+    border: none;
+    background-color: #ff0000;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+.homepage-button:hover {
+    background-color: #d00000;
+    transform: scale(1.05);
+}
+
+
 @media (max-width: 800px) {
     .navbar {
         padding: 10px 0;

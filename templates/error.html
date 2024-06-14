@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Page Not Found - YouSub</title>
+    <title>Page Not Found</title>
     <link rel="stylesheet" href="/static/styles.css">
     <meta http-equiv="refresh" content="5;url=/" />
     <script>
@@ -15,14 +15,6 @@
 </head>
 
 <body>
-    <div class="navbar">
-        <a href="/"><img src="/static/logo.jpg" alt="YouSub" style="height: 40px;"></a>
-        <a href="/">Home</a>
-        <a href="#about">About</a>
-        <a href="https://github.com/yourrepo" target="_blank">GitHub Repo</a>
-        <a href="#contact">Contact</a>
-    </div>
-    <button class="theme-toggle" onclick="toggleTheme()"></button>
     <div class="container">
         <h1>404 - Page Not Found</h1>
         <div class="description">
@@ -30,8 +22,8 @@
             <br>
             You will be redirected to the <a href="/" style="color: var(--primary-color);">homepage</a> in 5 seconds.
         </div>
-        <div class="actions">
-            <a href="/" class="btn">Go to Homepage</a>
+        <div>
+            <button onclick="window.location.href = '/'" class="homepage-button">Go to Homepage</button>
         </div>
     </div>
     <div class="footer">
