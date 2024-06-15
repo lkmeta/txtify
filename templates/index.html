@@ -10,6 +10,7 @@
 
 </head>
 
+
 <body class="dark-theme">
     <div class="navbar">
         <div class="navbar-content">
@@ -59,16 +60,23 @@
             <label for="stt-model">Speech-to-Text AI Model:</label>
             <small>Select the AI model to use for speech recognition.</small>
             <select id="stt-model">
-                <option value="whisper_tiny">Whisper Tiny</option>
-                <option value="whisper_base" selected>Whisper Base</option>
-                <option value="whisper_small">Whisper Small</option>
-                <option value="whisper_medium">Whisper Medium</option>
-                <option value="whisper_large">Whisper Large</option>
-                <option value="m4t_medium">SeamlessM4T Medium</option>
-                <option value="m4t_large">SeamlessM4T Large</option>
-            </select>
+                <option value="whisper_tiny">Whisper Tiny (Fastest - Low Accuracy - English Only - FREE)</option>
+                <option value="whisper_base" selected>Whisper Base (Fast - Balanced - English Only - FREE)</span>)
+                </option>
+                <option value="whisper_small">Whisper Small (Fast - Accurate - English Only - FREE)</option>
+                <option value="whisper_medium">Whisper Medium (Fast - High Accuracy - Multi-Language - Self Hosted
+                    -RECOMMENDED)
+                </option>
+                <option value="whisper_large">Whisper Large (Slow - Highest Accuracy - Multi-Language - Self Hosted)
+                </option>
+                <option value="m4t_medium">SeamlessM4T Medium (Fast - High Accuracy - Multi-Language - Self Hosted)
+                </option>
+                <option value="m4t_large">SeamlessM4T Large (Slow - Highest Accuracy - Multi-Language - Self Hosted)
+                </option>
             </select>
         </div>
+
+
         <div class="input-group">
             <label for="language-choice">Choose Language:</label>
             <small>Select the language spoken in the media.</small>
@@ -76,10 +84,12 @@
         </div>
         <div class="input-group">
             <label for="translation">Translation:</label>
-            <small>Enable translation of the transcribed text (requires DeepL API key).</small>
+            <small>Enable translation of the transcribed text.</small>
             <select id="translation">
                 <option value="none">Don't Translate</option>
-                <option value="deepl">DeepL Translation</option>
+                <option value="whisper">Whisper </option>
+                <option value="deepl">DeepL (requires DeepL API key - Highest Accuracy - Self Hosted -
+                    RECOMMENDED)</option>
             </select>
         </div>
         <div class="input-group">

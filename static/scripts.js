@@ -87,7 +87,7 @@ function resetTranscription() {
     document.getElementById('language-choice').value = 'en';
     document.getElementById('stt-model').value = 'whisper_base';
     document.getElementById('translation').value = 'deepl';
-    document.getElementById('language-translation').value = 'en';
+    document.getElementById('language-translation').value = 'EN';
     document.getElementById('file-export').value = 'txt';
 
     // Reset currentPid variable
@@ -453,6 +453,34 @@ function populateTranslationDropdown(languages) {
     languageTranslation.value = 'EN';
 }
 
+document.addEventListener('DOMContentLoaded', function () {
+    const sttModel = document.getElementById('stt-model');
+    const options = sttModel.options;
+
+    for (let i = 0; i < options.length; i++) {
+        if (options[i].innerText.includes('FREE')) {
+            options[i].style.color = 'var(--green-color)';
+        }
+        if (options[i].innerText.includes('RECOMMENDED')) {
+            options[i].style.color = 'var(--primary-color)';
+        }
+    }
+});
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    const translation = document.getElementById('translation');
+    const options = translation.options;
+
+    for (let i = 0; i < options.length; i++) {
+        if (options[i].innerText.includes('FREE')) {
+            options[i].style.color = 'var(--green-color)';
+        }
+        if (options[i].innerText.includes('RECOMMENDED')) {
+            options[i].style.color = 'var(--primary-color)';
+        }
+    }
+});
 
 
 function closeProgress() {

@@ -9,6 +9,8 @@
     --primary-color: #ff0000;
     --secondary-color-dark: #444;
     --secondary-color-light: #ddd;
+    --green-color: #28a745;
+    --red-color: #dc3545;
 }
 
 body {
@@ -282,7 +284,7 @@ h1 {
 .actions button {
     padding: 10px 30px;
     border: none;
-    background-color: #28a745;
+    background-color: var(--green-color);
     color: white;
     border-radius: 5px;
     cursor: pointer;
@@ -490,7 +492,7 @@ h1 {
 .download-button {
     padding: 10px 20px;
     border: none;
-    background-color: #28a745;
+    background-color: var(--green-color);
     color: white;
     border-radius: 5px;
     cursor: pointer;

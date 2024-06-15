@@ -91,19 +91,33 @@ def transcribe_audio(
         logger.info(f"Transcribing audio phase: Transcribing... . Progress: 40%")
         DB.update_transcription_status_by_pid("Transcribing...", "", 40, pid)
 
-        pipe = pipeline(
-            "automatic-speech-recognition",
-            model=model,
-            tokenizer=processor.tokenizer,
-            feature_extractor=processor.feature_extractor,
-            max_new_tokens=128,
-            chunk_length_s=30,
-            batch_size=16,
-            return_timestamps=True,
-            torch_dtype=torch_dtype,
-            device=device,
-            generate_kwargs={"language": language},
-        )
+        if language == "auto":
+            pipe = pipeline(
+                "automatic-speech-recognition",
+                model=model,
+                tokenizer=processor.tokenizer,
+                feature_extractor=processor.feature_extractor,
+                max_new_tokens=128,
+                chunk_length_s=30,
+                batch_size=16,
+                return_timestamps=True,
+                torch_dtype=torch_dtype,
+                device=device,
+            )
+        else:
+            pipe = pipeline(
+                "automatic-speech-recognition",
+                model=model,
+                tokenizer=processor.tokenizer,
+                feature_extractor=processor.feature_extractor,
+                max_new_tokens=128,
+                chunk_length_s=30,
+                batch_size=16,
+                return_timestamps=True,
+                torch_dtype=torch_dtype,
+                device=device,
+                generate_kwargs={"language": language},
+            )
 
         # Transcribe the audio file
         transcription_result = pipe(file_path)
@@ -126,22 +140,32 @@ def transcribe_audio(
 
         # Check if translation is needed
         if translation and language != language_translation:
-            # update_transcription_status({"phase": "Translating..."})
-            logger.info(f"Transcribing audio phase: Translating... . Progress: 85%")
-            DB.update_transcription_status_by_pid("Translating...", "", 85, pid)
-            logger.info(f"Translating from {language} to {language_translation}")
-            source_lang = SOURCE_LANGUAGES.get(language.upper())
-            target_lang = TARGET_LANGUAGES.get(language_translation.upper())
-            if not source_lang or not target_lang:
-                raise ValueError(
-                    f"Invalid language code: {language} or {language_translation}"
+
+            if translation is None:
+                logger.info(f"Do not have a translation model. Skipping translation.")
+            elif translation == "whisper":
+                # todo: add whisper translation
+                logger.info(
+                    f"Translating from {language} to {language_translation} using whisper."
                 )
-            transcription = deepl_translate(
-                transcription,
-                source_lang,
-                target_lang,
-                pid,
-            )
+                pass
+            else:
+                # update_transcription_status({"phase": "Translating..."})
+                logger.info(f"Transcribing audio phase: Translating... . Progress: 85%")
+                DB.update_transcription_status_by_pid("Translating...", "", 85, pid)
+                logger.info(f"Translating from {language} to {language_translation}")
+                source_lang = SOURCE_LANGUAGES.get(language.upper())
+                target_lang = TARGET_LANGUAGES.get(language_translation.upper())
+                if not source_lang or not target_lang:
+                    raise ValueError(
+                        f"Invalid language code: {language} or {language_translation}"
+                    )
+                transcription = deepl_translate(
+                    transcription,
+                    source_lang,
+                    target_lang,
+                    pid,
+                )
 
         # Save the transcription to a file
         # output_file = file_path.rsplit(".", 1)[0] + f".{file_export}"

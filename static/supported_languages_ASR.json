@@ -1,5 +1,10 @@
 {
     "languages": {
+        "auto": {
+            "name": "Auto-Detect",
+            "whisper_code": "auto",
+            "m4t_code": "auto"
+        },
         "af": {
             "name": "Afrikaans",
             "whisper_code": "af",
