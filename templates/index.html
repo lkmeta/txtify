@@ -54,23 +54,25 @@
             <small>Upload an audio or video file from your device to transcribe (MP4, MP3).</small>
             <input type="file" id="media-upload" accept=".mp4,.mp3">
         </div>
-        <div class="input-group">
-            <label for="language-choice">Choose Language:</label>
-            <small>Select the language spoken in the media.</small>
-            <select id="language-choice">
-                <option value="en">English</option>
-                <option value="es">Spanish</option>
-                <option value="fr">French</option>
-                <option value="de">German</option>
-            </select>
-        </div>
+
         <div class="input-group">
             <label for="stt-model">Speech-to-Text AI Model:</label>
             <small>Select the AI model to use for speech recognition.</small>
             <select id="stt-model">
-                <option value="whisper">OpenAI Whisper</option>
-                <option value="m4t">Facebook SeamlessM4T</option>
+                <option value="whisper_tiny">Whisper Tiny</option>
+                <option value="whisper_base" selected>Whisper Base</option>
+                <option value="whisper_small">Whisper Small</option>
+                <option value="whisper_medium">Whisper Medium</option>
+                <option value="whisper_large">Whisper Large</option>
+                <option value="m4t_medium">SeamlessM4T Medium</option>
+                <option value="m4t_large">SeamlessM4T Large</option>
             </select>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="language-choice">Choose Language:</label>
+            <small>Select the language spoken in the media.</small>
+            <select id="language-choice"></select>
         </div>
         <div class="input-group">
             <label for="translation">Translation:</label>
