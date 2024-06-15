@@ -15,10 +15,20 @@ load_dotenv()  # Load the environment variables: HUGGINGFACE_API_KEY and DEEPL_A
 DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
 
 # Define the Hugging Face models
-MODELS = {"whisper": "openai/whisper-tiny", "m4t": "facebook/hf-seamless-m4t-small"}
+MODELS = {
+    "whisper_tiny": "openai/whisper-tiny",
+    "whisper_base": "openai/whisper-base",
+    "whisper_small": "openai/whisper-small",
+    "whisper_medium": "openai/whisper-medium",
+    "whisper_large": "openai/whisper-large-v3",
+    "m4t_medium": "facebook/seamless-m4t-medium",
+    "m4t_large": "facebook/seamless-m4t-v2-large",
+}
+
+DEFAULT_MODEL = "whisper_base"
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
-# torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..\output")
 
@@ -70,13 +80,13 @@ def transcribe_audio(
         # Load the model and processor
         model = AutoModelForSpeechSeq2Seq.from_pretrained(
             stt_model,
-            # torch_dtype=torch_dtype,
-            # low_cpu_mem_usage=True,
+            torch_dtype=torch_dtype,
+            low_cpu_mem_usage=True,
             use_safetensors=True,
         )
         model.to(device)
 
-        processor = AutoProcessor.from_pretrained(stt_model)
+        processor = AutoProcessor.from_pretrained(stt_model, language=language)
 
         logger.info(f"Transcribing audio phase: Transcribing... . Progress: 40%")
         DB.update_transcription_status_by_pid("Transcribing...", "", 40, pid)
@@ -90,7 +100,7 @@ def transcribe_audio(
             chunk_length_s=30,
             batch_size=16,
             return_timestamps=True,
-            # torch_dtype=torch_dtype,
+            torch_dtype=torch_dtype,
             device=device,
         )
 
@@ -118,8 +128,9 @@ def transcribe_audio(
             # update_transcription_status({"phase": "Translating..."})
             logger.info(f"Transcribing audio phase: Translating... . Progress: 85%")
             DB.update_transcription_status_by_pid("Translating...", "", 85, pid)
-            source_lang = SOURCE_LANGUAGES.get(language)
-            target_lang = TARGET_LANGUAGES.get(language_translation)
+            logger.info(f"Translating from {language} to {language_translation}")
+            source_lang = SOURCE_LANGUAGES.get(language.upper())
+            target_lang = TARGET_LANGUAGES.get(language_translation.upper())
             if not source_lang or not target_lang:
                 raise ValueError(
                     f"Invalid language code: {language} or {language_translation}"
