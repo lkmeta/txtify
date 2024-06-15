@@ -21,7 +21,6 @@ from utils import (
     is_valid_youtube_url,
     is_valid_media_file,
     handle_transcription,
-    # get_transcription_status,
     kill_process_by_pid,
 )
 

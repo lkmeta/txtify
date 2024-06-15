@@ -86,7 +86,7 @@ def transcribe_audio(
         )
         model.to(device)
 
-        processor = AutoProcessor.from_pretrained(stt_model, language=language)
+        processor = AutoProcessor.from_pretrained(stt_model)
 
         logger.info(f"Transcribing audio phase: Transcribing... . Progress: 40%")
         DB.update_transcription_status_by_pid("Transcribing...", "", 40, pid)
@@ -102,6 +102,7 @@ def transcribe_audio(
             return_timestamps=True,
             torch_dtype=torch_dtype,
             device=device,
+            generate_kwargs={"language": language},
         )
 
         # Transcribe the audio file

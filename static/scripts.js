@@ -373,6 +373,7 @@ let selectedModel = 'whisper'; // Default model
 document.addEventListener('DOMContentLoaded', function () {
     fetchLanguages();
     document.getElementById('stt-model').addEventListener('change', updateLanguageCodes);
+    fetchTranslationLanguages();
 });
 
 function fetchLanguages() {
@@ -420,6 +421,38 @@ function updateLanguageCodes() {
         }
     }
 }
+
+
+function fetchTranslationLanguages() {
+    fetch('/static/supported_languages_TR.json')
+        .then(response => response.json())
+        .then(data => {
+            populateTranslationDropdown(data.target_languages);
+        })
+        .catch(error => {
+            console.error('Error fetching translation languages:', error);
+        });
+}
+
+
+function populateTranslationDropdown(languages) {
+    const languageTranslation = document.getElementById('language-translation');
+
+    // Clear existing options
+    languageTranslation.innerHTML = '';
+
+    // Add languages to the dropdown
+    for (const code in languages) {
+        const option = document.createElement('option');
+        option.value = code;
+        option.textContent = languages[code];
+        languageTranslation.appendChild(option);
+    }
+
+    // Set default language
+    languageTranslation.value = 'EN';
+}
+
 
 
 function closeProgress() {
