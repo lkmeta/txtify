@@ -1,0 +1,364 @@
+{
+    "languages": {
+        "af": {
+            "name": "Afrikaans",
+            "whisper_code": "af",
+            "m4t_code": "afr"
+        },
+        "am": {
+            "name": "Amharic",
+            "whisper_code": "am",
+            "m4t_code": "amh"
+        },
+        "ar": {
+            "name": "Arabic",
+            "whisper_code": "ar",
+            "m4t_code": "arb"
+        },
+        "as": {
+            "name": "Assamese",
+            "whisper_code": "as",
+            "m4t_code": "asm"
+        },
+        "az": {
+            "name": "Azerbaijani",
+            "whisper_code": "az",
+            "m4t_code": "azj"
+        },
+        "be": {
+            "name": "Belarusian",
+            "whisper_code": "be",
+            "m4t_code": "bel"
+        },
+        "bg": {
+            "name": "Bulgarian",
+            "whisper_code": "bg",
+            "m4t_code": "bul"
+        },
+        "bn": {
+            "name": "Bengali",
+            "whisper_code": "bn",
+            "m4t_code": "ben"
+        },
+        "bs": {
+            "name": "Bosnian",
+            "whisper_code": "bs",
+            "m4t_code": "bos"
+        },
+        "ca": {
+            "name": "Catalan",
+            "whisper_code": "ca",
+            "m4t_code": "cat"
+        },
+        "ceb": {
+            "name": "Cebuano",
+            "whisper_code": "ceb",
+            "m4t_code": "ceb"
+        },
+        "cs": {
+            "name": "Czech",
+            "whisper_code": "cs",
+            "m4t_code": "ces"
+        },
+        "cy": {
+            "name": "Welsh",
+            "whisper_code": "cy",
+            "m4t_code": "cym"
+        },
+        "da": {
+            "name": "Danish",
+            "whisper_code": "da",
+            "m4t_code": "dan"
+        },
+        "de": {
+            "name": "German",
+            "whisper_code": "de",
+            "m4t_code": "deu"
+        },
+        "el": {
+            "name": "Greek",
+            "whisper_code": "el",
+            "m4t_code": "ell"
+        },
+        "en": {
+            "name": "English",
+            "whisper_code": "en",
+            "m4t_code": "eng"
+        },
+        "es": {
+            "name": "Spanish",
+            "whisper_code": "es",
+            "m4t_code": "spa"
+        },
+        "et": {
+            "name": "Estonian",
+            "whisper_code": "et",
+            "m4t_code": "est"
+        },
+        "fa": {
+            "name": "Persian",
+            "whisper_code": "fa",
+            "m4t_code": "pes"
+        },
+        "fi": {
+            "name": "Finnish",
+            "whisper_code": "fi",
+            "m4t_code": "fin"
+        },
+        "fr": {
+            "name": "French",
+            "whisper_code": "fr",
+            "m4t_code": "fra"
+        },
+        "gl": {
+            "name": "Galician",
+            "whisper_code": "gl",
+            "m4t_code": "glg"
+        },
+        "gu": {
+            "name": "Gujarati",
+            "whisper_code": "gu",
+            "m4t_code": "guj"
+        },
+        "he": {
+            "name": "Hebrew",
+            "whisper_code": "he",
+            "m4t_code": "heb"
+        },
+        "hi": {
+            "name": "Hindi",
+            "whisper_code": "hi",
+            "m4t_code": "hin"
+        },
+        "hr": {
+            "name": "Croatian",
+            "whisper_code": "hr",
+            "m4t_code": "hrv"
+        },
+        "hu": {
+            "name": "Hungarian",
+            "whisper_code": "hu",
+            "m4t_code": "hun"
+        },
+        "hy": {
+            "name": "Armenian",
+            "whisper_code": "hy",
+            "m4t_code": "hye"
+        },
+        "id": {
+            "name": "Indonesian",
+            "whisper_code": "id",
+            "m4t_code": "ind"
+        },
+        "is": {
+            "name": "Icelandic",
+            "whisper_code": "is",
+            "m4t_code": "isl"
+        },
+        "it": {
+            "name": "Italian",
+            "whisper_code": "it",
+            "m4t_code": "ita"
+        },
+        "ja": {
+            "name": "Japanese",
+            "whisper_code": "ja",
+            "m4t_code": "jpn"
+        },
+        "jv": {
+            "name": "Javanese",
+            "whisper_code": "jv",
+            "m4t_code": "jav"
+        },
+        "ka": {
+            "name": "Georgian",
+            "whisper_code": "ka",
+            "m4t_code": "kat"
+        },
+        "kk": {
+            "name": "Kazakh",
+            "whisper_code": "kk",
+            "m4t_code": "kaz"
+        },
+        "km": {
+            "name": "Khmer",
+            "whisper_code": "km",
+            "m4t_code": "khm"
+        },
+        "kn": {
+            "name": "Kannada",
+            "whisper_code": "kn",
+            "m4t_code": "kan"
+        },
+        "ko": {
+            "name": "Korean",
+            "whisper_code": "ko",
+            "m4t_code": "kor"
+        },
+        "lo": {
+            "name": "Lao",
+            "whisper_code": "lo",
+            "m4t_code": "lao"
+        },
+        "lt": {
+            "name": "Lithuanian",
+            "whisper_code": "lt",
+            "m4t_code": "lit"
+        },
+        "lv": {
+            "name": "Latvian",
+            "whisper_code": "lv",
+            "m4t_code": "lvs"
+        },
+        "ml": {
+            "name": "Malayalam",
+            "whisper_code": "ml",
+            "m4t_code": "mal"
+        },
+        "mn": {
+            "name": "Mongolian",
+            "whisper_code": "mn",
+            "m4t_code": "khk"
+        },
+        "mr": {
+            "name": "Marathi",
+            "whisper_code": "mr",
+            "m4t_code": "mar"
+        },
+        "ms": {
+            "name": "Malay",
+            "whisper_code": "ms",
+            "m4t_code": "zsm"
+        },
+        "my": {
+            "name": "Burmese",
+            "whisper_code": "my",
+            "m4t_code": "mya"
+        },
+        "ne": {
+            "name": "Nepali",
+            "whisper_code": "ne",
+            "m4t_code": "npi"
+        },
+        "nl": {
+            "name": "Dutch",
+            "whisper_code": "nl",
+            "m4t_code": "nld"
+        },
+        "pa": {
+            "name": "Punjabi",
+            "whisper_code": "pa",
+            "m4t_code": "pan"
+        },
+        "pl": {
+            "name": "Polish",
+            "whisper_code": "pl",
+            "m4t_code": "pol"
+        },
+        "pt": {
+            "name": "Portuguese",
+            "whisper_code": "pt",
+            "m4t_code": "por"
+        },
+        "ro": {
+            "name": "Romanian",
+            "whisper_code": "ro",
+            "m4t_code": "ron"
+        },
+        "ru": {
+            "name": "Russian",
+            "whisper_code": "ru",
+            "m4t_code": "rus"
+        },
+        "si": {
+            "name": "Sinhala",
+            "whisper_code": "si",
+            "m4t_code": "sin"
+        },
+        "sk": {
+            "name": "Slovak",
+            "whisper_code": "sk",
+            "m4t_code": "slk"
+        },
+        "sl": {
+            "name": "Slovenian",
+            "whisper_code": "sl",
+            "m4t_code": "slv"
+        },
+        "sq": {
+            "name": "Albanian",
+            "whisper_code": "sq",
+            "m4t_code": "sqi"
+        },
+        "sr": {
+            "name": "Serbian",
+            "whisper_code": "sr",
+            "m4t_code": "srp"
+        },
+        "sv": {
+            "name": "Swedish",
+            "whisper_code": "sv",
+            "m4t_code": "swe"
+        },
+        "sw": {
+            "name": "Swahili",
+            "whisper_code": "sw",
+            "m4t_code": "swh"
+        },
+        "ta": {
+            "name": "Tamil",
+            "whisper_code": "ta",
+            "m4t_code": "tam"
+        },
+        "te": {
+            "name": "Telugu",
+            "whisper_code": "te",
+            "m4t_code": "tel"
+        },
+        "th": {
+            "name": "Thai",
+            "whisper_code": "th",
+            "m4t_code": "tha"
+        },
+        "tr": {
+            "name": "Turkish",
+            "whisper_code": "tr",
+            "m4t_code": "tur"
+        },
+        "uk": {
+            "name": "Ukrainian",
+            "whisper_code": "uk",
+            "m4t_code": "ukr"
+        },
+        "ur": {
+            "name": "Urdu",
+            "whisper_code": "ur",
+            "m4t_code": "urd"
+        },
+        "uz": {
+            "name": "Uzbek",
+            "whisper_code": "uz",
+            "m4t_code": "uzn"
+        },
+        "vi": {
+            "name": "Vietnamese",
+            "whisper_code": "vi",
+            "m4t_code": "vie"
+        },
+        "yi": {
+            "name": "Yiddish",
+            "whisper_code": "yi",
+            "m4t_code": "yid"
+        },
+        "yo": {
+            "name": "Yoruba",
+            "whisper_code": "yo",
+            "m4t_code": "yor"
+        },
+        "zh": {
+            "name": "Chinese",
+            "whisper_code": "zh",
+            "m4t_code": "cmn"
+        }
+    }
+}

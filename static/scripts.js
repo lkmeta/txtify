@@ -85,7 +85,7 @@ function resetTranscription() {
     document.getElementById('youtube-url').value = '';
     document.getElementById('media-upload').value = '';
     document.getElementById('language-choice').value = 'en';
-    document.getElementById('stt-model').value = 'whisper';
+    document.getElementById('stt-model').value = 'whisper_base';
     document.getElementById('translation').value = 'deepl';
     document.getElementById('language-translation').value = 'en';
     document.getElementById('file-export').value = 'txt';
@@ -365,6 +365,60 @@ function downloadCurrentPreview() {
         }
     };
     xhr.send();
+}
+
+let languagesData = {};
+let selectedModel = 'whisper'; // Default model
+
+document.addEventListener('DOMContentLoaded', function () {
+    fetchLanguages();
+    document.getElementById('stt-model').addEventListener('change', updateLanguageCodes);
+});
+
+function fetchLanguages() {
+    fetch('/static/supported_languages_ASR.json')
+        .then(response => response.json())
+        .then(data => {
+            languagesData = data.languages;
+            populateLanguageDropdown();
+        })
+        .catch(error => {
+            console.error('Error fetching languages:', error);
+        });
+}
+
+function populateLanguageDropdown() {
+    const languageChoice = document.getElementById('language-choice');
+
+    // Clear existing options
+    languageChoice.innerHTML = '';
+
+    // Add languages to the dropdown
+    for (const code in languagesData) {
+        const option = document.createElement('option');
+        option.value = languagesData[code].whisper_code; // Default to Whisper code
+        option.textContent = languagesData[code].name;
+        languageChoice.appendChild(option);
+    }
+
+    // Set English as default selected language
+    languageChoice.value = 'en';
+}
+
+function updateLanguageCodes() {
+    const languageChoice = document.getElementById('language-choice');
+    const selectedModel = document.getElementById('stt-model').value;
+
+    // Check if selected model contains 'whisper' to determine the language code
+    const whisperModel = selectedModel.includes('whisper');
+
+    // Update language codes in the dropdown
+    for (const option of languageChoice.options) {
+        const langCode = Object.keys(languagesData).find(code => languagesData[code].name === option.textContent);
+        if (langCode) {
+            option.value = whisperModel ? languagesData[langCode].whisper_code : languagesData[langCode].m4t_code;
+        }
+    }
 }
 
 
