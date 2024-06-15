@@ -2,6 +2,7 @@
 
 YouSub is a web application that allows you to easily convert audio and video files to text using AI. You can provide a YouTube URL or upload your own files and use AI models like OpenAI Whisper and Facebook SeamlessM4T for fast and accurate transcriptions.
 
+  
 ## Table of Contents
 
 - [About](#about)
@@ -30,23 +31,21 @@ Before you begin, ensure you have met the following requirements:
 To install YouSub, follow these steps:
 
 1. Clone the repository:
-   ```sh
-   git clone https://github.com/yourrepo/yousub.git
-   cd yousub
-    ```
+ ```sh
+ git clone https://github.com/yourrepo/yousub.git
+ cd yousub
+ ```
 
 Create a conda environment and activate it:
 
-```sh
-Copy code
-conda create --name yousub python=3.9
-conda activate yousub
-```
+  ```sh
+  conda create --name yousub python=3.9
+  conda activate yousub
+  ```
 
 Install the dependencies:
 
 ```sh
-Copy code
 pip install -r requirements.txt
 ```
 
@@ -70,8 +69,8 @@ python app.py
 3. Open your web browser and navigate to http://localhost:5000 and enjoy.
 
 
-
 ## Contributing
-
+Feel free to contribute by opening issues, suggesting improvements, or submitting pull requests. Your feedback is highly appreciated!
 
 ## License
+This project is licensed under [MIT](https://github.com/lkmeta/yousub/blob/main/LICENSE).
