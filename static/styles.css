@@ -95,7 +95,7 @@ body {
 .theme-toggle-wrapper {
     position: absolute;
     right: 20px;
-    top: 20px;
+    top: 24px;
     display: flex;
 }
 
@@ -316,6 +316,11 @@ h1 {
 .footer a:hover {
     color: var(--primary-color);
     text-decoration: underline;
+}
+
+.footer .heart {
+    color: red;
+    animation: pulse 1.5s infinite;
 }
 
 .alert-overlay {
@@ -619,6 +624,36 @@ h1 {
 .homepage-button:hover {
     background-color: #d00000;
     transform: scale(1.05);
+}
+
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 
