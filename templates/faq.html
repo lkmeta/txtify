@@ -37,66 +37,6 @@
         </div>
     </div>
 
-    <!-- <div class="container">
-        <h1>Frequently Asked Questions (FAQ)</h1>
-        <div class="faq-content">
-            <h2>General</h2>
-            <p><b>What is Txtify?</b><br>Txtify is a free tool that converts audio and video to text using AI models for
-                fast and accurate transcriptions.</p>
-
-            <h2>Models</h2>
-            <p><b>Which AI models are supported?</b><br>We support several AI models, including Whisper Tiny, Whisper
-                Base, Whisper Small, Whisper Medium, Whisper Large, SeamlessM4T Medium, and SeamlessM4T Large.</p>
-
-            <h2>Languages</h2>
-            <p><b>Which languages are supported for transcription?</b><br>Txtify supports transcription in over 30
-                languages.</p>
-            <p><b>Which languages are supported for translation?</b><br>Translations are supported in over 30 languages
-                using DeepL.</p>
-
-            <h2>Limitations</h2>
-            <p><b>Are there any limitations?</b><br>Yes, the free version has limitations. You can upload files up to
-                100MB or transcribe YouTube videos up to 10 minutes.</p>
-
-            <h2>Self-Hosting</h2>
-            <p><b>Can I self-host Txtify?</b><br>Yes, you can self-host Txtify with full features. Please check our <a
-                    href="https://lkmeta.com" target="_blank"
-                    style="color: var(--primary-color); font-weight: bold;">GitHub</a> repo for instructions.</p>
-        </div>
-    </div> -->
-
-    <!-- <div class="container">
-        <h1>Frequently Asked Questions (FAQ)</h1>
-        <div class="faq-content">
-            <h2>General</h2>
-            <p><b>What is Txtify?</b><br>Txtify is a free tool that converts audio and video to text using AI models for
-                fast and accurate transcriptions.</p>
-
-            <h2>Models</h2>
-            <p><b>Which AI models are supported?</b><br>We support several AI models, including <a
-                    href="https://openai.com/index/whisper" target="_blank"
-                    style="color: var(--primary-color); font-weight: bold;">Whisper</a> and <a
-                    href="https://ai.meta.com/blog/seamless-m4t/" target="_blank"
-                    style="color: var(--primary-color); font-weight: bold;">SeamlessM4T</a>.</p> 
-
-            <h2>Languages</h2>
-            <p><b>Which languages are supported for transcription?</b><br>Txtify supports transcription in over 30
-                languages. You can find the full list in the supported_languages_ASR.json file.</p>
-            <p><b>Which languages are supported for translation?</b><br>Translations are supported in over 30 languages
-                using <a href="https://www.deepl.com/en/translator" target="_blank"
-                    style="color: var(--primary-color); font-weight: bold;">DeepL</a>. You can find the full list in the
-                supported_languages_TR.json file.</p>
-
-            <h2>Limitations</h2>
-            <p><b>Are there any limitations?</b><br>Yes, the free version has limitations. You can upload files up to
-                100MB or transcribe YouTube videos up to 10 minutes.</p>
-
-            <h2>Self-Hosting</h2>
-            <p><b>Can I self-host Txtify?</b><br>Yes, you can self-host Txtify with full features. Please check our <a
-                    href="https://lkmeta.com" target="_blank"
-                    style="color: var(--primary-color); font-weight: bold;">GitHub</a> repo for instructions.</p>
-        </div>
-    </div> -->
 
     <div class="container_faq">
         <h1>Frequently Asked Questions (FAQ)</h1>
@@ -157,8 +97,8 @@
             <h2>Demo Video</h2>
             <h3>Is there a demo video showcasing the features of Txtify?</h3>
             <p style="text-align: center;">Yes, you can watch the demo video below:</p>
-            <iframe width="560" height="315" src="https://www.youtube.com/embed/your_demo_video_id" frameborder="0"
-                allowfullscreen></iframe>
+            <!-- <iframe width="560" height="315" src="https://www.youtube.com/embed/your_demo_video_id" frameborder="0"
+                allowfullscreen></iframe> -->
 
             <h2>Contact</h2>
 
@@ -173,36 +113,9 @@
             target="_blank">lkmeta</a>.
     </div>
 
-    <script>
-        // Fetch and display transcription languages
-        fetch('/static/supported_languages_ASR.json')
-            .then(response => response.json())
-            .then(data => {
-                const languages = data.languages;
-                const languageList = document.getElementById('transcription-languages-list');
-                languageList.innerHTML = '';
-                for (const code in languages) {
-                    if (languages[code].name !== 'Auto-detect') {
-                        languageList.innerHTML += `<li>${languages[code].name}</li>`;
-                    }
-                }
-            })
-            .catch(error => console.error('Error fetching transcription languages:', error));
 
-        // Fetch and display translation languages
-        fetch('/static/supported_languages_TR.json')
-            .then(response => response.json())
-            .then(data => {
-                const languages = data.target_languages;
-                const languageList = document.getElementById('translation-languages-list');
-                languageList.innerHTML = '';
-                for (const code in languages) {
-                    languageList.innerHTML += `<li>${languages[code]}</li>`;
-                }
-            })
-            .catch(error => console.error('Error fetching translation languages:', error));
-    </script>
-    <script src="/static/scripts.js"></script>
+    <!-- <script src="/static/scripts.js"></script> -->
+    <script src="/static/faq_scripts.js"></script>
 </body>
 
 </html>

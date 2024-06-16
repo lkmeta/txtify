@@ -60,6 +60,7 @@ function showAlert(title, message) {
     document.getElementById('alertOverlay').style.display = 'flex';
 }
 
+
 function closeAlert() {
     document.getElementById('alertOverlay').style.display = 'none';
 }
@@ -203,7 +204,7 @@ function startStatusCheck(pid) {
         xhr.onload = function () {
             if (xhr.status === 200) {
                 const response = JSON.parse(xhr.responseText);
-                console.log(response);
+                // console.log(response);
 
                 updateProgress(response.progress, response.phase, response.model, response.language, response.translation, response.time_taken);
                 if (response.progress >= 100) {
@@ -216,7 +217,7 @@ function startStatusCheck(pid) {
                 }
             } else {
                 showAlert('Error', 'Failed to check the transcription status.');
-                console.log(xhr.responseText);
+                // console.log(xhr.responseText);
             }
         };
         xhr.send();

@@ -673,6 +673,108 @@ h1 {
 }
 
 
+/* Contact Form Styles */
+#contact-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.input-group-contact {
+    margin: 10px 0;
+    width: 90%;
+}
+
+input[type="text"],
+input[type="email"],
+textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #333;
+    color: #ccc;
+    box-sizing: border-box;
+}
+
+textarea {
+    height: 150px;
+}
+
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+textarea::placeholder {
+    color: #888;
+}
+
+input[type="text"]::focus,
+input[type="email"]:focus,
+textarea:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+.submit-button {
+    background-color: var(--primary-color);
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s;
+}
+
+.submit-button:hover {
+    background-color: #b00000;
+    transform: scale(1.05);
+}
+
+
+.submit-button i {
+    margin-left: 5px;
+}
+
+/* Light Theme Adjustments */
+body.light-theme input[type="email"],
+body.light-theme textarea {
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+
+body.light-theme input[type="text"],
+body.light-theme textarea {
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+body.light-theme input[type="email"]:focus,
+body.light-theme textarea:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+
+body.light-theme input[type="text"]:focus,
+body.light-theme textarea:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+body.light-theme .submit-button {
+    background-color: var(--primary-color);
+}
+
+body.light-theme .submit-button:hover {
+    background-color: #b00000;
+    transform: scale(1.05);
+}
+
 
 @media (max-width: 768px) {
     .navbar .nav-links {
@@ -722,20 +824,6 @@ h1 {
     }
 }
 
-
-@keyframes pulse {
-    0% {
-        transform: scale(1);
-    }
-
-    50% {
-        transform: scale(1.1);
-    }
-
-    100% {
-        transform: scale(1);
-    }
-}
 
 
 @media (max-width: 800px) {
