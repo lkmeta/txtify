@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Txtify</title>
     <link rel="stylesheet" href="/static/styles.css">
-    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> -->
     <link href="https://fonts.googleapis.com/css2?family=Exo:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
 
 </head>
 
@@ -17,10 +17,17 @@
     <div class="navbar">
         <div class="navbar-content">
             <a href="/" class="logo">Txtify</a>
-            <a href="/">Home</a>
-            <a href="#about">About</a>
-            <a href="https://github.com/yourrepo" target="_blank">GitHub</a>
-            <a href="#contact">Contact</a>
+            <div class="menu-toggle" id="menuToggle">
+                <i class="fa fa-bars"></i>
+            </div>
+            <div class="nav-links" id="navLinks">
+                <a href="/">Application</a>
+                <a href="/faq" target="_blank">FAQ</a>
+                <a href="/contact">Contact</a>
+                <a class="github-button" href="https://github.com/lkmeta/txtify"
+                    data-color-scheme="no-preference: light; light: light; dark: dark;" data-size="large"
+                    aria-label="Star lkmeta/txtify on GitHub">Star</a>
+            </div>
             <div class="theme-toggle-wrapper">
                 <label class="theme-toggle">
                     <input type="checkbox" id="themeToggle">
@@ -30,6 +37,8 @@
             </div>
         </div>
     </div>
+
+
     <div class="container">
         <h1>Audio and Video to Text for FREE using AI</h1>
         <div class="description">
@@ -118,9 +127,6 @@
             <button id="transcribeButton">Transcribe</button>
         </div>
     </div>
-    <!-- <div class="footer">
-        &copy; 2024 <a href="https://lkmeta.me" target="_blank">lkmeta</a>. All rights reserved.
-    </div> -->
     <div class="footer">
         &copy; 2024 Txtify. Created with <i class="fa-solid fa-heart heart"></i> by <a href="https://lkmeta.me"
             target="_blank">lkmeta</a>.

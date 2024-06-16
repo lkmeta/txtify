@@ -1,6 +1,7 @@
 let transcriptionInterval;
 let currentPid = null;  // Global variable to store the PID
 
+
 function showInput(type) {
     const youtubeInput = document.getElementById('youtube-input');
     const uploadInput = document.getElementById('upload-input');
@@ -481,6 +482,16 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+    const menuToggle = document.getElementById('menuToggle');
+    const navLinks = document.getElementById('navLinks');
+
+    menuToggle.addEventListener('click', function () {
+        navLinks.classList.toggle('active');
+    });
+});
+
 
 
 function closeProgress() {
