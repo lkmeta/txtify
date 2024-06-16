@@ -12,7 +12,7 @@ OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..\output")
 DB = transcriptionsDB(os.path.join(OUTPUT_DIR, "transcriptions.db"))
 
 if __name__ == "__main__":
-    output_file = sys.argv[1]
+    file_path = sys.argv[1]
     language = sys.argv[2]
     model = sys.argv[3]
     translation = sys.argv[4]
@@ -43,12 +43,11 @@ if __name__ == "__main__":
     #     pass
 
     transcribe_audio(
-        output_file,
+        file_path,
         language,
         model,
         translation,
         language_translation,
-        file_export,
         process_id,
     )
 

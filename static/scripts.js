@@ -1,6 +1,22 @@
 let transcriptionInterval;
 let currentPid = null;  // Global variable to store the PID
 
+const modelMapping = {
+    whisper_tiny: 'Whisper Tiny',
+    whisper_base: 'Whisper Base',
+    whisper_small: 'Whisper Small',
+    whisper_medium: 'Whisper Medium',
+    whisper_large: 'Whisper Large',
+    m4t_medium: 'SeamlessM4T Medium',
+    m4t_large: 'SeamlessM4T Large'
+};
+
+const translationMapping = {
+    none: 'Don\'t Translate',
+    deepl: 'DeepL',
+    whisper: 'Whisper'
+};
+
 
 function showInput(type) {
     const youtubeInput = document.getElementById('youtube-input');
@@ -60,12 +76,6 @@ function resetTranscription() {
     document.querySelector('.download-button').classList.add('hidden');
     document.querySelector('.close-button').classList.add('hidden');
 
-    // // Hide all preview tabs
-    // document.getElementById('previewText').classList.add('hidden');
-    // document.getElementById('previewSRT').classList.add('hidden');
-    // document.getElementById('previewVTT').classList.add('hidden');
-    // document.getElementById('previewSBV').classList.add('hidden');
-
     // Check if preview elements exist before setting innerText
     const previewText = document.getElementById('previewText');
     if (previewText) previewText.innerText = '';
@@ -115,6 +125,12 @@ function transcribe() {
     // Check if both fields are empty
     if (!youtubeUrl && !mediaUpload) {
         showAlert('Invalid Input', 'Please enter a YouTube URL or upload a media file.');
+        return;
+    }
+
+    // Check if both fields are filled
+    if (youtubeUrl && mediaUpload) {
+        showAlert('Invalid Input', 'Please enter a YouTube URL or upload a media file, not both.');
         return;
     }
 
@@ -234,7 +250,7 @@ function downloadFile() {
             const url = window.URL.createObjectURL(xhr.response);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'transcription.txt';  // File name // TODO here
+            a.download = 'transcription.zip';  // File name // TODO here
             document.body.appendChild(a);
             a.click();
             a.remove();
@@ -247,16 +263,20 @@ function downloadFile() {
 
 document.querySelector('.cancel-button').addEventListener('click', cancelTranscription);
 document.querySelector('.download-button').addEventListener('click', downloadFile);
-document.querySelector('.close-button').addEventListener('click', closeProgress);
+// document.querySelector('.close-button').addEventListener('click', closeProgress);
 
 
 // preview section
 function updateProgress(progress, phase, model, language, translation, timeTaken) {
+    const modelName = modelMapping[model] || model;
+    const translationName = translationMapping[translation] || translation;
+
+    // Update the progress bar
     document.getElementById('progressPercentage').innerText = `${progress}%`;
     document.getElementById('progressPhase').innerText = phase;
-    document.getElementById('statsModel').innerHTML = `<span class="stat-title">Model:</span> ${model}`;
-    document.getElementById('statsLanguage').innerHTML = `<span class="stat-title">Language:</span> ${language}`;
-    document.getElementById('statsTranslation').innerHTML = `<span class="stat-title">Translation:</span> ${translation}`;
+    document.getElementById('statsModel').innerHTML = `<span class="stat-title">Model:</span> ${modelName}`;
+    // document.getElementById('statsLanguage').innerHTML = `<span class="stat-title">Language:</span> ${language}`;
+    document.getElementById('statsTranslation').innerHTML = `<span class="stat-title">Translation:</span> ${translationName}`;
     document.getElementById('statsTime').innerHTML = `<span class="stat-title">Time Taken:</span> ${timeTaken} seconds`;
 
 
@@ -348,7 +368,8 @@ function showPreview(format) {
 }
 
 function downloadCurrentPreview() {
-    const activeTab = document.querySelector('.tab-button.active').innerText.toLowerCase();
+    let activeTab = document.querySelector('.tab-button.active').innerText.toLowerCase();
+    activeTab = activeTab.replace('.', '');
     const xhr = new XMLHttpRequest();
     xhr.open('GET', `/downloadPreview?pid=${currentPid}&format=${activeTab}`, true);
     xhr.responseType = 'blob';
@@ -501,3 +522,23 @@ function closeProgress() {
 
     document.getElementById('progressOverlay').style.display = 'none';
 }
+
+function cleanUp() {
+    if (currentPid) {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `/cleanup?pid=${currentPid}`, true);
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                // console.log('Cleanup successful');
+            } else {
+                // console.error('Failed to clean up files.');
+            }
+        };
+        xhr.send();
+    }
+}
+
+document.querySelector('.close-button').addEventListener('click', function () {
+    cleanUp();
+    closeProgress();
+});

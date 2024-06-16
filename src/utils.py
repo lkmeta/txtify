@@ -11,6 +11,7 @@ import subprocess
 from db import transcriptionsDB
 import psutil
 from datetime import timedelta
+import shutil
 
 
 # Global dictionary to store transcription status
@@ -30,6 +31,9 @@ transcription_status = {
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..\output")
 
 DB = transcriptionsDB(os.path.join(OUTPUT_DIR, "transcriptions.db"))
+
+MAX_VIDEO_DURATION = 10 * 60  # 10 minutes in seconds TODO: Upgrade when needed
+MAX_UPLOAD_SIZE_MB = 100  # 100 MB TODO: Upgrade when needed
 
 
 def is_valid_youtube_url(url: str) -> bool:
@@ -51,9 +55,6 @@ def handle_transcription(
     language_translation: str,
     file_export: str,
 ):
-    from models import transcribe_audio
-
-    # start_time = time.time()
 
     output_file = None
 
@@ -69,6 +70,10 @@ def handle_transcription(
                         "preferredcodec": "mp3",
                         "preferredquality": "192",
                     }
+                ],
+                "postprocessor_args": [
+                    "-t",
+                    str(MAX_VIDEO_DURATION),  # Limit to the first 10 minutes
                 ],
             }
 
@@ -90,6 +95,13 @@ def handle_transcription(
                 logger.info(f"Downloaded video: {output_file}")
 
         elif media:
+            media_size_mb = len(media.file.read()) / (1024 * 1024)  # Size in MB
+            media.file.seek(0)  # Reset file pointer after reading size
+            if media_size_mb > MAX_UPLOAD_SIZE_MB:
+                raise Exception(
+                    f"Uploaded file exceeds the size limit of {MAX_UPLOAD_SIZE_MB} MB"
+                )
+
             media_filename = clean_filename(media.filename)
             media_file_path = os.path.join(OUTPUT_DIR, media_filename)
             with open(media_file_path, "wb") as buffer:
@@ -132,6 +144,10 @@ def handle_transcription(
             logger.info(f"Transcription process started with PID: {pid}")
         else:
             raise Exception("Failed to start transcription process")
+
+        # Move file to the output directory
+        if not os.path.exists(OUTPUT_DIR + f"\\{pid}"):
+            os.makedirs(OUTPUT_DIR + f"\\{pid}")
 
         return pid
 
@@ -218,36 +234,6 @@ def convert_to_pdf(text, file_path):
 
     pdf.output(file_path)
     logger.info(f"Transcription saved to PDF: {file_path}")
-
-
-# def convert_to_srt(text, file_path):
-#     subs = []
-#     lines = text.split("\n")
-#     for i in range(0, len(lines), 2):
-#         if i + 1 < len(lines):
-#             try:
-#                 start_time, end_time = lines[i].split(" --> ")
-#                 content = lines[i + 1]
-#                 start_time = srt.srt_timestamp_to_timedelta(start_time.strip())
-#                 end_time = srt.srt_timestamp_to_timedelta(end_time.strip())
-#                 subs.append(
-#                     srt.Subtitle(
-#                         index=(i // 2) + 1,
-#                         start=start_time,
-#                         end=end_time,
-#                         content=content.strip(),
-#                     )
-#                 )
-#             except ValueError as e:
-#                 warning_message = (
-#                     f"Skipping lines {i + 1} and {i + 2}: {lines[i]} {lines[i + 1]}"
-#                 )
-#                 # logger.warning(warning_message)
-#                 continue
-
-#     with open(file_path, "w") as f:
-#         f.write(srt.compose(subs))
-#     logger.info(f"Transcription saved to SRT: {file_path}")
 
 
 def convert_to_srt(text, file_path):
@@ -367,3 +353,22 @@ def convert_to_sbv(text, file_path):
                     sbvFile.write(makeSbvStr(raw_text, start_time, end_time))
 
     logger.info(f"Transcription saved to SBV: {file_path}")
+
+
+def cleanup_files(pid: int):
+    """
+    Cleanup the files generated during the transcription process.
+    """
+
+    pid_directory = os.path.join(OUTPUT_DIR, str(pid))
+    if os.path.exists(pid_directory):
+        shutil.rmtree(pid_directory)
+
+        # Clean mp3 or zip files in the output directory
+        for file in os.listdir(OUTPUT_DIR):
+            if file.endswith(".mp3") or file.endswith(".zip"):
+                os.remove(os.path.join(OUTPUT_DIR, file))
+
+        logger.info(f"Files cleaned up for PID: {pid}")
+    else:
+        logger.warning(f"No files found to clean up for PID: {pid}")

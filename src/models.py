@@ -4,7 +4,12 @@ from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 from loguru import logger
 from utils import convert_to_formats
 import deepl
-from deepl_languages import SOURCE_LANGUAGES, TARGET_LANGUAGES
+from deepl_languages import (
+    SOURCE_LANGUAGES,
+    TARGET_LANGUAGES,
+)  # TODO: change this to the correct path from JSON file /static/supported_languages_TR.json
+
+
 from dotenv import load_dotenv
 from db import transcriptionsDB
 import time
@@ -14,7 +19,7 @@ load_dotenv()  # Load the environment variables: HUGGINGFACE_API_KEY and DEEPL_A
 
 DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
 
-# Define the Hugging Face models
+# Define the Hugging Face available models
 MODELS = {
     "whisper_tiny": "openai/whisper-tiny",
     "whisper_base": "openai/whisper-base",
@@ -41,7 +46,6 @@ def transcribe_audio(
     model: str,
     translation: str,
     language_translation: str,
-    file_export: str,
     pid: int,
 ):
     """
@@ -58,6 +62,15 @@ def transcribe_audio(
     logger.info(
         f"Transcribing audio using model: {model}, language: {language}, translation: {translation}, language_translation: {language_translation}"
     )
+
+    # If file path is empty, return
+    if not file_path:
+        # update_transcription_status({"phase": "Error", "progress": 0})
+        logger.error("No file path provided. Progress: 0%")
+        DB.update_transcription_status_by_pid(
+            "Error:No file path provided.", "", 0, pid
+        )
+        return
 
     stt_model = MODELS.get(model)
 
@@ -88,7 +101,7 @@ def transcribe_audio(
 
         processor = AutoProcessor.from_pretrained(stt_model)
 
-        logger.info(f"Transcribing audio phase: Transcribing... . Progress: 40%")
+        logger.info(f"Transcribing audio phase: Transcribing... Progress: 40%")
         DB.update_transcription_status_by_pid("Transcribing...", "", 40, pid)
 
         if language == "auto":
@@ -144,7 +157,7 @@ def transcribe_audio(
             if translation is None:
                 logger.info(f"Do not have a translation model. Skipping translation.")
             elif translation == "whisper":
-                # todo: add whisper translation
+                # TODO: Implement whisper translation here
                 logger.info(
                     f"Translating from {language} to {language_translation} using whisper."
                 )

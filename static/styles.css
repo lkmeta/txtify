@@ -35,7 +35,7 @@ body {
 }
 
 .light-theme {
-    --background-color-dark: rgba(255, 255, 255, 0.9);
+    --background-color-dark: rgba(255, 255, 255, 0.8);
     /* Light theme background */
     --text-color-dark: #000;
     --secondary-color-dark: #ccc;
