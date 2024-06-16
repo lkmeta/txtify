@@ -1,6 +1,11 @@
 # TODO
 
-# missing last line from txt to srt conversion
+# CHECK THE FOLLOWING ISSUES:
+# 1. missing last line from txt to srt conversion
+# 2. demo
+# 3. vercel deployment
+# 4. update the README.md
+# 5. last check texts, process, and links
 
 #######################################################################
 
@@ -13,6 +18,8 @@ from fastapi.staticfiles import StaticFiles
 from loguru import logger
 import time
 import zipfile
+import resend
+from dotenv import load_dotenv
 
 
 from db import transcriptionsDB
@@ -43,6 +50,7 @@ DEFINED_REQUESTS = [
     "/cleanup",
     "/faq",
     "/contact",
+    "/submit_contact",
 ]
 
 # Define the routes
@@ -54,6 +62,24 @@ if not os.path.exists(OUTPUT_DIR):
 
 # Initialize the database connection on the output directory
 DB = transcriptionsDB(os.path.join(OUTPUT_DIR, "transcriptions.db"))
+
+
+# Load the API keys
+load_dotenv()  # Load the environment variables: DEEPL_API_KEY
+
+
+# Resend API key
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+if not RESEND_API_KEY:
+    raise ValueError("RESEND_API_KEY is not set")
+
+resend.api_key = RESEND_API_KEY
+
+# Resend Email Address for sending emails
+RESEND_EMAIL = os.getenv("RESEND_EMAIL")
+
+# Admin Email
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -90,6 +116,128 @@ async def faq(request: Request):
     }
 
     return templates.TemplateResponse("faq.html", context)
+
+
+@app.get("/contact", response_class=HTMLResponse)
+async def contact(request: Request):
+    """
+    Render the contact page
+    Args:
+        request (Request): The request object
+    Returns:
+        HTMLResponse: The response containing the contact page
+    """
+    context = {
+        "request": request,
+    }
+
+    return templates.TemplateResponse("contact.html", context)
+
+
+@app.post("/submit_contact")
+async def submit_contact(
+    name: str = Form(None),
+    email: str = Form(None),
+    message: str = Form(None),
+):
+
+    # HTML content for the email
+    html_content = f"""
+        <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>New Message Received from Txtify</title>
+            <style>
+                body {{
+                    font-family: 'Arial', sans-serif;
+                    background-color: #f9f9f9;
+                    color: #333;
+                    margin: 0;
+                    padding: 0;
+                }}
+                .container {{
+                    max-width: 600px;
+                    margin: 20px auto;
+                    padding: 20px;
+                    background-color: #fff;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                }}
+                h2 {{
+                    color: #e63946;
+                }}
+                p {{
+                    line-height: 1.6;
+                }}
+                .info {{
+                    background-color: #f1f1f1;
+                    padding: 10px;
+                    border-radius: 5px;
+                    margin-bottom: 20px;
+                }}
+                blockquote {{
+                    margin: 0;
+                    padding: 10px 20px;
+                    background-color: #f1f1f1;
+                    border-left: 5px solid #e63946;
+                    font-style: italic;
+                    color: #555;
+                }}
+                .footer {{
+                    margin-top: 20px;
+                    text-align: center;
+                    font-size: 12px;
+                    color: #aaa;
+                }}
+            </style>
+        </head>
+
+        <body>
+            <div class="container">
+                <h2>New Message Received from Txtify</h2>
+                <div class="info">
+                    <p><strong>Name:</strong> {name}</p>
+                    <p><strong>Email:</strong> {email}</p>
+                </div>
+                <p><strong>Message:</strong></p>
+                <blockquote>
+                    {message}
+                </blockquote>
+                <div class="footer">
+                    &copy; 2024 Txtify. All rights reserved.
+                </div>
+            </div>
+        </body>
+
+        </html>
+        """
+
+    try:
+
+        params: resend.Emails.SendParams = {
+            "from": RESEND_EMAIL,
+            "to": [ADMIN_EMAIL],
+            "subject": "Txtify Contact Form Submission",
+            "html": html_content,
+            "headers": {"X-Entity-Ref-ID": "123456789"},
+        }
+
+        email: resend.Email = resend.Emails.send(params)
+
+        logger.info(f"Email sent successfully!")
+
+        return JSONResponse(
+            content={"message": "Your message has been sent successfully!"},
+            status_code=200,
+        )
+    except Exception as e:
+        return JSONResponse(
+            content={"message": f"Failed to send your message: {str(e)}"},
+            status_code=500,
+        )
 
 
 @app.post("/transcribe", response_class=JSONResponse)
@@ -322,7 +470,7 @@ async def downloadPreview(pid: int, format: str):
     """
 
     # Check if the file format is valid
-    if format is "Text":
+    if format == "Text":
         format = format.lower()
         format = "txt"
 
