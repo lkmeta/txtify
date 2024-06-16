@@ -15,7 +15,7 @@ from db import transcriptionsDB
 import time
 
 # Load the API keys
-load_dotenv()  # Load the environment variables: HUGGINGFACE_API_KEY and DEEPL_API_KEY
+load_dotenv()  # Load the environment variables: DEEPL_API_KEY
 
 DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
 
@@ -151,10 +151,13 @@ def transcribe_audio(
         logger.info(f"Transcribing audio phase: Transcription saved. Progress: 80%")
         DB.update_transcription_status_by_pid("Transcription saved", "", 80, pid)
 
-        # Check if translation is needed
-        if translation and language != language_translation:
+        if language == "auto":
+            language = "en"
 
-            if translation is None:
+        # Check if translation is needed
+        if translation and language.lower() != language_translation.lower():
+
+            if translation.lower() == "none":
                 logger.info(f"Do not have a translation model. Skipping translation.")
             elif translation == "whisper":
                 # TODO: Implement whisper translation here
@@ -175,8 +178,8 @@ def transcribe_audio(
                     )
                 transcription = deepl_translate(
                     transcription,
-                    source_lang,
-                    target_lang,
+                    language,
+                    language_translation,
                     pid,
                 )
 
@@ -196,8 +199,6 @@ def transcribe_audio(
             f"Transcribing audio phase: Exporting transcription... . Progress: 90%"
         )
         DB.update_transcription_status_by_pid("Exporting transcription...", "", 90, pid)
-
-        # convert_to_formats(transcription, file_path.rsplit(".", 1)[0], file_export)
 
         convert_to_formats(transcription, output_file, "all")
 

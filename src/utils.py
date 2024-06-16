@@ -230,7 +230,17 @@ def convert_to_pdf(text, file_path):
     pdf.set_font("Arial", size=12)
 
     for line in text.split("\n"):
-        pdf.cell(200, 10, txt=line, ln=True, align="L")
+        try:
+            pdf.cell(
+                200,
+                10,
+                txt=line.encode("latin-1", "replace").decode("latin-1"),
+                ln=True,
+                align="L",
+            )
+        except Exception as e:
+            logger.error(f"Error writing line to PDF: {str(e)}")
+            continue
 
     pdf.output(file_path)
     logger.info(f"Transcription saved to PDF: {file_path}")
@@ -272,12 +282,18 @@ def convert_to_srt(text, file_path):
     with open(file_path, mode="w", encoding="utf-8") as subFile:
         lines = text.strip().split("\n")
         for i in range(0, len(lines), 2):
-            if i + 1 < len(lines):
+            if i + 1 <= len(lines):
                 start_end_times = lines[i].strip().split(" --> ")
                 if len(start_end_times) == 2:
                     start_time, end_time = start_end_times
                     raw_text = lines[i + 1].strip()
                     subFile.write(makeSubRipStr(raw_text, start_time, end_time))
+
+            else:
+                raw_text = lines[i].strip()
+                subFile.write(
+                    f"{current_section + 1}\n00:00:00,000 --> 00:00:10,000\n{raw_text}\n\n"
+                )
 
     logger.info(f"Transcription saved to SRT: {file_path}")
 
@@ -319,6 +335,9 @@ def convert_to_vtt(text, file_path):
                     start_time, end_time = start_end_times
                     raw_text = lines[i + 1].strip()
                     vttFile.write(makeVttStr(raw_text, start_time, end_time))
+            else:
+                raw_text = lines[i].strip()
+                vttFile.write(f"00:00:00.000 --> 00:00:10.000\n{raw_text}\n\n")
 
     logger.info(f"Transcription saved to VTT: {file_path}")
 
@@ -351,6 +370,9 @@ def convert_to_sbv(text, file_path):
                     start_time, end_time = start_end_times
                     raw_text = lines[i + 1].strip()
                     sbvFile.write(makeSbvStr(raw_text, start_time, end_time))
+            else:
+                raw_text = lines[i].strip()
+                sbvFile.write(f"00:00:00.000,00:00:10.000\n{raw_text}\n\n")
 
     logger.info(f"Transcription saved to SBV: {file_path}")
 

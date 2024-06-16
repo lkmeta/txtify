@@ -195,6 +195,31 @@ body {
     transition: background-color 0.8s;
 }
 
+
+.container_faq {
+    background: var(--background-color-dark);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    padding: 25px;
+    max-width: 800px;
+    width: 90%;
+    text-align: center;
+    margin-top: 100px;
+    transition: background-color 0.8s;
+}
+
+/* Adjust the style for paragraphs within the container */
+.container_faq p {
+    font-size: 15px;
+    text-align: left;
+    margin: 0;
+    padding: 0;
+    /* line-height: 1.5; */
+    max-width: 100%;
+    word-wrap: break-word;
+}
+
+
 h1 {
     margin-bottom: 20px;
     font-size: 24px;
@@ -734,6 +759,11 @@ h1 {
     }
 
     .container {
+        padding: 15px;
+        margin-top: 60px;
+    }
+
+    .container_faq {
         padding: 15px;
         margin-top: 60px;
     }
