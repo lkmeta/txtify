@@ -18,6 +18,16 @@ const translationMapping = {
 };
 
 
+document.addEventListener('DOMContentLoaded', function () {
+    const transcriptionLanguagesCount = 90;
+    const translationLanguagesCount = 37;
+    const fileTypes = ['.txt', '.pdf', '.srt', '.vtt', '.sbv'];
+
+    document.getElementById('transcription-languages').innerText = transcriptionLanguagesCount;
+    document.getElementById('translation-languages').innerText = translationLanguagesCount;
+    document.getElementById('file-types').innerText = fileTypes.join(', ');
+});
+
 function showInput(type) {
     const youtubeInput = document.getElementById('youtube-input');
     const uploadInput = document.getElementById('upload-input');
@@ -97,7 +107,7 @@ function resetTranscription() {
     document.getElementById('media-upload').value = '';
     document.getElementById('language-choice').value = 'en';
     document.getElementById('stt-model').value = 'whisper_base';
-    document.getElementById('translation').value = 'deepl';
+    document.getElementById('translation').value = 'none';
     document.getElementById('language-translation').value = 'EN';
     // document.getElementById('file-export').value = 'txt';
 
@@ -312,10 +322,13 @@ function fetchPreview() {
     xhr.onload = function () {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
+
+            // Preview content
             document.getElementById('previewText').innerText = response.txt;
             document.getElementById('previewSRT').innerText = response.srt;
             document.getElementById('previewVTT').innerText = response.vtt;
             document.getElementById('previewSBV').innerText = response.sbv;
+
 
             // if previewContent is hidden, unhide it
             if (document.getElementById('previewContent').classList.contains('hidden')) {

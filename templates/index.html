@@ -22,7 +22,7 @@
             </div>
             <div class="nav-links" id="navLinks">
                 <a href="/">Application</a>
-                <a href="/faq" target="_blank">FAQ</a>
+                <a href="/faq">FAQ</a>
                 <a href="/contact">Contact</a>
                 <a class="github-button" href="https://github.com/lkmeta/txtify"
                     data-color-scheme="no-preference: light; light: light; dark: dark;" data-size="large"
@@ -39,22 +39,32 @@
     </div>
 
 
+
     <div class="container">
         <h1>Audio and Video to Text for FREE using AI</h1>
         <div class="description">
-            Welcome to Txtify! Easily turn your <a style="color: var(--primary-color); font-weight: bold;">audio and
-                video to
-                text for
-                free</a>. Provide a YouTube URL or upload your own files and use AI to ensure fast and accurate
-            transcriptions.
-            <br>
-            <br>
+            Welcome to Txtify! Easily turn your <a style="color: var(--primary-color); font-weight: bold;">audio or
+                video to text for free</a>. Provide a YouTube URL or upload your own files and use AI to ensure fast and
+            accurate transcriptions.
+            <br><br>
+            Txtify supports transcribing audio and video in over <span id="transcription-languages"
+                style="color: var(--primary-color); font-weight: bold;"></span> languages and translating transcriptions
+            to <span id="translation-languages" style="color: var(--primary-color); font-weight: bold;"></span>
+            languages.
+            Export in multiple formats including <span id="file-types"
+                style="color: var(--primary-color); font-weight: bold;"></span>.
+            <!-- <br><br> -->
+            This version supports files up to <span style="color: var(--primary-color); font-weight: bold;">100MB</span>
+            and YouTube videos up to <span style="color: var(--primary-color); font-weight: bold;">10 minutes</span>.
+            <br><br>
             Want more control? Self-host Txtify with full features—check <a href="https://lkmeta.com" target="_blank"
-                style="color: var(--primary-color); font-weight: bold;">GitHub</a> repo for instructions. Or, use this
-            limited version
-            directly.
-            Enjoy!
+                style="color: var(--primary-color); font-weight: bold;">GitHub</a> repo for instructions. Otherwise, use
+            this
+            limited <a style="color: var(--primary-color); font-weight: bold;">FREE</a> version.
+            <!-- <br><br>
+            Enjoy! -->
         </div>
+
         <div class="switch-case">
             <button id="youtube-button" class="active" onclick="showInput('youtube')">YouTube URL</button>
             <button id="upload-button" onclick="showInput('upload')">Upload Audio/Video</button>
@@ -101,7 +111,7 @@
             <small>Enable translation of the transcribed text.</small>
             <select id="translation">
                 <option value="none">Don't Translate</option>
-                <option value="whisper">Whisper </option>
+                <!-- <option value="whisper">Whisper </option> -->
                 <option value="deepl">DeepL (requires DeepL API key - Highest Accuracy - Self Hosted -
                     RECOMMENDED)</option>
             </select>

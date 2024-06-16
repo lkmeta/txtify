@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Txtify</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Exo:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="/static/faq_scripts.js"></script>
+</head>
+
+<body class="dark-theme">
+    <div class="navbar">
+        <div class="navbar-content">
+            <a href="/" class="logo">Txtify</a>
+            <div class="menu-toggle" id="menuToggle">
+                <i class="fa fa-bars"></i>
+            </div>
+            <div class="nav-links" id="navLinks">
+                <a href="/">Application</a>
+                <a href="/faq">FAQ</a>
+                <a href="/contact">Contact</a>
+                <a class="github-button" href="https://github.com/lkmeta/txtify"
+                    data-color-scheme="no-preference: light; light: light; dark: dark;" data-size="large"
+                    aria-label="Star lkmeta/txtify on GitHub">Star</a>
+            </div>
+            <div class="theme-toggle-wrapper">
+                <label class="theme-toggle">
+                    <input type="checkbox" id="themeToggle">
+                    <div class="toggle-body"></div>
+                    <div class="celestial-body"></div>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- <div class="container">
+        <h1>Frequently Asked Questions (FAQ)</h1>
+        <div class="faq-content">
+            <h2>General</h2>
+            <p><b>What is Txtify?</b><br>Txtify is a free tool that converts audio and video to text using AI models for
+                fast and accurate transcriptions.</p>
+
+            <h2>Models</h2>
+            <p><b>Which AI models are supported?</b><br>We support several AI models, including Whisper Tiny, Whisper
+                Base, Whisper Small, Whisper Medium, Whisper Large, SeamlessM4T Medium, and SeamlessM4T Large.</p>
+
+            <h2>Languages</h2>
+            <p><b>Which languages are supported for transcription?</b><br>Txtify supports transcription in over 30
+                languages.</p>
+            <p><b>Which languages are supported for translation?</b><br>Translations are supported in over 30 languages
+                using DeepL.</p>
+
+            <h2>Limitations</h2>
+            <p><b>Are there any limitations?</b><br>Yes, the free version has limitations. You can upload files up to
+                100MB or transcribe YouTube videos up to 10 minutes.</p>
+
+            <h2>Self-Hosting</h2>
+            <p><b>Can I self-host Txtify?</b><br>Yes, you can self-host Txtify with full features. Please check our <a
+                    href="https://lkmeta.com" target="_blank"
+                    style="color: var(--primary-color); font-weight: bold;">GitHub</a> repo for instructions.</p>
+        </div>
+    </div> -->
+
+    <!-- <div class="container">
+        <h1>Frequently Asked Questions (FAQ)</h1>
+        <div class="faq-content">
+            <h2>General</h2>
+            <p><b>What is Txtify?</b><br>Txtify is a free tool that converts audio and video to text using AI models for
+                fast and accurate transcriptions.</p>
+
+            <h2>Models</h2>
+            <p><b>Which AI models are supported?</b><br>We support several AI models, including <a
+                    href="https://openai.com/index/whisper" target="_blank"
+                    style="color: var(--primary-color); font-weight: bold;">Whisper</a> and <a
+                    href="https://ai.meta.com/blog/seamless-m4t/" target="_blank"
+                    style="color: var(--primary-color); font-weight: bold;">SeamlessM4T</a>.</p> 
+
+            <h2>Languages</h2>
+            <p><b>Which languages are supported for transcription?</b><br>Txtify supports transcription in over 30
+                languages. You can find the full list in the supported_languages_ASR.json file.</p>
+            <p><b>Which languages are supported for translation?</b><br>Translations are supported in over 30 languages
+                using <a href="https://www.deepl.com/en/translator" target="_blank"
+                    style="color: var(--primary-color); font-weight: bold;">DeepL</a>. You can find the full list in the
+                supported_languages_TR.json file.</p>
+
+            <h2>Limitations</h2>
+            <p><b>Are there any limitations?</b><br>Yes, the free version has limitations. You can upload files up to
+                100MB or transcribe YouTube videos up to 10 minutes.</p>
+
+            <h2>Self-Hosting</h2>
+            <p><b>Can I self-host Txtify?</b><br>Yes, you can self-host Txtify with full features. Please check our <a
+                    href="https://lkmeta.com" target="_blank"
+                    style="color: var(--primary-color); font-weight: bold;">GitHub</a> repo for instructions.</p>
+        </div>
+    </div> -->
+
+    <div class="container_faq">
+        <h1>Frequently Asked Questions (FAQ)</h1>
+        <div class="faq-content">
+            <h2>General</h2>
+            <h3>What is Txtify?</h3>
+            <p>Txtify is a FREE and OPEN-SOURCE tool that converts audio and video into text
+                using state-of-the-art AI models for rapid and precise transcriptions. With Txtify, you can convert your
+                files or urls effortlessly, and it's available for self-hosting, offering you full control over your
+                transcription process.</p>
+
+            <h2>Models</h2>
+            <h3>Which AI models are supported?</h3>
+            <p>Txtify utilizes advanced AI models from <a href="https://openai.com/index/whisper" target="_blank"
+                    style="color: var(--primary-color); font-weight: bold;">Whisper</a> and <a
+                    href="https://ai.meta.com/blog/seamless-m4t/" target="_blank"
+                    style="color: var(--primary-color); font-weight: bold;">SeamlessM4T</a>,
+                including Whisper Tiny, Whisper Base, Whisper Small, Whisper Medium, Whisper Large, SeamlessM4T Medium,
+                and SeamlessM4T Large.
+                These models are sourced from <a href="https://huggingface.co/models" target="_blank"
+                    style="color: var(--primary-color); font-weight: bold;">Hugging Face</a> repository.</p>
+
+
+            <h2>Languages</h2>
+            <h3>Which languages are supported for transcription?</h3>
+            <p>Txtify supports transcription in the following
+                languages: Afrikaans, Amharic, Arabic, Assamese, Azerbaijani, Belarusian, Bulgarian, Bengali, Bosnian,
+                Catalan, Cebuano, Czech, Welsh, Danish, German, Greek, English, Spanish, Estonian, Persian, Finnish,
+                French, Galician, Gujarati, Hebrew, Hindi, Croatian, Hungarian, Armenian, Indonesian, Icelandic,
+                Italian, Japanese, Javanese, Georgian, Kazakh, Khmer, Kannada, Korean, Lao, Lithuanian, Latvian,
+                Malayalam, Mongolian, Marathi, Malay, Burmese, Nepali, Dutch, Punjabi, Polish, Portuguese, Romanian,
+                Russian, Sinhala, Slovak, Slovenian, Albanian, Serbian, Swedish, Swahili, Tamil, Telugu, Thai, Turkish,
+                Ukrainian, Urdu, Uzbek, Vietnamese, Yiddish, Yoruba, Chinese.</p>
+            <!-- <p id="transcription-languages-list"></p> -->
+
+            <h3>Which languages are supported for translation?</h3>
+            <p>Translations are supported in the following
+                languages using <a href="https://www.deepl.com/en/translator" target="_blank"
+                    style="color: var(--primary-color); font-weight: bold;">DeepL</a>: Arabic, Bulgarian, Czech, Danish,
+                German, Greek, English, English (British), English (American), Spanish, Estonian, Finnish, French,
+                Hungarian, Indonesian, Italian, Japanese, Korean, Lithuanian, Latvian, Norwegian Bokmål, Dutch, Polish,
+                Portuguese, Portuguese (Brazilian), Portuguese (excluding Brazilian Portuguese), Romanian, Russian,
+                Slovak, Slovenian, Swedish, Turkish, Ukrainian, Chinese (simplified).</p>
+            <!-- <p id="translation-languages-list" class="language-list"></p> -->
+
+            <h2>Limitations</h2>
+            <h3>Are there any limitations?</h3>
+            <p>Yes, the free version has limitations. You can upload files up to
+                100MB or transcribe YouTube videos up to 10 minutes.</p>
+
+            <h2>Self-Hosting</h2>
+            <h3>Can I self-host Txtify?</h3>
+            <p style="text-align: center;">Yes, you can self-host Txtify with full features. Please check the <a
+                    href="https://github.com/lkmeta/txtify" target="_blank"
+                    style="color: var(--primary-color); font-weight: bold;">GitHub</a> repo for
+                instructions.</p>
+
+            <h2>Demo Video</h2>
+            <h3>Is there a demo video showcasing the features of Txtify?</h3>
+            <p style="text-align: center;">Yes, you can watch the demo video below:</p>
+            <iframe width="560" height="315" src="https://www.youtube.com/embed/your_demo_video_id" frameborder="0"
+                allowfullscreen></iframe>
+
+            <h2>Contact</h2>
+
+            <p style="text-align: center;">If your question wasn't answered here, please use our <a href="/contact"
+                    style="color: var(--primary-color); font-weight: bold;">contact page</a> to reach out to us.</p>
+
+        </div>
+    </div>
+
+    <div class="footer">
+        &copy; 2024 Txtify. Created with <i class="fa-solid fa-heart heart"></i> by <a href="https://lkmeta.me"
+            target="_blank">lkmeta</a>.
+    </div>
+
+    <script>
+        // Fetch and display transcription languages
+        fetch('/static/supported_languages_ASR.json')
+            .then(response => response.json())
+            .then(data => {
+                const languages = data.languages;
+                const languageList = document.getElementById('transcription-languages-list');
+                languageList.innerHTML = '';
+                for (const code in languages) {
+                    if (languages[code].name !== 'Auto-detect') {
+                        languageList.innerHTML += `<li>${languages[code].name}</li>`;
+                    }
+                }
+            })
+            .catch(error => console.error('Error fetching transcription languages:', error));
+
+        // Fetch and display translation languages
+        fetch('/static/supported_languages_TR.json')
+            .then(response => response.json())
+            .then(data => {
+                const languages = data.target_languages;
+                const languageList = document.getElementById('translation-languages-list');
+                languageList.innerHTML = '';
+                for (const code in languages) {
+                    languageList.innerHTML += `<li>${languages[code]}</li>`;
+                }
+            })
+            .catch(error => console.error('Error fetching translation languages:', error));
+    </script>
+    <script src="/static/scripts.js"></script>
+</body>
+
+</html>
