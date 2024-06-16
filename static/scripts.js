@@ -88,7 +88,7 @@ function resetTranscription() {
     document.getElementById('stt-model').value = 'whisper_base';
     document.getElementById('translation').value = 'deepl';
     document.getElementById('language-translation').value = 'EN';
-    document.getElementById('file-export').value = 'txt';
+    // document.getElementById('file-export').value = 'txt';
 
     // Reset currentPid variable
     currentPid = null;
@@ -108,7 +108,7 @@ function transcribe() {
     const sttModel = document.getElementById('stt-model').value;
     const translation = document.getElementById('translation').value;
     const languageTranslation = document.getElementById('language-translation').value;
-    const fileExport = document.getElementById('file-export').value;
+    // const fileExport = document.getElementById('file-export').value;
 
 
     // Check if both fields are empty
@@ -138,7 +138,7 @@ function transcribe() {
     formData.append('model', sttModel);
     formData.append('translation', translation);
     formData.append('language_translation', languageTranslation);
-    formData.append('file_export', fileExport);
+    // formData.append('file_export', fileExport);
 
     if (youtubeUrl) {
         formData.append('youtube_url', youtubeUrl);

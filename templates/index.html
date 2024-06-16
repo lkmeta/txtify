@@ -4,9 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouSub</title>
+    <title>Txtify</title>
     <link rel="stylesheet" href="/static/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> -->
+    <link href="https://fonts.googleapis.com/css2?family=Exo:wght@400;700&display=swap" rel="stylesheet">
+
 
 </head>
 
@@ -14,7 +16,7 @@
 <body class="dark-theme">
     <div class="navbar">
         <div class="navbar-content">
-            <a href="/" class="logo">YouSub</a>
+            <a href="/" class="logo">Txtify</a>
             <a href="/">Home</a>
             <a href="#about">About</a>
             <a href="https://github.com/yourrepo" target="_blank">GitHub</a>
@@ -31,13 +33,16 @@
     <div class="container">
         <h1>Audio and Video to Text for FREE using AI</h1>
         <div class="description">
-            Welcome to YouSub! Easily turn your <a style="color: var(--primary-color);">audio and video to text for
+            Welcome to Txtify! Easily turn your <a style="color: var(--primary-color); font-weight: bold;">audio and
+                video to
+                text for
                 free</a>. Provide a YouTube URL or upload your own files and use AI to ensure fast and accurate
             transcriptions.
             <br>
             <br>
-            Want more control? Self-host YouSub with full features—check <a href="https://lkmeta.com" target="_blank"
-                style="color: var(--primary-color);">GitHub</a> repo for instructions. Or, use this limited version
+            Want more control? Self-host Txtify with full features—check <a href="https://lkmeta.com" target="_blank"
+                style="color: var(--primary-color); font-weight: bold;">GitHub</a> repo for instructions. Or, use this
+            limited version
             directly.
             Enjoy!
         </div>
@@ -52,7 +57,7 @@
         </div>
         <div id="upload-input" class="input-group" style="display: none;">
             <label for="media-upload">Upload Audio/Video:</label>
-            <small>Upload an audio or video file from your device to transcribe (MP4, MP3).</small>
+            <small>Upload an audio or video file from your device to transcribe (.mp4, .mp3).</small>
             <input type="file" id="media-upload" accept=".mp4,.mp3">
         </div>
 
@@ -97,7 +102,7 @@
             <small>Select the language to translate the transcribed text.</small>
             <select id="language-translation"></select>
         </div>
-        <div class="input-group">
+        <!-- <div class="input-group">
             <label for="file-export">File Export Type:</label>
             <small>Choose the format for the transcribed text.</small>
             <select id="file-export">
@@ -107,7 +112,7 @@
                 <option value="vtt">WebVTT (.vtt)</option>
                 <option value="sbv">YouTube Captions (.sbv)</option>
             </select>
-        </div>
+        </div> -->
 
         <div class="actions">
             <button id="transcribeButton">Transcribe</button>

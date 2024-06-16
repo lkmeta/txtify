@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Exo:wght@400;700&display=swap');
+
+
 :root {
     --width: 50px;
     --height: 25px;
@@ -14,7 +17,8 @@
 }
 
 body {
-    font-family: monaco, sans-serif;
+    /* font-family: monaco, sans-serif; */
+    font-family: 'Exo', sans-serif;
     margin: 0;
     padding: 0;
     display: flex;
@@ -82,7 +86,7 @@ body {
 .navbar .logo {
     font-size: 22px;
     font-weight: bold;
-    background: linear-gradient(90deg, white 50%, red 50%);
+    background: linear-gradient(90deg, white 53%, red 47%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     text-decoration: none;
@@ -91,7 +95,7 @@ body {
 .theme-toggle-wrapper {
     position: absolute;
     right: 20px;
-    top: 10px;
+    top: 20px;
     display: flex;
 }
 
