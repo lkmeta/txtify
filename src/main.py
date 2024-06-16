@@ -1,8 +1,8 @@
 # TODOs:
 
-# 1. Add all models on index.html, including translation models
-# 2. Add all available languages on index.html
-# 3. Make download button option to download all files zipped.
+# TODO models.py updates (whisper, deeepl translator, etc)
+
+# 1. Make download button option to download all files zipped.
 
 
 #######################################################################
@@ -32,7 +32,15 @@ TEMPLATES_PATH = os.path.join(os.path.dirname(__file__), "../templates")
 templates = Jinja2Templates(directory=TEMPLATES_PATH)
 
 # Initialize the defined requests
-DEFINED_REQUESTS = ["/", "/transcribe", "/status", "/cancel", "/download", "/preview"]
+DEFINED_REQUESTS = [
+    "/",
+    "/transcribe",
+    "/status",
+    "/cancel",
+    "/download",
+    "/preview",
+    "/downloadPreview",
+]
 
 # Define the routes
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "../output")
