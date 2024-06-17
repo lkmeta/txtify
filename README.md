@@ -111,4 +111,4 @@ If you encounter any issues or have suggestions, please use the contact form on 
 Feel free to contribute by opening issues, suggesting improvements, or submitting pull requests. Your feedback is highly appreciated!
 
 ## License
-This project is licensed under [MIT](https://github.com/lkmeta/Txtify/blob/main/LICENSE).
+This project is licensed under [Apache License 2.0](https://github.com/lkmeta/Txtify/blob/main/LICENSE).
