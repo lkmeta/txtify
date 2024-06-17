@@ -35,7 +35,7 @@ DEFAULT_MODEL = "whisper_base"
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..\output")
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "../output")
 
 DB = transcriptionsDB(os.path.join(OUTPUT_DIR, "transcriptions.db"))
 
@@ -188,10 +188,10 @@ def transcribe_audio(
 
         # Save the transcription files on a folder with the process ID
         # Generate the output folder
-        if not os.path.exists(OUTPUT_DIR + f"\\{pid}"):
-            os.makedirs(OUTPUT_DIR + f"\\{pid}")
+        if not os.path.exists(os.path.join(OUTPUT_DIR, f"{pid}")):
+            os.makedirs(os.path.join(OUTPUT_DIR, f"{pid}"))
 
-        output_file = os.path.join(OUTPUT_DIR, f"{pid}\\transcription.txt")
+        output_file = os.path.join(OUTPUT_DIR, f"{pid}", "transcription.txt")
         with open(output_file, "w") as f:
             f.write(transcription)
 

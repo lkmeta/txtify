@@ -26,7 +26,37 @@ app.mount("/static", StaticFiles(directory="../static", html=True), name="static
 TEMPLATES_PATH = os.path.join(os.path.dirname(__file__), "../templates")
 templates = Jinja2Templates(directory=TEMPLATES_PATH)
 
-# Initialize the defined requests
+
+# Load the API keys
+load_dotenv()  # Load the environment variables: DEEPL_API_KEY
+
+"""
+    # MUST READ BEFORE RUNNING THE APPLICATION
+    # ----------------------------------------
+    Before running the application, make sure to set the following environment variables:
+    - DEEPL_API_KEY: The API key for the DeepL API (required for translation)
+    - LOCAL_MODE: Set to "true" to run the application in local mode
+
+
+    You can set the environment variables in the .env file in the root directory of the project.
+    Check the .env.example file for the required format.
+
+"""
+# Check if local mode is enabled
+# For local deployment, LOCAL_MODE=true and uncomment the line below
+# LOCAL_MODE = os.getenv("LOCAL_MODE") == "true"
+LOCAL_MODE = False
+if LOCAL_MODE:
+    logger.info(
+        "LOCAL_MODE is enabled. You are running in local mode and the transcription process will run normally."
+    )
+else:
+    logger.info(
+        "LOCAL_MODE is disabled. The transcription process will run in FAKE MODE."
+    )
+
+
+# Initialize the available requests for the application
 DEFINED_REQUESTS = [
     "/",
     "/transcribe",
@@ -52,21 +82,7 @@ if not os.path.exists(OUTPUT_DIR):
 DB = transcriptionsDB(os.path.join(OUTPUT_DIR, "transcriptions.db"))
 
 
-# Load the API keys
-load_dotenv()  # Load the environment variables: DEEPL_API_KEY
-
-# Check if local mode is enabled
-# For local deployment, LOCAL_MODE=true
-LOCAL_MODE = os.getenv("LOCAL_MODE") == "true"
-if LOCAL_MODE:
-    logger.info(
-        "LOCAL_MODE is enabled. You are running in local mode and the transcription process will run normally."
-    )
-else:
-    logger.info(
-        "LOCAL_MODE is disabled. The transcription process will run in fake mode."
-    )
-
+# Load additional environment variables
 # Resend API key
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 if not RESEND_API_KEY:
@@ -149,8 +165,8 @@ async def submit_contact(
         JSONResponse: The response containing the message
     """
 
-    # Check if LOCAL_MODE is enabled. Contact form works only in deployment mode.
-    if LOCAL_MODE:
+    # Check if LOCAL_MODE is disabled. If so, then the transcription process will is fake.
+    if not LOCAL_MODE:
         return JSONResponse(
             content={"message": "Contact form works only in deployment mode."},
             status_code=200,
@@ -423,7 +439,8 @@ async def status(pid: int = None):
                 logs_file = os.path.join(OUTPUT_DIR, f"{pid}_logs.txt")
                 if os.path.exists(logs_file):
                     os.rename(
-                        logs_file, os.path.join(OUTPUT_DIR + f"\\{pid}\\logs.txt")
+                        logs_file,
+                        os.path.join(OUTPUT_DIR, f"{pid}", "logs.txt"),
                     )
 
                 if done:
@@ -471,7 +488,8 @@ async def status(pid: int = None):
                 logs_file = os.path.join(OUTPUT_DIR, f"{pid}_logs.txt")
                 if os.path.exists(logs_file):
                     os.rename(
-                        logs_file, os.path.join(OUTPUT_DIR + f"\\{pid}\\logs.txt")
+                        logs_file,
+                        os.path.join(OUTPUT_DIR, f"{pid}", "logs.txt"),
                     )
 
                 if done:
@@ -606,7 +624,7 @@ async def downloadPreview(pid: int, format: str):
             status_code=404,
         )
 
-    file_path = os.path.join(OUTPUT_DIR + f"\\{pid}\\transcription.{format}")
+    file_path = os.path.join(OUTPUT_DIR, pid, f"transcription.{format}")
 
     logger.info(f"Downloading file: {file_path}")
 
@@ -728,26 +746,26 @@ def generate_fake_transcription_files(pid):
     """
 
     # Generate the output folder
-    if not os.path.exists(OUTPUT_DIR + f"\\{pid}"):
-        os.makedirs(OUTPUT_DIR + f"\\{pid}")
+    if not os.path.exists(os.path.join(OUTPUT_DIR, str(pid))):
+        os.makedirs(os.path.join(OUTPUT_DIR, str(pid)))
 
     # Generate fake transcription files
-    with open(OUTPUT_DIR + f"\\{pid}\\transcription.txt", "w") as f:
+    with open(os.path.join(OUTPUT_DIR, str(pid), "transcription.txt"), "w") as f:
         f.write(
             "This is a fake transcription text. Self host Txtify to run the transcription process normally."
         )
 
-    with open(OUTPUT_DIR + f"\\{pid}\\transcription.srt", "w") as f:
+    with open(os.path.join(OUTPUT_DIR, str(pid), "transcription.srt"), "w") as f:
         f.write(
             "1\n00:00:00,000 --> 00:00:02,000\nThis is a fake transcription text. Self host Txtify to run the transcription process normally."
         )
 
-    with open(OUTPUT_DIR + f"\\{pid}\\transcription.vtt", "w") as f:
+    with open(os.path.join(OUTPUT_DIR, str(pid), "transcription.vtt"), "w") as f:
         f.write(
             "WEBVTT\n\n1\n00:00:00.000 --> 00:00:02.000\nThis is a fake transcription text. Self host Txtify to run the transcription process normally."
         )
 
-    with open(OUTPUT_DIR + f"\\{pid}\\transcription.sbv", "w") as f:
+    with open(os.path.join(OUTPUT_DIR, str(pid), "transcription.sbv"), "w") as f:
         f.write(
             "0:00:00.000,0:00:02.000\nThis is a fake transcription text. Self host Txtify to run the transcription process normally."
         )

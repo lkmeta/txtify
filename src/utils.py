@@ -28,7 +28,7 @@ transcription_status = {
     "pid": None,
 }
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..\output")
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "../output")
 
 DB = transcriptionsDB(os.path.join(OUTPUT_DIR, "transcriptions.db"))
 
@@ -146,8 +146,8 @@ def handle_transcription(
             raise Exception("Failed to start transcription process")
 
         # Move file to the output directory
-        if not os.path.exists(OUTPUT_DIR + f"\\{pid}"):
-            os.makedirs(OUTPUT_DIR + f"\\{pid}")
+        if not os.path.exists(os.path.join(OUTPUT_DIR, f"{pid}")):
+            os.makedirs(os.path.join(OUTPUT_DIR, f"{pid}"))
 
         return pid
 
