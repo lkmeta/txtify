@@ -11,7 +11,7 @@ __pycache__/
 # output/ 
 
 # Everything inside the output directory
-output/*
+# output/*
 
 # Environments
 .env
