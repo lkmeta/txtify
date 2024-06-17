@@ -182,3 +182,17 @@ class transcriptionsDB:
             """
         )
         return self.cursor.fetchone()[0]
+
+    def delete_transcription_by_pid(self, pid: int):
+        """
+        Delete a transcription record by PID
+        Args:
+            pid (int): The process ID
+        """
+        self.cursor.execute(
+            """
+            DELETE FROM transcriptions WHERE pid=?
+            """,
+            (pid,),
+        )
+        self.conn.commit()

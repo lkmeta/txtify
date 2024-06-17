@@ -1,6 +1,7 @@
 let transcriptionInterval;
 let currentPid = null;  // Global variable to store the PID
 
+
 const modelMapping = {
     whisper_tiny: 'Whisper Tiny',
     whisper_base: 'Whisper Base',
@@ -180,6 +181,7 @@ function transcribe() {
     xhr.onload = function () {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
+            console.log(response);
             currentPid = response.pid;  // Store the PID
             startStatusCheck(currentPid);
         } else {
@@ -192,10 +194,15 @@ function transcribe() {
 
 function startStatusCheck(pid) {
 
-    // Check if the PID is valid
+    // Check if the PID is valid or non Fake PID == 0
     if (!pid) {
-        showAlert('Error', 'Invalid Process. Please try again.');
-        return;
+        // if pid isn't equal to 0, then show the error message
+        // PID is 0 when the process is Fake
+        if (pid !== 0) {
+            showAlert('Error', 'Invalid Process. Please try again.');
+            document.getElementById('progressOverlay').style.display = 'none';
+            return;
+        }
     }
 
     transcriptionInterval = setInterval(() => {
@@ -204,7 +211,6 @@ function startStatusCheck(pid) {
         xhr.onload = function () {
             if (xhr.status === 200) {
                 const response = JSON.parse(xhr.responseText);
-                // console.log(response);
 
                 updateProgress(response.progress, response.phase, response.model, response.language, response.translation, response.time_taken);
                 if (response.progress >= 100) {
@@ -216,8 +222,10 @@ function startStatusCheck(pid) {
                     document.querySelector('.close-button').classList.remove('hidden');
                 }
             } else {
-                showAlert('Error', 'Failed to check the transcription status.');
-                // console.log(xhr.responseText);
+                if (pid !== 0) {
+                    showAlert('Error', 'Failed to check the transcription status.');
+                    // console.log(xhr.responseText);
+                }
             }
         };
         xhr.send();
@@ -244,7 +252,7 @@ function cancelTranscription() {
         if (xhr.status !== 200) {
             showAlert('Error', 'Failed to cancel the transcription.');
         } else {
-            showAlert('Success', 'Transcription has been cancelled.');
+            showAlert('Success', 'Transcription has been cancelled successfully.');
         }
     };
     xhr.send();
