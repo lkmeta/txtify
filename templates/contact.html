@@ -43,16 +43,17 @@
         </p>
         <form id="contact-form" action="/submit-contact" method="POST">
             <div class="input-group-contact">
-                <label for="name">Your name</label>
-                <input type="text" id="name" name="name" required>
+                <label for="name">Full Name</label>
+                <input type="text" id="name" name="name" placeholder="First & last name" required>
             </div>
             <div class="input-group-contact">
-                <label for="email">Your email</label>
-                <input type="email" id="email" name="email" required>
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="For example: john@company.com" required>
             </div>
             <div class="input-group-contact">
-                <label for="message">Your message</label>
-                <textarea id="message" name="message" rows="8" required></textarea>
+                <label for="message">How can we help you?</label>
+                <textarea id="message" name="message" placeholder="Describe your issue or question here..." rows="8"
+                    required></textarea>
             </div>
             <button type="submit" class="submit-button">Submit <i class="fa-solid fa-paper-plane"></i></button>
 

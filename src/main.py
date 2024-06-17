@@ -1,14 +1,3 @@
-# TODO
-
-# CHECK THE FOLLOWING ISSUES:
-# 1. missing last line from txt to srt conversion
-# 2. demo
-# 3. vercel deployment
-# 4. update the README.md
-# 5. last check texts, process, and links
-
-#######################################################################
-
 
 import os
 from fastapi import FastAPI, Request, Form, UploadFile, File
@@ -207,8 +196,7 @@ async def submit_contact(
                     {message}
                 </blockquote>
                 <div class="footer">
-                    &copy; 2024 Txt<span style="color: var(--primary-color);">ify</span>. Created with <i
-                        class="fa-solid fa-heart heart"></i> by <a href="https://lkmeta.me" target="_blank">lkmeta</a>.
+                    &copy; 2024 Txtify</span>. Created by <a href="https://lkmeta.me" target="_blank">lkmeta</a>.
                 </div>
             </div>
         </body>

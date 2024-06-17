@@ -112,7 +112,7 @@ def handle_transcription(
         logger.info(f"Transcription started for: {output_file}")
 
         # Start the transcription process as a separate subprocess within the conda environment
-        conda_env = "yousub"
+        conda_env = "txtify"
 
         process = subprocess.Popen(
             [
@@ -246,37 +246,25 @@ def convert_to_pdf(text, file_path):
     logger.info(f"Transcription saved to PDF: {file_path}")
 
 
+def convertMillisToTc(millis: float) -> str:
+    # Utility function to convert seconds to timeCode hh:mm:ss.mmm
+    millis = int(millis * 1000)
+    milliseconds = millis % 1000
+    seconds = (millis // 1000) % 60
+    minutes = (millis // (1000 * 60)) % 60
+    hours = (millis // (1000 * 60 * 60)) % 24
+    return f"{hours}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
+
+
+def makeStr(rawText: str, initialTimeCode: str, endTimeCode: str) -> str:
+    initialTimeCodeFormatted = convertMillisToTc(float(initialTimeCode))
+    endTimeCodeFormatted = convertMillisToTc(float(endTimeCode))
+    formattedText = f"{initialTimeCodeFormatted},{endTimeCodeFormatted}\n{rawText}\n\n"
+    return formattedText
+
+
 def convert_to_srt(text, file_path):
     current_section = 0
-
-    def convertMillisToTc(millis: int) -> str:
-        # Utility function to convert milliseconds to timeCode hh:mm:ss,mmm
-        milliseconds, seconds = divmod(millis, 1000)
-        minutes, seconds = divmod(seconds, 60)
-        hours, minutes = divmod(minutes, 60)
-        return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
-
-    def time_to_millis(time_str: str) -> int:
-        hours, minutes, seconds = 0, 0, 0
-        if "." in time_str:
-            seconds, millis = map(float, time_str.split("."))
-        else:
-            seconds, millis = float(time_str), 0
-        millis = int(millis * 1000)
-        total_millis = int((hours * 3600 + minutes * 60 + seconds) * 1000) + millis
-        return total_millis
-
-    def makeSubRipStr(rawText: str, initialTimeCode: str, endTimeCode: str) -> str:
-        nonlocal current_section
-        current_section += 1  # Increment the current section counter
-        initialTimeCodeInMillis = time_to_millis(initialTimeCode)
-        endTimeCodeInMillis = time_to_millis(endTimeCode)
-        finalTimeCode = convertMillisToTc(endTimeCodeInMillis)
-        initialTimeCode = convertMillisToTc(initialTimeCodeInMillis)
-        formattedText = (
-            f"{current_section}\n{initialTimeCode} --> {finalTimeCode}\n{rawText}\n\n"
-        )
-        return formattedText
 
     # Create the SRT file and write the formatted entries
     with open(file_path, mode="w", encoding="utf-8") as subFile:
@@ -287,7 +275,7 @@ def convert_to_srt(text, file_path):
                 if len(start_end_times) == 2:
                     start_time, end_time = start_end_times
                     raw_text = lines[i + 1].strip()
-                    subFile.write(makeSubRipStr(raw_text, start_time, end_time))
+                    subFile.write(makeStr(raw_text, start_time, end_time))
 
             else:
                 raw_text = lines[i].strip()
@@ -299,31 +287,6 @@ def convert_to_srt(text, file_path):
 
 
 def convert_to_vtt(text, file_path):
-    def convertMillisToTc(millis: int) -> str:
-        # Utility function to convert milliseconds to timeCode hh:mm:ss.mmm
-        milliseconds, seconds = divmod(millis, 1000)
-        minutes, seconds = divmod(seconds, 60)
-        hours, minutes = divmod(minutes, 60)
-        return f"{hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
-
-    def time_to_millis(time_str: str) -> int:
-        hours, minutes, seconds = 0, 0, 0
-        if "." in time_str:
-            seconds, millis = map(float, time_str.split("."))
-        else:
-            seconds, millis = float(time_str), 0
-        millis = int(millis * 1000)
-        total_millis = int((hours * 3600 + minutes * 60 + seconds) * 1000) + millis
-        return total_millis
-
-    def makeVttStr(rawText: str, initialTimeCode: str, endTimeCode: str) -> str:
-        initialTimeCodeInMillis = time_to_millis(initialTimeCode)
-        endTimeCodeInMillis = time_to_millis(endTimeCode)
-        finalTimeCode = convertMillisToTc(endTimeCodeInMillis)
-        initialTimeCode = convertMillisToTc(initialTimeCodeInMillis)
-        formattedText = f"{initialTimeCode} --> {finalTimeCode}\n{rawText}\n\n"
-        return formattedText
-
     # Create the VTT file and write the formatted entries
     with open(file_path, mode="w", encoding="utf-8") as vttFile:
         vttFile.write("WEBVTT\n\n")  # VTT files start with the WEBVTT header
@@ -334,7 +297,7 @@ def convert_to_vtt(text, file_path):
                 if len(start_end_times) == 2:
                     start_time, end_time = start_end_times
                     raw_text = lines[i + 1].strip()
-                    vttFile.write(makeVttStr(raw_text, start_time, end_time))
+                    vttFile.write(makeStr(raw_text, start_time, end_time))
             else:
                 raw_text = lines[i].strip()
                 vttFile.write(f"00:00:00.000 --> 00:00:10.000\n{raw_text}\n\n")
@@ -343,23 +306,6 @@ def convert_to_vtt(text, file_path):
 
 
 def convert_to_sbv(text, file_path):
-    def convertMillisToTc(millis: float) -> str:
-        # Utility function to convert seconds to SBV timeCode hh:mm:ss.mmm
-        millis = int(millis * 1000)
-        milliseconds = millis % 1000
-        seconds = (millis // 1000) % 60
-        minutes = (millis // (1000 * 60)) % 60
-        hours = (millis // (1000 * 60 * 60)) % 24
-        return f"{hours}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
-
-    def makeSbvStr(rawText: str, initialTimeCode: str, endTimeCode: str) -> str:
-        initialTimeCodeFormatted = convertMillisToTc(float(initialTimeCode))
-        endTimeCodeFormatted = convertMillisToTc(float(endTimeCode))
-        formattedText = (
-            f"{initialTimeCodeFormatted},{endTimeCodeFormatted}\n{rawText}\n\n"
-        )
-        return formattedText
-
     # Create the SBV file and write the formatted entries
     with open(file_path, mode="w", encoding="utf-8") as sbvFile:
         lines = text.strip().split("\n")
@@ -369,7 +315,7 @@ def convert_to_sbv(text, file_path):
                 if len(start_end_times) == 2:
                     start_time, end_time = start_end_times
                     raw_text = lines[i + 1].strip()
-                    sbvFile.write(makeSbvStr(raw_text, start_time, end_time))
+                    sbvFile.write(makeStr(raw_text, start_time, end_time))
             else:
                 raw_text = lines[i].strip()
                 sbvFile.write(f"00:00:00.000,00:00:10.000\n{raw_text}\n\n")
