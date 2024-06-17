@@ -35,7 +35,8 @@ DEFAULT_MODEL = "whisper_base"
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "../output")
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "output")
+OUTPUT_DIR = os.path.abspath(OUTPUT_DIR)
 
 DB = transcriptionsDB(os.path.join(OUTPUT_DIR, "transcriptions.db"))
 

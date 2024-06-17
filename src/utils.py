@@ -28,7 +28,8 @@ transcription_status = {
     "pid": None,
 }
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "../output")
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "output")
+OUTPUT_DIR = os.path.abspath(OUTPUT_DIR)
 
 DB = transcriptionsDB(os.path.join(OUTPUT_DIR, "transcriptions.db"))
 

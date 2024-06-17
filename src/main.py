@@ -72,11 +72,15 @@ DEFINED_REQUESTS = [
 ]
 
 # Define the routes
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "../output")
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "output")
+OUTPUT_DIR = os.path.abspath(OUTPUT_DIR)
+
 
 # Check if the output directory exists
+logger.info(f"Output directory: {OUTPUT_DIR}")
 if not os.path.exists(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR)
+
 
 # Initialize the database connection on the output directory
 DB = transcriptionsDB(os.path.join(OUTPUT_DIR, "transcriptions.db"))

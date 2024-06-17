@@ -7,8 +7,8 @@ __pycache__/
 # VS Code specific
 .vscode/
 
-# Output directories
-output/
+# Output directory
+# output/ 
 
 # Environments
 .env
