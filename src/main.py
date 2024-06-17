@@ -89,7 +89,7 @@ DB = transcriptionsDB(os.path.join(OUTPUT_DIR, "transcriptions.db"))
 # Load additional environment variables
 # Resend API key
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-if not RESEND_API_KEY:
+if not RESEND_API_KEY and not LOCAL_MODE:
     raise ValueError("RESEND_API_KEY is not set")
 
 resend.api_key = RESEND_API_KEY
