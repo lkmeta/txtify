@@ -1,6 +1,25 @@
-# Txtify
+<div align="center">
 
-Txtify is a web application that allows you to easily convert audio and video files to text using AI. You can provide a YouTube URL or upload your own files and use AI models like OpenAI Whisper and Facebook SeamlessM4T for fast and accurate transcriptions.
+<p align="center"> <img src="https://github.com/lkmeta/txtify/blob/main/static/Txtify.png" width="300px"></p>
+
+[![](https://img.shields.io/github/license/lkmeta/txtify?colorB=ff0000)](https://github.com/lkmeta/txtify/blob/main/LICENSE) 
+[![](https://img.shields.io/badge/Open_Source-brightgreen.svg?colorB=ff0000)](https://github.com/lkmeta/Txtify)
+
+</div>
+
+<div align="center">
+  <p>
+    <img src="https://img.shields.io/badge/ASR-Whisper-1f425f.svg" alt="Whisper">
+    <img src="https://img.shields.io/badge/ASR-SeamlessM4T-1f425f.svg" alt="SeamlessM4T">
+    <img src="https://img.shields.io/badge/Hugging_Face-1f425f.svg" alt="Hugging Face">
+    <img src="https://img.shields.io/badge/Translation-DeepL-1f425f.svg" alt="DeepL">
+    <img src="https://img.shields.io/badge/FastAPI-1f425f.svg" alt="FastAPI">
+    <img src="https://img.shields.io/badge/Python-1f425f.svg" alt="Python">
+  </p>
+</div>
+
+
+Txtify is a free and open-source web app for converting audio and video to text using advanced AI models. It supports YouTube videos and personal media files, offering fast and accurate transcriptions. Txtify can be self-hosted, giving you full control over your transcription process.
 
   
 ## Table of Contents
@@ -11,6 +30,8 @@ Txtify is a web application that allows you to easily convert audio and video fi
 - [Usage](#usage)
   - [Run FREE Online Limited Version](#run-free-online-limited-version)
   - [Self Host](#self-host)
+- [Roadmap](#roadmap)
+- [Report Issues](#report-issues)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -22,28 +43,28 @@ Txtify is designed to simplify the process of converting audio and video content
 
 Before you begin, ensure you have met the following requirements:
 
-- Python 3.x installed on your machine
-- Conda installed on your machine
-- An API key for DeepL if you want to enable translation
+- Python 3.11 installed on your machine
+- Conda installed on your machine (recommended to run on a conda environment)
+- An API key for DeepL if you want to enable translation (in case you need to use this tool for translation)
 
 ## Installation
 
-To install Txtify, follow these steps:
+To install Txtify locally, follow these steps:
 
 1. Clone the repository:
  ```sh
- git clone https://github.com/yourrepo/Txtify.git
- cd Txtify
+ git clone https://github.com/lkmeta/txtify.git
+ cd txtify
  ```
 
-Create a conda environment and activate it:
+2. Create a conda environment and activate it:
 
   ```sh
-  conda create --name Txtify python=3.9
-  conda activate Txtify
+  conda create --name txtify python=3.11
+  conda activate txtify
   ```
 
-Install the dependencies:
+3. Install the dependencies:
 
 ```sh
 pip install -r requirements.txt
@@ -61,12 +82,29 @@ To self-host Txtify with full features, follow these steps:
 
 1. Ensure you have completed the installation steps above.
 
-2. Start the server:
+2. Rename the .env.example file to .env and add your required DeepL API key for translation.
+
+3. Start the server:
 ```sh
-python app.py
+cd src/
+python -m uvicorn main:app --reload --port 5000  --host "0.0.0.0"
 ```
 
-3. Open your web browser and navigate to http://localhost:5000 and enjoy.
+4. Open your web browser and navigate to http://localhost:5000 and enjoy.
+
+## Roadmap
+
+- [x] Basic transcription functionality
+- [x] Support for multiple output formats
+- [x] Integration with DeepL for translations
+- [x] Improved UI/UX
+- [ ] Enhance performance and scalability
+- [ ] Web browser Whisper option
+
+
+## Report Issues
+
+If you encounter any issues or have suggestions, please use the contact form on the [Contact Page](https://your-contact-page-link) to let us know.
 
 
 ## Contributing
