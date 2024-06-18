@@ -83,12 +83,6 @@ if not RESEND_API_KEY:
 
 resend.api_key = RESEND_API_KEY
 
-# Resend Email Address for sending emails
-RESEND_EMAIL = os.getenv("RESEND_EMAIL")
-
-# Admin Email
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
-
 
 @app.get("/", response_class=HTMLResponse)
 async def read_form(request: Request):
@@ -235,8 +229,8 @@ async def submit_contact(
     try:
 
         params: resend.Emails.SendParams = {
-            "from": RESEND_EMAIL,
-            "to": [ADMIN_EMAIL],
+            "from": "Txtify <onboarding@resend.dev>",
+            "to": "louiskmeta@gmail.com",
             "subject": "Txtify Contact Form Submission",
             "html": html_content,
             "headers": {"X-Entity-Ref-ID": "123456789"},
@@ -503,7 +497,7 @@ async def downloadPreview(pid: int, format: str):
             status_code=404,
         )
 
-    file_path = os.path.join(OUTPUT_DIR, pid, f"transcription.{format}")
+    file_path = os.path.join(OUTPUT_DIR, f"{pid}", f"transcription.{format}")
 
     logger.info(f"Downloading file: {file_path}")
 
