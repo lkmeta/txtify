@@ -5,7 +5,7 @@
             "src": "src/main.py",
             "use": "@vercel/python",
             "config": {
-                "maxLambdaSize": "1024mb",
+                "maxLambdaSize": "4000mb",
                 "runtime": "python3.11"
             }
         }
