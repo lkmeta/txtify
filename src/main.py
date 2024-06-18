@@ -1,3 +1,16 @@
+"""
+    # MUST READ BEFORE RUNNING THE APPLICATION
+    # ----------------------------------------
+    Before running the application, make sure to set the following environment variables:
+    - DEEPL_API_KEY: The API key for the DeepL API (required for translation)
+    - RESEND_API_KEY: The API key for the Resend API (required for sending emails)
+        - I recommend you to remove the email sending feature. It's not necessary for the application to work.
+
+    You can set the environment variables in the .env file in the root directory of the project.
+    Check the .env.example file for the required format.
+
+"""
+
 import os
 from fastapi import FastAPI, Request, Form, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
@@ -10,6 +23,17 @@ import resend
 from dotenv import load_dotenv
 
 
+import sys, os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+
+# Ensure the correct absolute path for the static files and templates directories
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "static"))
+TEMPLATES_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "templates"))
+OUTPUT_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "output"))
+
+
 from db import transcriptionsDB
 from utils import (
     is_valid_youtube_url,
@@ -19,42 +43,13 @@ from utils import (
     cleanup_files,
 )
 
+
 app = FastAPI()
-
-app.mount("/static", StaticFiles(directory="../static", html=True), name="static")
-
-TEMPLATES_PATH = os.path.join(os.path.dirname(__file__), "../templates")
-templates = Jinja2Templates(directory=TEMPLATES_PATH)
-
+app.mount("/static", StaticFiles(directory=STATIC_DIR, html=True), name="static")
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 # Load the API keys
 load_dotenv()  # Load the environment variables: DEEPL_API_KEY
-
-"""
-    # MUST READ BEFORE RUNNING THE APPLICATION
-    # ----------------------------------------
-    Before running the application, make sure to set the following environment variables:
-    - DEEPL_API_KEY: The API key for the DeepL API (required for translation)
-    - LOCAL_MODE: Set to "true" to run the application in local mode
-
-
-    You can set the environment variables in the .env file in the root directory of the project.
-    Check the .env.example file for the required format.
-
-"""
-# Check if local mode is enabled
-# For local deployment, LOCAL_MODE=true and uncomment the line below
-# LOCAL_MODE = os.getenv("LOCAL_MODE") == "true"
-LOCAL_MODE = False
-if LOCAL_MODE:
-    logger.info(
-        "LOCAL_MODE is enabled. You are running in local mode and the transcription process will run normally."
-    )
-else:
-    logger.info(
-        "LOCAL_MODE is disabled. The transcription process will run in FAKE MODE."
-    )
-
 
 # Initialize the available requests for the application
 DEFINED_REQUESTS = [
@@ -71,25 +66,19 @@ DEFINED_REQUESTS = [
     "/submit_contact",
 ]
 
-# Define the routes
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "output")
-OUTPUT_DIR = os.path.abspath(OUTPUT_DIR)
-
 
 # Check if the output directory exists
 logger.info(f"Output directory: {OUTPUT_DIR}")
 if not os.path.exists(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR)
 
-
 # Initialize the database connection on the output directory
 DB = transcriptionsDB(os.path.join(OUTPUT_DIR, "transcriptions.db"))
-
 
 # Load additional environment variables
 # Resend API key
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-if not RESEND_API_KEY and not LOCAL_MODE:
+if not RESEND_API_KEY:
     raise ValueError("RESEND_API_KEY is not set")
 
 resend.api_key = RESEND_API_KEY
@@ -168,13 +157,6 @@ async def submit_contact(
     Returns:
         JSONResponse: The response containing the message
     """
-
-    # Check if LOCAL_MODE is disabled. If so, then the transcription process will is fake.
-    if not LOCAL_MODE:
-        return JSONResponse(
-            content={"message": "Contact form works only in deployment mode."},
-            status_code=200,
-        )
 
     # HTML content for the email
     html_content = f"""
@@ -283,7 +265,6 @@ async def transcribe(
     model: str = Form(...),
     translation: str = Form(...),
     language_translation: str = Form(...),
-    # file_export: str = Form(...),
 ):
     """
     Transcribe the audio from a YouTube video or media file
@@ -294,7 +275,6 @@ async def transcribe(
         model (str): The transcription model to use
         translation (str): The translation model to use
         language_translation (str): The language to translate the transcription to
-        # file_export (str): The file format to export the transcription
     Returns:
         JSONResponse: The response containing the message
     """
@@ -323,44 +303,6 @@ async def transcribe(
             return JSONResponse(
                 content={"message": "Invalid file type"}, status_code=400
             )
-
-    # Check if LOCAL_MODE is disabled and start a fake transcription process.
-    if not LOCAL_MODE:
-
-        logger.info("LOCAL_MODE is disabled. Starting a fake transcription process.")
-
-        # Search if there is a transcription with pid 0
-        pid = DB.get_transcription_by_pid(0)
-
-        if pid:
-            # Clear the database
-            DB.delete_transcription_by_pid(0)
-
-        # Add the transcription task to the database
-        DB.insert_transcription(
-            youtube_url,
-            media.filename if media else None,
-            language,
-            model,
-            translation,
-            language_translation,
-            file_export,
-            "Processing request...",
-            str(time.time()),
-            None,
-            0,
-            0,
-        )
-
-        pid, status = run_fake_transcription(
-            20
-        )  # Fake transcription process which will return a fake process ID and status (progress, phase)
-
-        logger.info(f"Faking transcription process: {pid}, {status}")
-
-        DB.update_transcription_status_by_pid(status[1], "", status[0], pid)
-
-        return {"message": "Fake transcription started successfully.", "pid": pid}
 
     # Add the transcription task to the database
     DB.insert_transcription(
@@ -405,65 +347,7 @@ async def status(pid: int = None):
 
     logger.info(f"Getting status for process ID: {pid}")
 
-    # Check if LOCAL_MODE is disabled. If so, then the transcription process will is fake.
-    if not LOCAL_MODE:
-        # Get the transcription status by process ID
-        status = DB.get_transcription_by_pid(pid)
-        if not status:
-            return JSONResponse(
-                content={"message": "Transcription not found"}, status_code=404
-            )
-
-        if status[11] < 100:
-            time_taken = "In Progress"
-
-            # If status[11] is less than 100, the transcription is still in progress
-            pid, new_status = run_fake_transcription(status[11])
-
-            # logger.info(f"status: Faking transcription process: {pid}, {new_status}")
-
-            # Update the transcription status in the database
-            DB.update_transcription_status_by_pid(new_status[1], "", new_status[0], pid)
-
-            status = DB.get_transcription_by_pid(pid)
-
-        else:
-            try:
-                # Calculate the time taken for the transcription process using the timestamps
-                time_taken = (
-                    str(round(float(status[10]) - float(status[9]), 2))
-                    if status[9]
-                    else "In Progress"
-                )
-
-                # Kill the transcription process when it's done
-                done = kill_process_by_pid(pid)
-
-                # Move logs to the output folder
-                logs_file = os.path.join(OUTPUT_DIR, f"{pid}_logs.txt")
-                if os.path.exists(logs_file):
-                    os.rename(
-                        logs_file,
-                        os.path.join(OUTPUT_DIR, f"{pid}", "logs.txt"),
-                    )
-
-                if done:
-                    logger.info(f"Transcription process {pid} is done!")
-
-            except ValueError:
-                time_taken = "Invalid data"
-
-        json_status = {
-            "progress": str(status[11]),
-            "phase": status[8],
-            "model": status[4],
-            "language": status[3],
-            "translation": status[5],
-            "time_taken": time_taken,
-        }
-
-        return json_status
-
+    # Check if PID is valid on the database by searching for progress
     if pid:
         status = DB.get_transcription_by_pid(pid)
         if not status:
@@ -531,15 +415,6 @@ async def cancel_transcription(pid: int = None):
         return JSONResponse(
             content={"message": "Transcription not found"}, status_code=404
         )
-
-    # Check if LOCAL_MODE is disabled. If so, then the transcription process will is fake.
-    if not LOCAL_MODE:
-        cleanup_files(pid)
-
-        # Update the transcription status in the database
-        DB.update_transcription_status_by_pid("Canceled", str(time.time()), 0, pid)
-
-        return {"message": "Transcription canceled successfully!"}
 
     # Kill the transcription process
     cancel = kill_process_by_pid(pid)
@@ -704,72 +579,3 @@ async def catch_all(request: Request):
         return templates.TemplateResponse("error.html", {"request": request})
 
     return templates.TemplateResponse("index.html", {"request": request})
-
-
-# Add fake transcription process
-def run_fake_transcription(progress):
-    """
-    Fake transcription process for demo purposes.
-    Args:
-        phase (int): The phase of the transcription process
-    Returns:
-        str: A fake process ID
-        phase: The next phase of the transcription process
-
-    """
-
-    STATUS_DICT = {
-        30: "Downloading audio locally...",
-        40: "Extracting audio...",
-        50: "Loading transcription model...",
-        60: "Transcribing...",
-        70: "Saving transcription...",
-        80: "Translating...",
-        90: "Exporting transcription...",
-        100: "Completed successfully!",
-    }
-
-    # Get the next phase and process ID and return them after a delay
-    p = progress + 10
-
-    if p < 100:
-        time.sleep(5)
-    else:
-        time.sleep(2)
-
-        generate_fake_transcription_files(0)
-
-    return 0, (p, STATUS_DICT[p])
-
-
-def generate_fake_transcription_files(pid):
-    """
-    Generate fake transcription files for fake transcription process.
-    Args:
-        pid (int): The process ID
-    """
-
-    # Generate the output folder
-    if not os.path.exists(os.path.join(OUTPUT_DIR, str(pid))):
-        os.makedirs(os.path.join(OUTPUT_DIR, str(pid)))
-
-    # Generate fake transcription files
-    with open(os.path.join(OUTPUT_DIR, str(pid), "transcription.txt"), "w") as f:
-        f.write(
-            "This is a fake transcription text. Self host Txtify to run the transcription process normally."
-        )
-
-    with open(os.path.join(OUTPUT_DIR, str(pid), "transcription.srt"), "w") as f:
-        f.write(
-            "1\n00:00:00,000 --> 00:00:02,000\nThis is a fake transcription text. Self host Txtify to run the transcription process normally."
-        )
-
-    with open(os.path.join(OUTPUT_DIR, str(pid), "transcription.vtt"), "w") as f:
-        f.write(
-            "WEBVTT\n\n1\n00:00:00.000 --> 00:00:02.000\nThis is a fake transcription text. Self host Txtify to run the transcription process normally."
-        )
-
-    with open(os.path.join(OUTPUT_DIR, str(pid), "transcription.sbv"), "w") as f:
-        f.write(
-            "0:00:00.000,0:00:02.000\nThis is a fake transcription text. Self host Txtify to run the transcription process normally."
-        )

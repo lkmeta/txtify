@@ -49,7 +49,6 @@
 
             <!-- add line spacing using dots -->
             <h3>____________________________________________________________</h3>
-            </h3>
 
             <h2>Models</h2>
             <h3>Which AI models are supported?</h3>
@@ -62,8 +61,73 @@
                 These models are sourced from <a href="https://huggingface.co/models" target="_blank"
                     style="color: var(--primary-color); font-weight: bold;">Hugging Face</a> repository.</p>
 
+            <span>____________________________________________________________</span>
+
+            <h3>What are the memory requirements and speed for the models?</h3>
+            <p style="text-align: center;">Below is a table summarizing the available Whisper models, their memory
+                requirements,
+                and their relative
+                inference speeds. The speed and memory requirements may vary based on the available hardware.</p>
+
+            <br>
+            <div class="table-container">
+                <table class="model-table">
+                    <thead>
+                        <tr>
+                            <th>Size</th>
+                            <th>Parameters</th>
+                            <!-- <th>English-only model</th> -->
+                            <th>Multilingual model</th>
+                            <th>Required VRAM</th>
+                            <th>Relative speed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>tiny</td>
+                            <td>39 M</td>
+                            <!-- <td>tiny.en</td> -->
+                            <td>tiny</td>
+                            <td>~1 GB</td>
+                            <td>~32x</td>
+                        </tr>
+                        <tr>
+                            <td>base</td>
+                            <td>74 M</td>
+                            <!-- <td>base.en</td> -->
+                            <td>base</td>
+                            <td>~1 GB</td>
+                            <td>~16x</td>
+                        </tr>
+                        <tr>
+                            <td>small</td>
+                            <td>244 M</td>
+                            <!-- <td>small.en</td> -->
+                            <td>small</td>
+                            <td>~2 GB</td>
+                            <td>~6x</td>
+                        </tr>
+                        <tr>
+                            <td>medium</td>
+                            <td>769 M</td>
+                            <!-- <td>medium.en</td> -->
+                            <td>medium</td>
+                            <td>~5 GB</td>
+                            <td>~2x</td>
+                        </tr>
+                        <tr>
+                            <td>large</td>
+                            <td>1550 M</td>
+                            <!-- <td>N/A</td> -->
+                            <td>large</td>
+                            <td>~10 GB</td>
+                            <td>~1x</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
             <h3>____________________________________________________________</h3>
-            </h3>
 
             <h2>Languages</h2>
             <h3>Which languages are supported for transcription?</h3>
@@ -77,38 +141,41 @@
                 Ukrainian, Urdu, Uzbek, Vietnamese, Yiddish, Yoruba, Chinese.</p>
             <!-- <p id="transcription-languages-list"></p> -->
 
-            <h3>____________________________________________________________</h3>
-            </h3>
+            <span>____________________________________________________________</span>
 
             <h3>Which languages are supported for translation?</h3>
             <p>Translations are supported in the following
                 languages using <a href="https://www.deepl.com/en/translator" target="_blank"
-                    style="color: var(--primary-color); font-weight: bold;">DeepL</a>: Arabic, Bulgarian, Czech, Danish,
+                    style="color: var(--primary-color); font-weight: bold;">DeepL</a>: Arabic, Bulgarian, Czech,
+                Danish,
                 German, Greek, English, English (British), English (American), Spanish, Estonian, Finnish, French,
-                Hungarian, Indonesian, Italian, Japanese, Korean, Lithuanian, Latvian, Norwegian Bokmål, Dutch, Polish,
+                Hungarian, Indonesian, Italian, Japanese, Korean, Lithuanian, Latvian, Norwegian Bokmål, Dutch,
+                Polish,
                 Portuguese, Portuguese (Brazilian), Portuguese (excluding Brazilian Portuguese), Romanian, Russian,
                 Slovak, Slovenian, Swedish, Turkish, Ukrainian, Chinese (simplified).</p>
             <!-- <p id="translation-languages-list" class="language-list"></p> -->
 
             <h3>____________________________________________________________</h3>
-            </h3>
 
             <h2>Limitations</h2>
             <h3>Are there any limitations?</h3>
-            <p>Yes, the free version has limitations. You can upload files up to
-                100MB or transcribe YouTube videos up to 10 minutes.</p>
+            <p>Yes, the free version has limitations. You can upload files up to 100MB or transcribe YouTube videos up
+                to 10 minutes. However, when you self-host Txtify, you can modify and run the application without these
+                limitations, giving you full control over the transcription process.</p>
+
 
             <h3>____________________________________________________________</h3>
-            </h3>
+
 
             <h2>File and Process Deletion</h2>
             <h3>What happens to my files and processes after I close the window?</h3>
             <p>After the window is closed,
-                all generated files and the transcription process are automatically deleted to ensure your data privacy
+                all generated files and the transcription process are automatically deleted to ensure your data
+                privacy
                 and security.</p>
 
             <h3>____________________________________________________________</h3>
-            </h3>
+
 
             <h2>Self-Hosting</h2>
             <h3>Can I self-host Txtify?</h3>
@@ -118,7 +185,7 @@
                 instructions.</p>
 
             <h3>____________________________________________________________</h3>
-            </h3>
+
 
             <h2>Demo Video</h2>
             <h3>Is there a demo video showcasing the features of Txtify?</h3>
@@ -135,7 +202,7 @@
                 aria-label="Star lkmeta/txtify on GitHub">Star</a>
  -->
             <h3>____________________________________________________________</h3>
-            </h3>
+
 
             <h2>Contribute</h2>
             <h3>Want to contribute to Txtify?</h3>
@@ -144,7 +211,7 @@
                     style="color: var(--primary-color); font-weight: bold;">GitHub repository</a>.</p>
 
             <h3>____________________________________________________________</h3>
-            </h3>
+
 
             <h2>Report Errors</h2>
             <h3>Found any issues or bugs?</h3>
@@ -153,7 +220,7 @@
                 feedback and will work to resolve any problems as quickly as possible.</p>
 
             <h3>____________________________________________________________</h3>
-            </h3>
+
 
             <h2>Contact</h2>
 

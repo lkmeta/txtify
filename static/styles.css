@@ -775,6 +775,32 @@ body.light-theme .submit-button:hover {
     transform: scale(1.05);
 }
 
+.table-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.model-table {
+    width: 80%;
+    max-width: 800px;
+    border-collapse: collapse;
+    margin: 0 auto;
+}
+
+.model-table th,
+.model-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+.model-table th {
+    background-color: var(--primary-color);
+    color: white;
+}
+
 
 @media (max-width: 768px) {
     .navbar .nav-links {

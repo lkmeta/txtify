@@ -194,15 +194,11 @@ function transcribe() {
 
 function startStatusCheck(pid) {
 
-    // Check if the PID is valid or non Fake PID == 0
+    // Check if the PID is valid
     if (!pid) {
-        // if pid isn't equal to 0, then show the error message
-        // PID is 0 when the process is Fake
-        if (pid !== 0) {
-            showAlert('Error', 'Invalid Process. Please try again.');
-            document.getElementById('progressOverlay').style.display = 'none';
-            return;
-        }
+        showAlert('Error', 'Invalid Process. Please try again.');
+        // document.getElementById('progressOverlay').style.display = 'none';
+        return;
     }
 
     transcriptionInterval = setInterval(() => {
@@ -222,10 +218,8 @@ function startStatusCheck(pid) {
                     document.querySelector('.close-button').classList.remove('hidden');
                 }
             } else {
-                if (pid !== 0) {
-                    showAlert('Error', 'Failed to check the transcription status.');
-                    // console.log(xhr.responseText);
-                }
+                showAlert('Error', 'Failed to check the transcription status.');
+
             }
         };
         xhr.send();
