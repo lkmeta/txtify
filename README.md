@@ -11,10 +11,11 @@
   <p>
     <img src="https://img.shields.io/badge/ASR-Whisper-1f425f.svg" alt="Whisper">
     <img src="https://img.shields.io/badge/ASR-SeamlessM4T-1f425f.svg" alt="SeamlessM4T">
-    <img src="https://img.shields.io/badge/Hugging_Face-1f425f.svg" alt="Hugging Face">
+    <img src="https://img.shields.io/badge/%F0%9F%A4%97-Models-yellow" alt="Hugging Face">
     <img src="https://img.shields.io/badge/Translation-DeepL-1f425f.svg" alt="DeepL">
     <img src="https://img.shields.io/badge/FastAPI-1f425f.svg" alt="FastAPI">
-    <img src="https://img.shields.io/badge/Python-1f425f.svg" alt="Python">
+    <img src="https://img.shields.io/badge/Python_3.11-1f425f.svg" alt="Python">
+
   </p>
 </div>
 
