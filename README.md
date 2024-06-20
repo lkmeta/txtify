@@ -25,10 +25,11 @@ Txtify is a free and open-source web app for converting audio and video to text 
 ## Table of Contents
 
 - [About](#about)
+- [Demo](#demo)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
-  - [Run FREE Online Limited Version](#run-free-online-limited-version)
+  - [Run Online Simulation Demo](#run-online-simulation-demo)
   - [Self Host](#self-host)
 - [Roadmap](#roadmap)
 - [Report Issues](#report-issues)
@@ -38,6 +39,17 @@ Txtify is a free and open-source web app for converting audio and video to text 
 ## About
 
 Txtify is designed to simplify the process of converting audio and video content into text. Whether you're looking to transcribe a YouTube video or your own audio/video files, Txtify offers an easy-to-use interface and powerful AI models to ensure accuracy and speed. The application supports multiple output formats including .txt, .pdf, .srt, .vtt, and .sbv.
+
+## Demo
+
+
+<div align="center">
+
+[![Txtify Demo | Convert Audio and Video to Text using AI](https://markdown-videos-api.jorgenkh.no/url?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3Dwha6_4zyXXo)](https://www.youtube.com/watch?v=wha6_4zyXXo)
+
+Check out the demo video to see Txtify in action.
+
+</div>
 
 ## Prerequisites
 
@@ -72,9 +84,8 @@ pip install -r requirements.txt
 
 ## Usage
 
-### Run FREE Online Limited Version
-
-You can use the limited online version of Txtify to get started quickly. Visit [Txtify Online](https://your-online-version-link) and follow the instructions to upload your media or enter a YouTube URL for transcription.
+### Run Online Simulation Demo
+You can use the online simulation demo of Txtify to understand how it works. Visit [Txtify Website](https://txtify-web.vercel.app/) and follow the instructions to upload your media or enter a YouTube URL for a simulated transcription process.
 
 ### Self Host
 
@@ -104,11 +115,11 @@ python -m uvicorn main:app --reload --port 5000  --host "0.0.0.0"
 
 ## Report Issues
 
-If you encounter any issues or have suggestions, please use the contact form on the [Contact Page](https://your-contact-page-link) to let us know.
+If you encounter any issues or have suggestions, please use the contact form on the [Contact Page](https://txtify-web.vercel.app/contact) to let us know.
 
 
 ## Contributing
 Feel free to contribute by opening issues, suggesting improvements, or submitting pull requests. Your feedback is highly appreciated!
 
 ## License
-This project is licensed under [Apache License 2.0](https://github.com/lkmeta/Txtify/blob/main/LICENSE).
+This project is licensed under [Apache 2.0](https://github.com/lkmeta/Txtify/blob/main/LICENSE).
