@@ -801,6 +801,13 @@ body.light-theme .submit-button:hover {
     color: white;
 }
 
+.custom-line {
+    border: none;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--primary-color), transparent);
+    margin: 20px 0;
+}
+
 
 @media (max-width: 768px) {
     .navbar .nav-links {
