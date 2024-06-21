@@ -46,8 +46,7 @@ Txtify is designed to simplify the process of converting audio and video content
 
 <div align="center">
 
-[![Txtify Demo | Convert Audio and Video to Text using AI](https://markdown-videos-api.jorgenkh.no/url?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3Dwha6_4zyXXo)](https://www.youtube.com/watch?v=wha6_4zyXXo)
-
+[![Txtify Demo Video](https://github.com/lkmeta/txtify/blob/main/static/Txtify_demo.png)](https://www.youtube.com/watch?v=wha6_4zyXXo)  
 Check out the demo video to see Txtify in action.
 
 </div>
