@@ -2,6 +2,10 @@
 
 <p align="center"> <img src="https://github.com/lkmeta/txtify/blob/main/static/Txtify.png" width="300px"></p>
 
+<p><a href="https://txtify-web.vercel.app/">Demo Website</a> | <a href="https://www.youtube.com/watch?v=wha6_4zyXXo">Demo Video</a></p>
+
+<hr class="custom-line">
+
 [![](https://img.shields.io/github/license/lkmeta/txtify?colorB=ff0000)](https://github.com/lkmeta/txtify/blob/main/LICENSE) 
 [![](https://img.shields.io/badge/Open_Source-brightgreen.svg?colorB=ff0000)](https://github.com/lkmeta/Txtify)
 
