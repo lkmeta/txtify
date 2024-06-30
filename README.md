@@ -18,7 +18,7 @@
     <img src="https://img.shields.io/badge/%F0%9F%A4%97-Models-yellow" alt="Hugging Face">
     <img src="https://img.shields.io/badge/Translation-DeepL-1f425f.svg" alt="DeepL">
     <img src="https://img.shields.io/badge/FastAPI-1f425f.svg" alt="FastAPI">
-    <img src="https://img.shields.io/badge/Python_3.11-1f425f.svg" alt="Python">
+    <img src="https://img.shields.io/badge/Python_3.10-1f425f.svg" alt="Python">
 
   </p>
 </div>
@@ -59,7 +59,7 @@ Check out the demo video to see Txtify in action.
 
 Before you begin, ensure you have met the following requirements:
 
-- Python 3.11 installed on your machine
+- Python 3.10 installed on your machine
 - Conda installed on your machine (recommended to run on a conda environment)
 - An API key for DeepL if you want to enable translation (in case you need to use this tool for translation)
 
@@ -76,14 +76,14 @@ To install Txtify locally, follow these steps:
 2. Create a conda environment and activate it:
 
   ```sh
-  conda create --name txtify python=3.11
+  conda create --name txtify python=3.10
   conda activate txtify
   ```
 
 3. Install the dependencies:
 
 ```sh
-pip install -r requirements.txt
+pip install -r requirements_linux.txt
 ```
 
 ## Usage
