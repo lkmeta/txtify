@@ -7,7 +7,7 @@ pydub==0.25.1
 python-dotenv==1.0.1
 resend==2.1.0
 srt==3.5.3
-torch==1.11.0
+torch==2.2.0
 transformers==4.37.2
 webvtt_py==0.5.1
 yt_dlp==2024.5.27

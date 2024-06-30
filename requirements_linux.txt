@@ -65,7 +65,7 @@ srt==3.5.3
 starlette==0.37.2
 sympy==1.12.1
 tokenizers==0.15.2
-torch==1.11.0
+torch==2.2.0
 tqdm==4.66.4
 transformers==4.37.2
 triton==2.2.0
