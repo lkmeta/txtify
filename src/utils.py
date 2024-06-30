@@ -12,7 +12,7 @@ from db import transcriptionsDB
 import psutil
 from datetime import timedelta
 import shutil
-
+from pathlib import Path
 
 # Global dictionary to store transcription status
 transcription_status = {
@@ -28,10 +28,13 @@ transcription_status = {
     "pid": None,
 }
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "output")
-OUTPUT_DIR = os.path.abspath(OUTPUT_DIR)
+BASE_DIR = Path(__file__).resolve().parent
+OUTPUT_DIR = BASE_DIR.parent / "output"
 
-DB = transcriptionsDB(os.path.join(OUTPUT_DIR, "transcriptions.db"))
+# Ensure the output directory exists
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+DB = transcriptionsDB(OUTPUT_DIR / "transcriptions.db")
 
 MAX_VIDEO_DURATION = 10 * 60  # 10 minutes in seconds TODO: Upgrade when needed
 MAX_UPLOAD_SIZE_MB = 100  # 100 MB TODO: Upgrade when needed
@@ -84,7 +87,7 @@ def handle_transcription(
 
                 info_dict["title"] = sanitized_title
 
-            ydl_opts["outtmpl"] = os.path.join(OUTPUT_DIR, sanitized_title + ".%(ext)s")
+            ydl_opts["outtmpl"] = str(OUTPUT_DIR / f"{sanitized_title}.%(ext)s")
 
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([youtube_url])
@@ -104,7 +107,7 @@ def handle_transcription(
                 )
 
             media_filename = clean_filename(media.filename)
-            media_file_path = os.path.join(OUTPUT_DIR, media_filename)
+            media_file_path = OUTPUT_DIR / media_filename
             with open(media_file_path, "wb") as buffer:
                 buffer.write(media.file.read())
             output_file = media_file_path
@@ -123,7 +126,7 @@ def handle_transcription(
                 conda_env,
                 "python",
                 "transcribe_process.py",
-                output_file,
+                str(output_file),
                 language,
                 model,
                 translation,
@@ -147,8 +150,8 @@ def handle_transcription(
             raise Exception("Failed to start transcription process")
 
         # Move file to the output directory
-        if not os.path.exists(os.path.join(OUTPUT_DIR, f"{pid}")):
-            os.makedirs(os.path.join(OUTPUT_DIR, f"{pid}"))
+        pid_output_dir = OUTPUT_DIR / f"{pid}"
+        pid_output_dir.mkdir(parents=True, exist_ok=True)
 
         return pid
 
@@ -160,14 +163,14 @@ def handle_transcription(
         return None
 
 
-def convert_to_mp3(file_path: str) -> str:
-    file_extension = file_path.split(".")[-1].lower()
+def convert_to_mp3(file_path: Path) -> Path:
+    file_extension = file_path.suffix.lower()
 
-    if file_extension != "mp3":
+    if file_extension != ".mp3":
         audio = AudioSegment.from_file(file_path)
-        mp3_file_path = file_path.rsplit(".", 1)[0] + ".mp3"
+        mp3_file_path = file_path.with_suffix(".mp3")
         audio.export(mp3_file_path, format="mp3")
-        os.remove(file_path)
+        file_path.unlink()
 
         logger.info(f"File converted to MP3: {mp3_file_path}")
 
@@ -208,20 +211,20 @@ def convert_to_formats(transcription_text, base_file_path, export_format):
     """
     Convert the transcription text to various formats such as PDF, SRT, VTT, etc.
     """
+    base_file_path = Path(base_file_path)
     if export_format == "pdf":
-        convert_to_pdf(transcription_text, base_file_path + ".pdf")
+        convert_to_pdf(transcription_text, base_file_path.with_suffix(".pdf"))
     elif export_format == "srt":
-        convert_to_srt(transcription_text, base_file_path + ".srt")
+        convert_to_srt(transcription_text, base_file_path.with_suffix(".srt"))
     elif export_format == "vtt":
-        convert_to_vtt(transcription_text, base_file_path + ".vtt")
+        convert_to_vtt(transcription_text, base_file_path.with_suffix(".vtt"))
     elif export_format == "sbv":
-        convert_to_sbv(transcription_text, base_file_path + ".sbv")
+        convert_to_sbv(transcription_text, base_file_path.with_suffix(".sbv"))
     elif export_format == "all":
-        base_file_path = base_file_path.rsplit(".", 1)[0]
-        convert_to_pdf(transcription_text, base_file_path + ".pdf")
-        convert_to_srt(transcription_text, base_file_path + ".srt")
-        convert_to_vtt(transcription_text, base_file_path + ".vtt")
-        convert_to_sbv(transcription_text, base_file_path + ".sbv")
+        convert_to_pdf(transcription_text, base_file_path.with_suffix(".pdf"))
+        convert_to_srt(transcription_text, base_file_path.with_suffix(".srt"))
+        convert_to_vtt(transcription_text, base_file_path.with_suffix(".vtt"))
+        convert_to_sbv(transcription_text, base_file_path.with_suffix(".sbv"))
 
 
 def convert_to_pdf(text, file_path):
@@ -243,7 +246,7 @@ def convert_to_pdf(text, file_path):
             logger.error(f"Error writing line to PDF: {str(e)}")
             continue
 
-    pdf.output(file_path)
+    pdf.output(str(file_path))
     logger.info(f"Transcription saved to PDF: {file_path}")
 
 
@@ -329,14 +332,14 @@ def cleanup_files(pid: int):
     Cleanup the files generated during the transcription process.
     """
 
-    pid_directory = os.path.join(OUTPUT_DIR, str(pid))
-    if os.path.exists(pid_directory):
+    pid_directory = OUTPUT_DIR / str(pid)
+    if pid_directory.exists():
         shutil.rmtree(pid_directory)
 
         # Clean mp3 or zip files in the output directory
-        for file in os.listdir(OUTPUT_DIR):
-            if file.endswith(".mp3") or file.endswith(".zip"):
-                os.remove(os.path.join(OUTPUT_DIR, file))
+        for file in OUTPUT_DIR.iterdir():
+            if file.suffix in [".mp3", ".zip"]:
+                file.unlink()
 
         logger.info(f"Files cleaned up for PID: {pid}")
     else:

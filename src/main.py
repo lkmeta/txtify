@@ -21,18 +21,20 @@ import time
 import zipfile
 import resend
 from dotenv import load_dotenv
+from pathlib import Path
 
+# Load the API keys
+load_dotenv()  # Load the environment variables: DEEPL_API_KEY
 
-import sys, os
+# Define base directories using pathlib
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR.parent / "static"
+TEMPLATES_DIR = BASE_DIR.parent / "templates"
+OUTPUT_DIR = BASE_DIR.parent / "output"
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-
-# Ensure the correct absolute path for the static files and templates directories
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-STATIC_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "static"))
-TEMPLATES_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "templates"))
-OUTPUT_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "output"))
-
+# Ensure the directories exist
+for directory in [STATIC_DIR, TEMPLATES_DIR, OUTPUT_DIR]:
+    directory.mkdir(parents=True, exist_ok=True)
 
 from db import transcriptionsDB
 from utils import (
@@ -43,13 +45,9 @@ from utils import (
     cleanup_files,
 )
 
-
 app = FastAPI()
-app.mount("/static", StaticFiles(directory=STATIC_DIR, html=True), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
-
-# Load the API keys
-load_dotenv()  # Load the environment variables: DEEPL_API_KEY
 
 # Initialize the available requests for the application
 DEFINED_REQUESTS = [
@@ -66,14 +64,8 @@ DEFINED_REQUESTS = [
     "/submit_contact",
 ]
 
-
-# Check if the output directory exists
-logger.info(f"Output directory: {OUTPUT_DIR}")
-if not os.path.exists(OUTPUT_DIR):
-    os.makedirs(OUTPUT_DIR)
-
 # Initialize the database connection on the output directory
-DB = transcriptionsDB(os.path.join(OUTPUT_DIR, "transcriptions.db"))
+DB = transcriptionsDB(OUTPUT_DIR / "transcriptions.db")
 
 # Load additional environment variables
 # Resend API key
@@ -93,14 +85,10 @@ async def read_form(request: Request):
     Returns:
         HTMLResponse: The response containing the form
     """
-
     if request.url.path not in DEFINED_REQUESTS:
         return templates.TemplateResponse("error.html", {"request": request})
 
-    context = {
-        "request": request,
-    }
-
+    context = {"request": request}
     return templates.TemplateResponse("index.html", context)
 
 
@@ -113,10 +101,7 @@ async def faq(request: Request):
     Returns:
         HTMLResponse: The response containing the FAQ page
     """
-    context = {
-        "request": request,
-    }
-
+    context = {"request": request}
     return templates.TemplateResponse("faq.html", context)
 
 
@@ -129,10 +114,7 @@ async def contact(request: Request):
     Returns:
         HTMLResponse: The response containing the contact page
     """
-    context = {
-        "request": request,
-    }
-
+    context = {"request": request}
     return templates.TemplateResponse("contact.html", context)
 
 
@@ -151,12 +133,9 @@ async def submit_contact(
     Returns:
         JSONResponse: The response containing the message
     """
-
-    # HTML content for the email
     html_content = f"""
         <!DOCTYPE html>
         <html lang="en">
-
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -205,7 +184,6 @@ async def submit_contact(
                 }}
             </style>
         </head>
-
         <body>
             <div class="container">
                 <h2>New Message Received from Txtify</h2>
@@ -222,24 +200,20 @@ async def submit_contact(
                 </div>
             </div>
         </body>
-
         </html>
         """
 
     try:
+        params = resend.Emails.SendParams(
+            from_="Txtify <onboarding@resend.dev>",
+            to=["louiskmeta@gmail.com"],
+            subject="Txtify Contact Form Submission",
+            html=html_content,
+            headers={"X-Entity-Ref-ID": "123456789"},
+        )
 
-        params: resend.Emails.SendParams = {
-            "from": "Txtify <onboarding@resend.dev>",
-            "to": "louiskmeta@gmail.com",
-            "subject": "Txtify Contact Form Submission",
-            "html": html_content,
-            "headers": {"X-Entity-Ref-ID": "123456789"},
-        }
-
-        email: resend.Email = resend.Emails.send(params)
-
-        logger.info(f"Email sent successfully!")
-
+        email = resend.Emails.send(params)
+        logger.info("Email sent successfully!")
         return JSONResponse(
             content={"message": "Your message has been sent successfully!"},
             status_code=200,
@@ -272,18 +246,7 @@ async def transcribe(
     Returns:
         JSONResponse: The response containing the message
     """
-
     file_export = "all"
-
-    # Print the form data using logger
-    # logger.info("Received transcription request")
-    # logger.info(f"youtube_url: {youtube_url}")
-    # logger.info(f"media: {media}")
-    # logger.info(f"language: {language}")
-    # logger.info(f"model: {model}")
-    # logger.info(f"translation: {translation}")
-    # logger.info(f"language_translation: {language_translation}")
-    # logger.info(f"file_export: {file_export}")
 
     # Validate the YouTube URL or media file
     if youtube_url:
@@ -338,7 +301,6 @@ async def status(pid: int = None):
     Returns:
         JSONResponse: The response containing the transcription status
     """
-
     logger.info(f"Getting status for process ID: {pid}")
 
     # Check if PID is valid on the database by searching for progress
@@ -355,7 +317,6 @@ async def status(pid: int = None):
             time_taken = "In Progress"
         else:
             try:
-
                 # Calculate the time taken for the transcription process using the timestamps
                 time_taken = (
                     str(round(float(status[10]) - float(status[9]), 2))
@@ -367,16 +328,12 @@ async def status(pid: int = None):
                 done = kill_process_by_pid(pid)
 
                 # Move logs to the output folder
-                logs_file = os.path.join(OUTPUT_DIR, f"{pid}_logs.txt")
-                if os.path.exists(logs_file):
-                    os.rename(
-                        logs_file,
-                        os.path.join(OUTPUT_DIR, f"{pid}", "logs.txt"),
-                    )
+                logs_file = OUTPUT_DIR / f"{pid}_logs.txt"
+                if logs_file.exists():
+                    logs_file.rename(OUTPUT_DIR / f"{pid}" / "logs.txt")
 
                 if done:
                     logger.info(f"Transcription process {pid} is done!")
-
             except ValueError:
                 time_taken = "Invalid data"
 
@@ -390,7 +347,6 @@ async def status(pid: int = None):
         }
 
         return json_status
-
     else:
         return {"message": "Process ID is required."}
 
@@ -402,7 +358,6 @@ async def cancel_transcription(pid: int = None):
     Returns:
         JSONResponse: The response containing the message
     """
-
     # Get the transcription status by process ID
     status = DB.get_transcription_by_pid(pid)
     if not status:
@@ -434,7 +389,6 @@ async def download(pid: int = None):
     Returns:
         FileResponse: The response containing the file to download
     """
-
     # Check if PID is valid on the database by searching for progress
     pid_progress = DB.get_transcription_by_pid(pid)[11]
 
@@ -445,10 +399,10 @@ async def download(pid: int = None):
         )
 
     # Folder containing the transcriptions
-    folder_path = os.path.join(OUTPUT_DIR, str(pid))
-    zip_path = os.path.join(OUTPUT_DIR, f"{pid}.zip")
+    folder_path = OUTPUT_DIR / str(pid)
+    zip_path = OUTPUT_DIR / f"{pid}.zip"
 
-    if not os.path.exists(folder_path):
+    if not folder_path.exists():
         return JSONResponse(
             content={"message": "Transcription folder not found"}, status_code=404
         )
@@ -457,14 +411,14 @@ async def download(pid: int = None):
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
         for root, dirs, files in os.walk(folder_path):
             for file in files:
-                file_path = os.path.join(root, file)
-                arcname = os.path.relpath(file_path, start=folder_path)
+                file_path = Path(root) / file
+                arcname = file_path.relative_to(folder_path)
                 zipf.write(file_path, arcname)
 
     logger.info(f"Downloading zip file: {zip_path}")
 
-    if os.path.exists(zip_path):
-        return FileResponse(path=zip_path, filename=os.path.basename(zip_path))
+    if zip_path.exists():
+        return FileResponse(path=zip_path, filename=zip_path.name)
 
     return JSONResponse(content={"message": "Zip file not found"}, status_code=404)
 
@@ -479,7 +433,6 @@ async def downloadPreview(pid: int, format: str):
     Returns:
         FileResponse: The response containing the file to download
     """
-
     # Check if the file format is valid
     if format == "Text":
         format = format.lower()
@@ -497,12 +450,12 @@ async def downloadPreview(pid: int, format: str):
             status_code=404,
         )
 
-    file_path = os.path.join(OUTPUT_DIR, f"{pid}", f"transcription.{format}")
+    file_path = OUTPUT_DIR / str(pid) / f"transcription.{format}"
 
     logger.info(f"Downloading file: {file_path}")
 
-    if file_path and os.path.exists(file_path):
-        return FileResponse(path=file_path, filename=os.path.basename(file_path))
+    if file_path.exists():
+        return FileResponse(path=file_path, filename=file_path.name)
     return JSONResponse(content={"message": "File not found"}, status_code=404)
 
 
@@ -515,13 +468,12 @@ async def preview(pid: int):
     Returns:
         JSONResponse: The response containing the preview content
     """
+    files_dir = OUTPUT_DIR / str(pid)
 
-    FILES_DIR = os.path.join(OUTPUT_DIR, str(pid))
-
-    txt_path = f"{FILES_DIR}/transcription.txt"
-    srt_path = f"{FILES_DIR}/transcription.srt"
-    vtt_path = f"{FILES_DIR}/transcription.vtt"
-    sbv_path = f"{FILES_DIR}/transcription.sbv"
+    txt_path = files_dir / "transcription.txt"
+    srt_path = files_dir / "transcription.srt"
+    vtt_path = files_dir / "transcription.vtt"
+    sbv_path = files_dir / "transcription.sbv"
 
     try:
         with open(txt_path, "r", encoding="utf-8") as txt_file:
@@ -568,7 +520,6 @@ async def catch_all(request: Request):
     Returns:
         HTMLResponse: The response containing the error message
     """
-
     if request.url.path not in DEFINED_REQUESTS:
         return templates.TemplateResponse("error.html", {"request": request})
 

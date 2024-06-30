@@ -1,4 +1,3 @@
-import os
 import torch
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 from loguru import logger
@@ -9,10 +8,11 @@ from deepl_languages import (
     TARGET_LANGUAGES,
 )  # TODO: change this to the correct path from JSON file /static/supported_languages_TR.json
 
-
 from dotenv import load_dotenv
 from db import transcriptionsDB
 import time
+import os
+
 
 # Load the API keys
 load_dotenv()  # Load the environment variables: DEEPL_API_KEY
@@ -35,10 +35,13 @@ DEFAULT_MODEL = "whisper_base"
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "output")
-OUTPUT_DIR = os.path.abspath(OUTPUT_DIR)
+BASE_DIR = Path(__file__).resolve().parent
+OUTPUT_DIR = BASE_DIR.parent / "output"
 
-DB = transcriptionsDB(os.path.join(OUTPUT_DIR, "transcriptions.db"))
+# Ensure the output directory exists
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+DB = transcriptionsDB(OUTPUT_DIR / "transcriptions.db")
 
 
 def transcribe_audio(
@@ -57,19 +60,16 @@ def transcribe_audio(
         model (str): The transcription model to use
         translation (str): The translation model to use
         language_translation (str): The language to translate the transcription to
-        file_export (str): The file format to export the transcription
     """
-
     logger.info(
         f"Transcribing audio using model: {model}, language: {language}, translation: {translation}, language_translation: {language_translation}"
     )
 
     # If file path is empty, return
     if not file_path:
-        # update_transcription_status({"phase": "Error", "progress": 0})
         logger.error("No file path provided. Progress: 0%")
         DB.update_transcription_status_by_pid(
-            "Error:No file path provided.", "", 0, pid
+            "Error: No file path provided.", "", 0, pid
         )
         return
 
@@ -77,15 +77,13 @@ def transcribe_audio(
 
     # Check if the model is valid
     if not stt_model:
-        # update_transcription_status({"phase": "Error", "progress": 0})
         logger.error(f"Invalid model: {model}. Progress: 0%")
-        DB.update_transcription_status_by_pid("Error:Invalid model.", "", 0, pid)
+        DB.update_transcription_status_by_pid("Error: Invalid model.", "", 0, pid)
         return
 
     try:
-
         logger.info(
-            f"Transcribing audio phase: Loading model and processor... . Progress: 30%"
+            "Transcribing audio phase: Loading model and processor... Progress: 30%"
         )
         DB.update_transcription_status_by_pid(
             "Loading transcription model...", "", 30, pid
@@ -102,7 +100,7 @@ def transcribe_audio(
 
         processor = AutoProcessor.from_pretrained(stt_model)
 
-        logger.info(f"Transcribing audio phase: Transcribing... Progress: 40%")
+        logger.info("Transcribing audio phase: Transcribing... Progress: 40%")
         DB.update_transcription_status_by_pid("Transcribing...", "", 40, pid)
 
         if language == "auto":
@@ -136,9 +134,7 @@ def transcribe_audio(
         # Transcribe the audio file
         transcription_result = pipe(file_path)
 
-        logger.info(
-            f"Transcribing audio phase: Saving transcription... . Progress: 70%"
-        )
+        logger.info("Transcribing audio phase: Saving transcription... Progress: 70%")
         DB.update_transcription_status_by_pid("Saving transcription...", "", 70, pid)
 
         # Extract text and timestamps
@@ -149,7 +145,7 @@ def transcribe_audio(
             text = chunk["text"]
             transcription += f"{start_time} --> {end_time}\n{text}\n\n"
 
-        logger.info(f"Transcribing audio phase: Transcription saved. Progress: 80%")
+        logger.info("Transcribing audio phase: Transcription saved. Progress: 80%")
         DB.update_transcription_status_by_pid("Transcription saved", "", 80, pid)
 
         if language == "auto":
@@ -157,9 +153,8 @@ def transcribe_audio(
 
         # Check if translation is needed
         if translation and language.lower() != language_translation.lower():
-
             if translation.lower() == "none":
-                logger.info(f"Do not have a translation model. Skipping translation.")
+                logger.info("Do not have a translation model. Skipping translation.")
             elif translation == "whisper":
                 # TODO: Implement whisper translation here
                 logger.info(
@@ -167,8 +162,7 @@ def transcribe_audio(
                 )
                 pass
             else:
-                # update_transcription_status({"phase": "Translating..."})
-                logger.info(f"Transcribing audio phase: Translating... . Progress: 85%")
+                logger.info("Transcribing audio phase: Translating... Progress: 85%")
                 DB.update_transcription_status_by_pid("Translating...", "", 85, pid)
                 logger.info(f"Translating from {language} to {language_translation}")
                 source_lang = SOURCE_LANGUAGES.get(language.upper())
@@ -178,38 +172,30 @@ def transcribe_audio(
                         f"Invalid language code: {language} or {language_translation}"
                     )
                 transcription = deepl_translate(
-                    transcription,
-                    language,
-                    language_translation,
-                    pid,
+                    transcription, language, language_translation, pid
                 )
 
         # Save the transcription to a file
-        # output_file = file_path.rsplit(".", 1)[0] + f".{file_export}"
+        pid_dir = OUTPUT_DIR / str(pid)
+        pid_dir.mkdir(parents=True, exist_ok=True)
+        output_file = pid_dir / "transcription.txt"
 
-        # Save the transcription files on a folder with the process ID
-        # Generate the output folder
-        if not os.path.exists(os.path.join(OUTPUT_DIR, f"{pid}")):
-            os.makedirs(os.path.join(OUTPUT_DIR, f"{pid}"))
-
-        output_file = os.path.join(OUTPUT_DIR, f"{pid}", "transcription.txt")
         with open(output_file, "w") as f:
             f.write(transcription)
 
         logger.info(
-            f"Transcribing audio phase: Exporting transcription... . Progress: 90%"
+            "Transcribing audio phase: Exporting transcription... Progress: 90%"
         )
         DB.update_transcription_status_by_pid("Exporting transcription...", "", 90, pid)
 
-        convert_to_formats(transcription, output_file, "all")
+        convert_to_formats(transcription, str(output_file), "all")
 
-        logger.info(f"Transcribing audio phase: Completed successfully! Progress: 100%")
+        logger.info("Transcribing audio phase: Completed successfully! Progress: 100%")
         DB.update_transcription_status_by_pid(
             "Completed successfully!", str(time.time()), 100, pid
         )
 
     except Exception as e:
-        # update_transcription_status({"phase": "Error", "progress": 0})
         logger.error(f"Transcription failed: {str(e)}. Progress: 0%")
         DB.update_transcription_status_by_pid("Error", "", 0, pid)
 
@@ -225,7 +211,6 @@ def deepl_translate(text: str, source_lang: str, target_lang: str, pid: int):
     Returns:
         str: Translated text
     """
-
     logger.info(f"Translating text from {source_lang} to {target_lang}")
 
     try:
@@ -235,7 +220,6 @@ def deepl_translate(text: str, source_lang: str, target_lang: str, pid: int):
         )
         return result.text
     except Exception as e:
-        # update_transcription_status({"phase": "Translation Error", "progress": 0})
         logger.error(f"Translation failed: {str(e)}. Progress: 0%")
         DB.update_transcription_status_by_pid("Translation Error", "", 0, pid)
         return text

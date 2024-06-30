@@ -2,15 +2,19 @@ import sys
 from models import transcribe_audio
 import os
 from loguru import logger
+from pathlib import Path
 
 # import psutil
-
 from db import transcriptionsDB
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "output")
-OUTPUT_DIR = os.path.abspath(OUTPUT_DIR)
 
-DB = transcriptionsDB(os.path.join(OUTPUT_DIR, "transcriptions.db"))
+BASE_DIR = Path(__file__).resolve().parent
+OUTPUT_DIR = BASE_DIR.parent / "output"
+
+# Ensure the output directory exists
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+DB = transcriptionsDB(OUTPUT_DIR / "transcriptions.db")
 
 if __name__ == "__main__":
     file_path = sys.argv[1]
@@ -26,30 +30,18 @@ if __name__ == "__main__":
     if process_id is None:
         process_id = 0
 
-    logs_file = open(os.path.join(OUTPUT_DIR, f"{process_id}_logs.txt"), "w")
+    logs_file = OUTPUT_DIR / f"{process_id}_logs.txt"
 
-    sys.stdout = logs_file
-    sys.stderr = logs_file
+    with logs_file.open("w") as log:
+        sys.stdout = log
+        sys.stderr = log
+        logger.add(log)
 
-    logger.add(logs_file)
-
-    # logger.info(f"Process ID: {process_id}")
-
-    # local_pid = os.getpid()
-    # parent = psutil.Process(local_pid).parent()
-    # print("subprocess thinks its pid is", os.getpid())
-    # try:
-    #     print("parent process of our main python is", parent.pid)
-    # except:
-    #     pass
-
-    transcribe_audio(
-        file_path,
-        language,
-        model,
-        translation,
-        language_translation,
-        process_id,
-    )
-
-    logs_file.close()
+        transcribe_audio(
+            file_path,
+            language,
+            model,
+            translation,
+            language_translation,
+            process_id,
+        )
