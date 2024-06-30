@@ -1,18 +1,14 @@
+import os
 import torch
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 from loguru import logger
 from utils import convert_to_formats
 import deepl
-from deepl_languages import (
-    SOURCE_LANGUAGES,
-    TARGET_LANGUAGES,
-)  # TODO: change this to the correct path from JSON file /static/supported_languages_TR.json
-
+from deepl_languages import SOURCE_LANGUAGES, TARGET_LANGUAGES
 from dotenv import load_dotenv
 from db import transcriptionsDB
+from pathlib import Path
 import time
-import os
-
 
 # Load the API keys
 load_dotenv()  # Load the environment variables: DEEPL_API_KEY
