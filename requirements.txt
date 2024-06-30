@@ -1,0 +1,15 @@
+deepl==1.18.0
+fastapi==0.111.0
+fpdf==1.7.2
+loguru==0.5.3
+psutil==5.9.8
+pydub==0.25.1
+pytest==8.2.2
+python-dotenv==1.0.1
+resend==2.1.0
+srt==3.5.3
+torch==2.2.0
+transformers==4.37.2
+webvtt_py==0.5.1
+yt_dlp==2024.5.27
+pytest
