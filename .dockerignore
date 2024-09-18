@@ -1,0 +1,42 @@
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore virtual environments
+env/
+*.env
+
+# Ignore Docker-related files
+# Dockerfile
+
+# Ignore log files
+logs/
+*.log
+
+# Ignore other unnecessary files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Ignore git-related files and directories
+.git/
+
+# Ignore compiled files
+*.so
+*.o
+*.a
+*.out
+*.exe
+
+# Logs and databases
+*.db
+
+# VS Code specific
+.vscode/
+
+# Random test
+test.txt
+
+# Current Tests directory
+tests/
