@@ -5,7 +5,7 @@
     - DEEPL_API_KEY: The API key for the DeepL API (required for translation)
     - RESEND_API_KEY: The API key for the Resend API (required for sending emails)
         - I recommend you to remove the email sending feature. It's not necessary for the application to work.
-
+    - RUNNING_LOCALLY: Set this to False if you want to enable the email sending feature.
     You can set the environment variables in the .env file in the root directory of the project.
     Check the .env.example file for the required format.
 
@@ -31,6 +31,9 @@ BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR.parent / "static"
 TEMPLATES_DIR = BASE_DIR.parent / "templates"
 OUTPUT_DIR = BASE_DIR.parent / "output"
+
+
+RUNNING_LOCALLY = os.getenv("RUNNING_LOCALLY", "True").lower() == "true"
 
 # Ensure the directories exist
 for directory in [STATIC_DIR, TEMPLATES_DIR, OUTPUT_DIR]:
@@ -70,10 +73,11 @@ DB = transcriptionsDB(OUTPUT_DIR / "transcriptions.db")
 # Load additional environment variables
 # Resend API key
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-if not RESEND_API_KEY:
+if not RESEND_API_KEY and not RUNNING_LOCALLY:
     raise ValueError("RESEND_API_KEY is not set")
 
-resend.api_key = RESEND_API_KEY
+if not RUNNING_LOCALLY:
+    resend.api_key = RESEND_API_KEY
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -202,6 +206,12 @@ async def submit_contact(
         </body>
         </html>
         """
+
+    if RUNNING_LOCALLY:
+        return JSONResponse(
+            content={"message": "Email sending is disabled in the local environment."},
+            status_code=200,
+        )
 
     try:
         params = resend.Emails.SendParams(
@@ -469,6 +479,8 @@ async def preview(pid: int):
         JSONResponse: The response containing the preview content
     """
     files_dir = OUTPUT_DIR / str(pid)
+
+    logger.info(f"Fetching preview on directory: {files_dir}")
 
     txt_path = files_dir / "transcription.txt"
     srt_path = files_dir / "transcription.srt"
