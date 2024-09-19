@@ -23,8 +23,7 @@
   </p>
 </div>
 
-
-Txtify is a free and open-source web app for converting audio and video to text using advanced AI models. It supports YouTube videos and personal media files, offering fast and accurate transcriptions. Txtify can be self-hosted, giving you full control over your transcription process.
+Txtify is a free open-source wep application that transcribes and translates audio from YouTube videos or uploaded media files. It now runs on Docker for easier deployment and includes monitoring capabilities.
 
   
 ## Table of Contents
@@ -34,8 +33,6 @@ Txtify is a free and open-source web app for converting audio and video to text 
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
-  - [Run Online Simulation Demo](#run-online-simulation-demo)
-  - [Self Host](#self-host)
 - [Roadmap](#roadmap)
 - [Report Issues](#report-issues)
 - [Contributing](#contributing)
@@ -60,12 +57,12 @@ Check out the demo video to see Txtify in action.
 Before you begin, ensure you have met the following requirements:
 
 - Python 3.10 installed on your machine
-- Conda installed on your machine (recommended to run on a conda environment)
+- Docker (containerized deployment)
 - An API key for DeepL if you want to enable translation (in case you need to use this tool for translation)
 
 ## Installation
 
-To install Txtify locally, follow these steps:
+To install and run Txtify using Docker, follow these steps:
 
 1. Clone the repository:
  ```sh
@@ -73,39 +70,48 @@ To install Txtify locally, follow these steps:
  cd txtify
  ```
 
-2. Create a conda environment and activate it:
+2. Set Up Environment Variables
 
   ```sh
-  conda create --name txtify python=3.10
-  conda activate txtify
+  cp .env.example .env
+  ```
+> <sub>Edit the .env file and add your DeepL API key for translation, and any other necessary environment variables.</sub>
+
+3. Build the Docker Image  
+
+  ```sh
+  docker build -t txtify .
   ```
 
-3. Install the dependencies:
+4. Run the Docker Container
 
-```sh
-pip install -r requirements_linux.txt
-```
+  ```sh
+  docker run -d -p 5000:5000 --env-file .env --name txtify_container txtify
+  ```
+
+>  <sub>**Note:** The --env-file option passes your environment variables to the container.</sub>  
+>  <sub>**Note:** The -d flag runs the container in detached mode.</sub>
 
 ## Usage
 
-### Run Online Simulation Demo
-You can use the online simulation demo of Txtify to understand how it works. Visit [Txtify Website](https://txtify-web.vercel.app/) and follow the instructions to upload your media or enter a YouTube URL for a simulated transcription process.
+### Access the Application
+Open your web browser and navigate to ```http://localhost:5000``` to access Txtify.
 
-### Self Host
+### Monitoring
 
-To self-host Txtify with full features, follow these steps:
+To monitor the application and the transcription processes:
 
 1. Ensure you have completed the installation steps above.
 
-2. Rename the .env.example file to .env and add your required DeepL API key for translation.
+2. You can view the logs of the running Docker container to monitor the application output.
+  ```sh
+  docker logs -f txtify_container
+  ```
+>  <sub>**Note:** The -f option follows the log output in real-time.</sub>
 
-3. Start the server:
-```sh
-cd src/
-python -m uvicorn main:app --reload --port 5000  --host "0.0.0.0"
-```
 
-4. Open your web browser and navigate to http://localhost:5000 and enjoy.
+### Online Simulation Demo
+To understand how Txtify works, you can use the online simulation demo. Visit [Txtify Website](https://txtify-web.vercel.app/) and follow the instructions to upload your media or enter a YouTube URL for a simulated transcription process.
 
 ## Roadmap
 
@@ -113,13 +119,19 @@ python -m uvicorn main:app --reload --port 5000  --host "0.0.0.0"
 - [x] Support for multiple output formats
 - [x] Integration with DeepL for translations
 - [x] Improved UI/UX
+- [x] Containerized the application
 - [ ] Enhance performance and scalability
 - [ ] Web browser Whisper option
 
 
 ## Report Issues
+If you encounter any issues, bugs, or have suggestions for improvements, please report them using one of the following methods:
 
-If you encounter any issues or have suggestions, please use the contact form on the [Contact Page](https://txtify-web.vercel.app/contact) to let us know.
+- Contact Form: Visit our [Contact Page](https://txtify-web.vercel.app/contact) and submit your feedback or issue.  
+- GitHub Issues: Open an issue on the repository's issue tracker. Please provide detailed information to help us address the problem effectively.
+
+>  <sub>Your feedback is valuable and helps us improve Txtify!</sub>
+
 
 
 ## Contributing
