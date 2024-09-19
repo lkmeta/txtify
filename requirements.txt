@@ -13,5 +13,5 @@ transformers==4.44.2
 webvtt_py==0.5.1
 yt_dlp==2024.8.6
 uvicorn==0.22.0
-python-multipart==0.0.6
+python-multipart==0.0.7
 accelerate==0.21.0 
