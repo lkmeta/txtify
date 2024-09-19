@@ -69,6 +69,12 @@ def transcribe_audio(
         )
         return
 
+    # Check if the path ends with .m4a, if so, rename and choose the .mp3 file
+    if file_path.endswith(".m4a"):
+        file_path = file_path.replace(".m4a", ".mp3")
+
+    logger.info(f"Transcribing file: {file_path}")
+
     stt_model = MODELS.get(model)
 
     # Check if the model is valid
