@@ -274,17 +274,30 @@ def convert_to_srt(text, file_path):
     with open(file_path, mode="w", encoding="utf-8") as subFile:
         lines = text.strip().split("\n")
         for i in range(0, len(lines), 2):
-            if i + 1 <= len(lines):
-                start_end_times = lines[i].strip().split(" --> ")
-                if len(start_end_times) == 2:
-                    start_time, end_time = start_end_times
-                    raw_text = lines[i + 1].strip()
-                    subFile.write(makeStr(raw_text, start_time, end_time))
+            try:
+                if i + 1 <= len(lines):
+                    start_end_times = lines[i].strip().split(" --> ")
+                    if len(start_end_times) == 2:
+                        start_time, end_time = start_end_times
 
-            else:
-                raw_text = lines[i].strip()
+                        # Validate and process start_time and end_time
+                        if start_time and end_time:
+                            raw_text = lines[i + 1].strip()
+                            subFile.write(makeStr(raw_text, start_time, end_time))
+                        else:
+                            raise ValueError("Start or end time is None or empty")
+
+                else:
+                    raw_text = lines[i].strip()
+                    subFile.write(
+                        f"{current_section + 1}\n00:00:00,000 --> 00:00:10,000\n{raw_text}\n\n"
+                    )
+
+            except Exception as e:
+                # Log the error and write a placeholder in the SRT file
+                logger.error(f"Error processing SRT entry at index {i}: {str(e)}")
                 subFile.write(
-                    f"{current_section + 1}\n00:00:00,000 --> 00:00:10,000\n{raw_text}\n\n"
+                    f"{current_section + 1}\n00:00:00,000 --> 00:00:10,000\nInvalid timestamp or text\n\n"
                 )
 
     logger.info(f"Transcription saved to SRT: {file_path}")
