@@ -94,7 +94,13 @@ def handle_transcription(
 
                 # Get output file path
                 output_file = ydl.prepare_filename(info_dict)
-                output_file = output_file.replace(".webm", ".mp3")
+
+                if output_file.endswith(".webm"):
+                    output_file = output_file.replace(".webm", ".mp3")
+                elif output_file.endswith(".m4a"):
+                    output_file = output_file.replace(".m4a", ".mp3")
+
+                # output_file = output_file.replace(".webm", ".mp3")
 
                 logger.info(f"Downloaded video: {output_file}")
 
@@ -116,14 +122,29 @@ def handle_transcription(
         logger.info(f"Transcription started for: {output_file}")
 
         # Start the transcription process as a separate subprocess within the conda environment
-        conda_env = "txtify"
+        # conda_env = "txtify"
+
+        # process = subprocess.Popen(
+        #     [
+        #         "conda",
+        #         "run",
+        #         "--name",
+        #         conda_env,
+        #         "python",
+        #         "transcribe_process.py",
+        #         str(output_file),
+        #         language,
+        #         model,
+        #         translation,
+        #         language_translation,
+        #         file_export,
+        #     ],
+        #     stdout=subprocess.PIPE,
+        #     stderr=subprocess.PIPE,
+        # )
 
         process = subprocess.Popen(
             [
-                "conda",
-                "run",
-                "--name",
-                conda_env,
                 "python",
                 "transcribe_process.py",
                 str(output_file),
@@ -133,9 +154,12 @@ def handle_transcription(
                 language_translation,
                 file_export,
             ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            cwd="/app/src",
         )
+
         pid = process.pid
 
         # Check if PID is valid

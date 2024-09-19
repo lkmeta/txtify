@@ -15,6 +15,7 @@ load_dotenv()  # Load the environment variables: DEEPL_API_KEY
 
 DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
 
+
 # Define the Hugging Face available models
 MODELS = {
     "whisper_tiny": "openai/whisper-tiny",
@@ -214,6 +215,9 @@ def deepl_translate(text: str, source_lang: str, target_lang: str, pid: int):
         str: Translated text
     """
     logger.info(f"Translating text from {source_lang} to {target_lang}")
+
+    if not DEEPL_API_KEY:
+        raise Exception("DEEPL_API_KEY is not set in the environment variables.")
 
     try:
         translator = deepl.Translator(DEEPL_API_KEY)
