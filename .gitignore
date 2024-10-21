@@ -21,3 +21,6 @@ test.txt
 
 # Current Tests directory
 tests/
+
+# Mp4 file for demo
+demo txtify.mp4
