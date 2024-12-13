@@ -86,7 +86,7 @@ To install and run Txtify using Docker, follow these steps:
 4. Run the Docker Container
 
   ```sh
-  docker run -d -p 5000:5000 --env-file .env --name txtify_container txtify
+  docker run -d -p 8010:8010 --env-file .env --name txtify_container txtify
   ```
 
 >  <sub>**Note:** The --env-file option passes your environment variables to the container.</sub>  
@@ -95,7 +95,7 @@ To install and run Txtify using Docker, follow these steps:
 ## Usage
 
 ### Access the Application
-Open your web browser and navigate to ```http://localhost:5000``` to access Txtify.
+Open your web browser and navigate to ```http://localhost:8010``` to access Txtify.
 
 ### Monitoring
 

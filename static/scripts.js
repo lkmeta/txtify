@@ -223,7 +223,7 @@ function startStatusCheck(pid) {
             }
         };
         xhr.send();
-    }, 5000);
+    }, 8010);
 }
 
 function isValidYoutubeUrl(url) {
