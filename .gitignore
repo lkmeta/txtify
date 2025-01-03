@@ -24,3 +24,6 @@ tests/
 
 # Mp4 file for demo
 demo txtify.mp4
+
+# MacOs specific 
+.DS_Store
