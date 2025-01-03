@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  txtify:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: txtify_container
+    ports:
+      - "8010:8010"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    restart: unless-stopped
