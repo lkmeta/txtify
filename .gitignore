@@ -27,3 +27,8 @@ demo txtify.mp4
 
 # MacOs specific 
 .DS_Store
+
+# Poetry and dependency management
+poetry.lock
+.mypy_cache/
+.ruff_cache/

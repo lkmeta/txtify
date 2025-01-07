@@ -21,6 +21,7 @@ logs/
 
 # Ignore git-related files and directories
 .git/
+.gitignore
 
 # Ignore compiled files
 *.so
@@ -40,3 +41,11 @@ test.txt
 
 # Current Tests directory
 tests/
+
+# MacOS-specific files
+.DS_Store
+
+# Poetry and dependency management
+# poetry.lock
+.mypy_cache/
+.ruff_cache/

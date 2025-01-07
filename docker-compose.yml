@@ -5,11 +5,19 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    environment:
+      - RUNNING_IN_DOCKER=true
+    image: txtify:latest 
     container_name: txtify_container
     ports:
       - "8010:8010"
     env_file:
       - .env
     volumes:
-      - .:/app
+      - ./output:/app/output
+      - huggingface_cache:/root/.cache/huggingface
     restart: unless-stopped
+
+
+volumes:
+  huggingface_cache:  # Define the volume to store the cache

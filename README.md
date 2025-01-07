@@ -80,7 +80,7 @@ cp .env.example .env
 3. Run the Docker
 
 ```sh
-docker-compose up -d
+docker-compose up --build -d
 ```
 
 4. Stop the Docker Container

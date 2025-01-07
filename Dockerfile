@@ -1,37 +1,42 @@
 # Use an official Python runtime as a parent image
-FROM python:3.10-slim
+FROM python:3.12-slim
 
 # Set the working directory in the container
 WORKDIR /app
 
-# Install system dependencies including ffmpeg and build tools
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     gcc \
     python3-dev \
-    --no-install-recommends
+    curl \
+    --no-install-recommends && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy the requirements file into the container
-COPY requirements.txt .
+# Install Poetry
+RUN curl -sSL https://install.python-poetry.org | python3 - && \
+    ln -s /root/.local/bin/poetry /usr/local/bin/poetry
 
-# Upgrade pip
-RUN pip install --no-cache-dir --upgrade pip
+# Copy only the pyproject.toml and poetry.lock first (for better caching)
+COPY pyproject.toml poetry.lock ./
 
-# Install any dependencies specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Install only main dependencies (exclude dev dependencies)
+RUN poetry install --no-root --only main
 
-# Cleanup unnecessary build tools and cache
-RUN apt-get remove -y gcc python3-dev && apt-get autoremove -y && apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Copy the rest of the application code into the container
+# Copy the rest of the project files into the container
 COPY . .
 
 # Ensure the Python path includes the src directory
 ENV PYTHONPATH=/app/src
 
-# Expose port 8010 to the outside world
+# Add Poetry's virtual environment to the PATH
+ENV PATH="/root/.local/share/pypoetry/venv/bin:$PATH"
+
+# Preload the model to avoid loading it on the first request
+RUN test -d /root/.cache/huggingface || poetry run python -c "from transformers import AutoModelForSpeechSeq2Seq; AutoModelForSpeechSeq2Seq.from_pretrained('openai/whisper-medium')"
+
+# Expose port 8010
 EXPOSE 8010
 
 # Run the application
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8010"]
+CMD ["poetry", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8010"]
