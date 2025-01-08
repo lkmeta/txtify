@@ -1,22 +1,34 @@
+"""
+Database management class for transcription records. It provides methods for
+creating a table, inserting records, updating statuses, and deleting entries.
+"""
+
 import sqlite3
 
 
-# Database class
 class transcriptionsDB:
+    """
+    A class to manage database operations for transcription records.
+    """
+
     def __init__(self, db_path: str):
         """
-        Initialize the database connection
+        Initialize the database connection.
+
         Args:
-            db_path (str): The path to the database file
+            db_path (str): The path to the database file.
         """
         self.db_path = db_path
-        self.conn = sqlite3.connect(db_path)
+        self.conn = sqlite3.connect(db_path, timeout=5)
         self.cursor = self.conn.cursor()
         self.create_table()
 
-    def create_table(self):
+    def create_table(self) -> None:
         """
-        Create the table if it does not exist
+        Create the transcriptions table if it does not already exist.
+
+        Returns:
+            None
         """
         self.cursor.execute(
             """
@@ -53,22 +65,26 @@ class transcriptionsDB:
         completed_at: str,
         progress: int,
         pid: int,
-    ):
+    ) -> None:
         """
-        Insert a new transcription record
+        Insert a new transcription record into the database.
+
         Args:
-            youtube_url (str): The URL of the YouTube video
-            media_path (str): The path to the media file
-            language (str): The language of the transcription
-            model (str): The model used for transcription
-            translation (str): The translation language
-            language_translation (str): The language for translation
-            file_export (str): The file export format
-            status (str): The status of the transcription
-            created_at (str): The creation timestamp
-            completed_at (str): The completion timestamp
-            progress (int): The progress of the transcription
-            pid (int): The process ID
+            youtube_url (str): The URL of the YouTube video.
+            media_path (str): The path to the media file.
+            language (str): The language of the transcription.
+            model (str): The transcription model used.
+            translation (str): The translation language.
+            language_translation (str): The language for translation.
+            file_export (str): The file export format.
+            status (str): The current status of the transcription.
+            created_at (str): The creation timestamp.
+            completed_at (str): The completion timestamp.
+            progress (int): The transcription progress (0-100).
+            pid (int): The process ID.
+
+        Returns:
+            None
         """
         self.cursor.execute(
             """
@@ -106,11 +122,13 @@ class transcriptionsDB:
 
     def get_transcription_by_pid(self, pid: int):
         """
-        Get a transcription record by PID
+        Retrieve a transcription record by its PID.
+
         Args:
-            pid (int): The process ID
+            pid (int): The process ID.
+
         Returns:
-            tuple: The transcription record
+            tuple or None: The corresponding transcription record, or None if not found.
         """
         self.cursor.execute(
             """
@@ -122,44 +140,59 @@ class transcriptionsDB:
 
     def update_transcription_status_by_pid(
         self, status: str, completed_at: str, progress: int, pid: int
-    ):
+    ) -> None:
         """
-        Update the status of a transcription record
+        Update the status, completion timestamp, and progress of a transcription record by PID.
+
         Args:
-            status (str): The new status
-            completed_at (str): The completion timestamp
-            progress (int): The progress
-            pid (int): The process ID
+            status (str): The new status.
+            completed_at (str): The completion timestamp.
+            progress (int): The transcription progress (0-100).
+            pid (int): The process ID.
+
+        Returns:
+            None
         """
-        # update the status and completion timestamp using the process ID
         self.cursor.execute(
             """
-            UPDATE transcriptions SET status=?, completed_at=?, progress=? WHERE pid=?
+            UPDATE transcriptions
+            SET status=?, completed_at=?, progress=?
+            WHERE pid=?
             """,
             (status, completed_at, progress, pid),
         )
         self.conn.commit()
 
-    def update_transcription_pid(self, status: str, pid: int):
+    def update_transcription_pid(self, status: str, pid: int) -> None:
         """
-        Add the process ID to the transcription record
+        Update the status and set the PID for the most recently inserted transcription record.
+
         Args:
-            status (str): The new status
-            pid (int): The process ID
+            status (str): The new status.
+            pid (int): The process ID.
+
+        Returns:
+            None
         """
         self.cursor.execute(
             """
-            UPDATE transcriptions SET status=?, pid=? WHERE id=(SELECT MAX(id) FROM transcriptions)
+            UPDATE transcriptions
+            SET status=?, pid=?
+            WHERE id=(SELECT MAX(id) FROM transcriptions)
             """,
             (status, pid),
         )
         self.conn.commit()
 
-    def delete_transcription(self, pid: int):
+    def delete_transcription(self, pid: int) -> None:
         """
-        Delete a transcription record
+        Delete a transcription record by PID.
+
         Args:
-            pid (int): The process ID
+            pid (int): The process ID.
+
+        Returns:
+            None
         """
         self.cursor.execute(
             """
@@ -167,27 +200,32 @@ class transcriptionsDB:
             """,
             (pid,),
         )
-
         self.conn.commit()
 
-    def get_last_process_id(self):
+    def get_last_process_id(self) -> int:
         """
-        Get the last process ID
+        Retrieve the most recently inserted process ID.
+
         Returns:
-            int: The last process ID
+            int: The last inserted process ID.
         """
         self.cursor.execute(
             """
             SELECT pid FROM transcriptions ORDER BY id DESC LIMIT 1
             """
         )
-        return self.cursor.fetchone()[0]
+        result = self.cursor.fetchone()
+        return result[0] if result else 0
 
-    def delete_transcription_by_pid(self, pid: int):
+    def delete_transcription_by_pid(self, pid: int) -> None:
         """
-        Delete a transcription record by PID
+        Delete a transcription record by PID.
+
         Args:
-            pid (int): The process ID
+            pid (int): The process ID.
+
+        Returns:
+            None
         """
         self.cursor.execute(
             """

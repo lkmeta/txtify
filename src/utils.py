@@ -1,18 +1,26 @@
+"""
+This file provides utility functions for managing transcription processes, 
+handling media files, and converting transcriptions to various formats such as 
+PDF, SRT, VTT, and SBV. It also includes helper functions for cleaning filenames, 
+validating YouTube URLs, and managing file cleanup.
+"""
+
 import os
 import re
-import time
-import yt_dlp
-from loguru import logger
-from pydub import AudioSegment  # Audio conversion
-from fpdf import FPDF  # PDF generation
-import srt  # SRT generation
-import webvtt  # VTT generation
-import subprocess
-from db import transcriptionsDB
-import psutil
-from datetime import timedelta
 import shutil
+import subprocess
 from pathlib import Path
+from typing import Optional
+
+import psutil
+import yt_dlp
+from fpdf import FPDF
+from loguru import logger
+from pydub import AudioSegment
+
+from db import transcriptionsDB
+
+cwd = "/app/src" if os.getenv("RUNNING_IN_DOCKER") else os.getcwd()
 
 # Global dictionary to store transcription status
 transcription_status = {
@@ -30,22 +38,38 @@ transcription_status = {
 
 BASE_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = BASE_DIR.parent / "output"
-
-# Ensure the output directory exists
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 DB = transcriptionsDB(OUTPUT_DIR / "transcriptions.db")
 
-MAX_VIDEO_DURATION = 10 * 60  # 10 minutes in seconds TODO: Upgrade when needed
-MAX_UPLOAD_SIZE_MB = 100  # 100 MB TODO: Upgrade when needed
+MAX_VIDEO_DURATION = 10 * 60  # 10 minutes in seconds
+MAX_UPLOAD_SIZE_MB = 100  # 100 MB limit
 
 
 def is_valid_youtube_url(url: str) -> bool:
+    """
+    Validate whether a given URL is a valid YouTube link.
+
+    Args:
+        url (str): The URL to validate.
+
+    Returns:
+        bool: True if valid, False otherwise.
+    """
     regex = r"^(https?\:\/\/)?(www\.youtube\.com|youtu\.be)\/.+$"
     return re.match(regex, url) is not None
 
 
 def is_valid_media_file(filename: str) -> bool:
+    """
+    Check if a file has a supported media format.
+
+    Args:
+        filename (str): The name of the file.
+
+    Returns:
+        bool: True if supported, False otherwise.
+    """
     valid_extensions = ["mp4", "mp3"]
     return filename.split(".")[-1].lower() in valid_extensions
 
@@ -58,14 +82,26 @@ def handle_transcription(
     translation: str,
     language_translation: str,
     file_export: str,
-):
+) -> Optional[int]:
+    """
+    Handle the transcription process: download YouTube or handle uploaded media,
+    then launch a separate transcription subprocess.
 
+    Args:
+        youtube_url (str): The YouTube video URL.
+        media: Uploaded media file.
+        language (str): Transcription language.
+        model (str): Transcription model.
+        translation (str): Translation model.
+        language_translation (str): Target language for translation.
+        file_export (str): Export format.
+
+    Returns:
+        Optional[int]: The PID of the subprocess, or None on failure.
+    """
     output_file = None
-
     try:
         if youtube_url:
-
-            # Options for downloading the YouTube video
             ydl_opts = {
                 "format": "bestaudio/best",
                 "postprocessors": [
@@ -75,24 +111,18 @@ def handle_transcription(
                         "preferredquality": "192",
                     }
                 ],
-                "postprocessor_args": [
-                    "-t",
-                    str(MAX_VIDEO_DURATION),  # Limit to the first 10 minutes
-                ],
+                "postprocessor_args": ["-t", str(MAX_VIDEO_DURATION)],
             }
 
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info_dict = ydl.extract_info(youtube_url, download=False)
                 sanitized_title = clean_filename(info_dict["title"])
-
                 info_dict["title"] = sanitized_title
 
             ydl_opts["outtmpl"] = str(OUTPUT_DIR / f"{sanitized_title}.%(ext)s")
 
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([youtube_url])
-
-                # Get output file path
                 output_file = ydl.prepare_filename(info_dict)
 
                 if output_file.endswith(".webm"):
@@ -100,30 +130,24 @@ def handle_transcription(
                 elif output_file.endswith(".m4a"):
                     output_file = output_file.replace(".m4a", ".mp3")
 
-                # output_file = output_file.replace(".webm", ".mp3")
-
-                logger.info(f"Downloaded video: {output_file}")
+            logger.info(f"Downloaded video: {output_file}")
 
         elif media:
-            media_size_mb = len(media.file.read()) / (1024 * 1024)  # Size in MB
-            media.file.seek(0)  # Reset file pointer after reading size
+            media_size_mb = len(media.file.read()) / (1024 * 1024)
+            media.file.seek(0)
             if media_size_mb > MAX_UPLOAD_SIZE_MB:
-                raise Exception(
-                    f"Uploaded file exceeds the size limit of {MAX_UPLOAD_SIZE_MB} MB"
-                )
+                raise Exception(f"Uploaded file exceeds {MAX_UPLOAD_SIZE_MB} MB limit.")
 
             media_filename = clean_filename(media.filename)
             media_file_path = OUTPUT_DIR / media_filename
             with open(media_file_path, "wb") as buffer:
                 buffer.write(media.file.read())
-            output_file = media_file_path
-            output_file = convert_to_mp3(output_file)
+            output_file = convert_to_mp3(media_file_path)
 
         logger.info(f"Transcription started for: {output_file}")
 
-        # Start the transcription process as a separate subprocess within the conda environment
+        # Local process
         # conda_env = "txtify"
-
         # process = subprocess.Popen(
         #     [
         #         "conda",
@@ -141,12 +165,19 @@ def handle_transcription(
         #     ],
         #     stdout=subprocess.PIPE,
         #     stderr=subprocess.PIPE,
+        #     cwd=cwd + "/src",
         # )
+        # logger.warning(f"Running subprocess in directory: {cwd} + '/src'")
 
+        # stdout, stderr = process.communicate()
+        # logger.warning(f"STDOUT: {stdout.decode()}")
+        # logger.warning(f"STDERR: {stderr.decode()}")
+
+        # # Docker container process
         process = subprocess.Popen(
             [
                 "python",
-                "transcribe_process.py",
+                "/app/src/transcribe_process.py",
                 str(output_file),
                 language,
                 model,
@@ -154,17 +185,20 @@ def handle_transcription(
                 language_translation,
                 file_export,
             ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            cwd="/app/src",
+            # cwd="/app/src",
         )
 
-        pid = process.pid
+        # logger.warning(f"Running subprocess in directory: /app/src'")
 
-        # Check if PID is valid
+        # stdout_data, stderr_data = process.communicate()
+        # logger.warning(f"STDOUT: {stdout_data}")
+        # logger.warning(f"STDERR: {stderr_data}")
+
+        pid = process.pid
         if pid:
-            # Update the transcription status
             DB.update_transcription_pid("Processing request...", pid)
             transcription_status["phase"] = "Processing request..."
             transcription_status["progress"] = 10
@@ -173,54 +207,67 @@ def handle_transcription(
         else:
             raise Exception("Failed to start transcription process")
 
-        # Move file to the output directory
         pid_output_dir = OUTPUT_DIR / f"{pid}"
-        pid_output_dir.mkdir(parents=True, exist_ok=True)
 
+        # Check if pid_output_dir exists and if yes clean it
+        if pid_output_dir.exists():
+            shutil.rmtree(pid_output_dir)
+
+        pid_output_dir.mkdir(parents=True, exist_ok=True)
         return pid
 
     except Exception as e:
         transcription_status["phase"] = "Error"
         transcription_status["progress"] = 0
         logger.error(f"Transcription failed: {str(e)}")
-
         return None
 
 
 def convert_to_mp3(file_path: Path) -> Path:
-    file_extension = file_path.suffix.lower()
+    """
+    Convert a media file to MP3 format if not already MP3.
 
+    Args:
+        file_path (Path): Path to the media file.
+
+    Returns:
+        Path: The MP3 file path.
+    """
+    file_extension = file_path.suffix.lower()
     if file_extension != ".mp3":
         audio = AudioSegment.from_file(file_path)
         mp3_file_path = file_path.with_suffix(".mp3")
         audio.export(mp3_file_path, format="mp3")
         file_path.unlink()
-
         logger.info(f"File converted to MP3: {mp3_file_path}")
-
         return mp3_file_path
-
     return file_path
 
 
 def clean_filename(filename: str) -> str:
     """
-    Clean filename by removing special characters
-    such as spaces, quotes, and slashes.
+    Sanitize a filename by replacing special characters with underscores.
+
+    Args:
+        filename (str): Original filename.
+
+    Returns:
+        str: Sanitized filename.
     """
-
-    # Remove special characters
     filename = re.sub(r"[^a-zA-Z0-9_.-]", "_", filename)
-
-    # Remove multiple underscores in a row
     filename = re.sub(r"__+", "_", filename)
-
     return filename
 
 
-def kill_process_by_pid(pid):
+def kill_process_by_pid(pid: int) -> bool:
     """
-    Kill the process by process ID.
+    Terminate a process by its PID.
+
+    Args:
+        pid (int): The process ID.
+
+    Returns:
+        bool: True if terminated, False otherwise.
     """
     try:
         process = psutil.Process(pid)
@@ -231,11 +278,23 @@ def kill_process_by_pid(pid):
         return False
 
 
-def convert_to_formats(transcription_text, base_file_path, export_format):
+def convert_to_formats(
+    transcription_text: str, base_file_path: str, export_format: str
+) -> None:
     """
-    Convert the transcription text to various formats such as PDF, SRT, VTT, etc.
+    Convert the transcription text to various formats.
+
+    Args:
+        transcription_text (str): The raw transcription text.
+        base_file_path (str): Base path for output files.
+        export_format (str): Desired format ('pdf', 'srt', 'vtt', 'sbv', or 'all').
+
+    Returns:
+        None
     """
     base_file_path = Path(base_file_path)
+    transcription_text = "\n".join(transcription_text)
+
     if export_format == "pdf":
         convert_to_pdf(transcription_text, base_file_path.with_suffix(".pdf"))
     elif export_format == "srt":
@@ -251,7 +310,17 @@ def convert_to_formats(transcription_text, base_file_path, export_format):
         convert_to_sbv(transcription_text, base_file_path.with_suffix(".sbv"))
 
 
-def convert_to_pdf(text, file_path):
+def convert_to_pdf(text: str, file_path: Path) -> None:
+    """
+    Convert transcription text to a PDF.
+
+    Args:
+        text (str): Transcription text.
+        file_path (Path): Output PDF file.
+
+    Returns:
+        None
+    """
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -275,7 +344,15 @@ def convert_to_pdf(text, file_path):
 
 
 def convertMillisToTc(millis: float) -> str:
-    # Utility function to convert seconds to timeCode hh:mm:ss.mmm
+    """
+    Convert milliseconds to timecode (hh:mm:ss.mmm).
+
+    Args:
+        millis (float): Time in milliseconds.
+
+    Returns:
+        str: Timecode string.
+    """
     millis = int(millis * 1000)
     milliseconds = millis % 1000
     seconds = (millis // 1000) % 60
@@ -285,95 +362,159 @@ def convertMillisToTc(millis: float) -> str:
 
 
 def makeStr(rawText: str, initialTimeCode: str, endTimeCode: str) -> str:
+    """
+    Create a formatted string block for subtitles.
+
+    Args:
+        rawText (str): Subtitle text.
+        initialTimeCode (str): Start timecode.
+        endTimeCode (str): End timecode.
+
+    Returns:
+        str: Formatted subtitle string.
+    """
     initialTimeCodeFormatted = convertMillisToTc(float(initialTimeCode))
     endTimeCodeFormatted = convertMillisToTc(float(endTimeCode))
-    formattedText = f"{initialTimeCodeFormatted},{endTimeCodeFormatted}\n{rawText}\n\n"
-    return formattedText
+    return f"{initialTimeCodeFormatted},{endTimeCodeFormatted}\n{rawText}\n\n"
 
 
-def convert_to_srt(text, file_path):
-    current_section = 0
+def convert_to_srt(text: str, file_path: Path) -> None:
+    """
+    Convert transcription text to SRT format.
 
-    # Create the SRT file and write the formatted entries
-    with open(file_path, mode="w", encoding="utf-8") as subFile:
-        lines = text.strip().split("\n")
-        for i in range(0, len(lines), 2):
+    Args:
+        text (str): Transcription text.
+        file_path (Path): Output SRT file.
+
+    Returns:
+        None
+    """
+    lines = text.strip().split("\n")
+    filtered_lines = []
+    for line in lines:
+        if "-->" in line or (line.strip() and not line.strip().isdigit()):
+            filtered_lines.append(line)
+
+    with open(file_path, "w", encoding="utf-8") as subFile:
+        current_section = 0
+        for i in range(0, len(filtered_lines), 2):
             try:
-                if i + 1 <= len(lines):
-                    start_end_times = lines[i].strip().split(" --> ")
-                    if len(start_end_times) == 2:
-                        start_time, end_time = start_end_times
-
-                        # Validate and process start_time and end_time
-                        if start_time and end_time:
-                            raw_text = lines[i + 1].strip()
-                            subFile.write(makeStr(raw_text, start_time, end_time))
-                        else:
-                            raise ValueError("Start or end time is None or empty")
-
-                else:
-                    raw_text = lines[i].strip()
+                start_end_times = filtered_lines[i].split(" --> ")
+                if len(start_end_times) == 2:
+                    start_time, end_time = start_end_times
+                    raw_text = filtered_lines[i + 1].strip()
+                    current_section += 1
                     subFile.write(
-                        f"{current_section + 1}\n00:00:00,000 --> 00:00:10,000\n{raw_text}\n\n"
+                        f"{current_section}\n"
+                        f"{start_time} --> {end_time}\n"
+                        f"{raw_text}\n\n"
                     )
-
+                else:
+                    raise ValueError("Invalid timestamp format")
             except Exception as e:
-                # Log the error and write a placeholder in the SRT file
                 logger.error(f"Error processing SRT entry at index {i}: {str(e)}")
+                current_section += 1
                 subFile.write(
-                    f"{current_section + 1}\n00:00:00,000 --> 00:00:10,000\nInvalid timestamp or text\n\n"
+                    f"{current_section}\n"
+                    f"00:00:00,000 --> 00:00:10,000\n"
+                    f"Invalid timestamp or text\n\n"
                 )
 
     logger.info(f"Transcription saved to SRT: {file_path}")
 
 
-def convert_to_vtt(text, file_path):
-    # Create the VTT file and write the formatted entries
+def convert_to_vtt(text: str, file_path: Path) -> None:
+    """
+    Convert transcription text to WebVTT format.
+
+    Args:
+        text (str): Transcription text.
+        file_path (Path): Output VTT file.
+
+    Returns:
+        None
+    """
+    lines = text.strip().split("\n")
+
+    # Filter out numeric index lines
+    filtered_lines = []
+    for line in lines:
+        # If it's just digits (like "1", "2", "3"), skip it
+        if line.strip().isdigit():
+            continue
+        # Otherwise keep it
+        filtered_lines.append(line)
+
     with open(file_path, mode="w", encoding="utf-8") as vttFile:
-        vttFile.write("WEBVTT\n\n")  # VTT files start with the WEBVTT header
-        lines = text.strip().split("\n")
-        for i in range(0, len(lines), 2):
-            if i + 1 < len(lines):
-                start_end_times = lines[i].strip().split(" --> ")
+        vttFile.write("WEBVTT\n\n")
+
+        # Now iterate in pairs of (time_line, text_line)
+        for i in range(0, len(filtered_lines), 2):
+            if i + 1 < len(filtered_lines):
+                start_end_times = filtered_lines[i].split(" --> ")
                 if len(start_end_times) == 2:
                     start_time, end_time = start_end_times
-                    raw_text = lines[i + 1].strip()
-                    vttFile.write(makeStr(raw_text, start_time, end_time))
+                    raw_text = filtered_lines[i + 1].strip()
+                    vttFile.write(f"{start_time} --> {end_time}\n{raw_text}\n\n")
             else:
-                raw_text = lines[i].strip()
+                # Last odd line doesn't have a matching pair
+                raw_text = filtered_lines[i].strip()
                 vttFile.write(f"00:00:00.000 --> 00:00:10.000\n{raw_text}\n\n")
 
     logger.info(f"Transcription saved to VTT: {file_path}")
 
 
-def convert_to_sbv(text, file_path):
-    # Create the SBV file and write the formatted entries
+def convert_to_sbv(text: str, file_path: Path) -> None:
+    """
+    Convert transcription text to SBV format.
+
+    Args:
+        text (str): Transcription text.
+        file_path (Path): Output SBV file.
+
+    Returns:
+        None
+    """
+    lines = text.strip().split("\n")
+    filtered_lines = []
+    for line in lines:
+        stripped = line.strip()
+        if "-->" in stripped or (stripped and not stripped.isdigit()):
+            filtered_lines.append(stripped)
+
     with open(file_path, mode="w", encoding="utf-8") as sbvFile:
-        lines = text.strip().split("\n")
-        for i in range(0, len(lines), 2):
-            if i + 1 < len(lines):
-                start_end_times = lines[i].strip().split(" --> ")
+        for i in range(0, len(filtered_lines), 2):
+            if i + 1 < len(filtered_lines):
+                start_end_times = filtered_lines[i].split(" --> ")
                 if len(start_end_times) == 2:
                     start_time, end_time = start_end_times
-                    raw_text = lines[i + 1].strip()
-                    sbvFile.write(makeStr(raw_text, start_time, end_time))
+                    start_time = start_time.replace(",", ".")
+                    end_time = end_time.replace(",", ".")
+                    raw_text = filtered_lines[i + 1]
+                    sbvFile.write(f"{start_time},{end_time}\n{raw_text}\n\n")
+                else:
+                    sbvFile.write("00:00:00.000,00:00:10.000\nInvalid timestamp\n\n")
             else:
-                raw_text = lines[i].strip()
-                sbvFile.write(f"00:00:00.000,00:00:10.000\n{raw_text}\n\n")
+                raw_text = filtered_lines[i]
+                sbvFile.write("00:00:00.000,00:00:10.000\n" + raw_text + "\n\n")
 
     logger.info(f"Transcription saved to SBV: {file_path}")
 
 
-def cleanup_files(pid: int):
+def cleanup_files(pid: int) -> None:
     """
-    Cleanup the files generated during the transcription process.
-    """
+    Cleanup files generated during the transcription process.
 
+    Args:
+        pid (int): The process ID associated with the files.
+
+    Returns:
+        None
+    """
     pid_directory = OUTPUT_DIR / str(pid)
     if pid_directory.exists():
         shutil.rmtree(pid_directory)
 
-        # Clean mp3 or zip files in the output directory
         for file in OUTPUT_DIR.iterdir():
             if file.suffix in [".mp3", ".zip"]:
                 file.unlink()
