@@ -8,8 +8,8 @@ const modelMapping = {
     whisper_small: 'Whisper Small',
     whisper_medium: 'Whisper Medium',
     whisper_large: 'Whisper Large',
-    m4t_medium: 'SeamlessM4T Medium',
-    m4t_large: 'SeamlessM4T Large'
+    // m4t_medium: 'SeamlessM4T Medium',
+    // m4t_large: 'SeamlessM4T Large'
 };
 
 const translationMapping = {
