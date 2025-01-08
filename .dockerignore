@@ -5,6 +5,7 @@ __pycache__/
 # Ignore virtual environments
 env/
 *.env
+*.env.*
 
 # Ignore Docker-related files
 # Dockerfile
@@ -22,6 +23,7 @@ logs/
 # Ignore git-related files and directories
 .git/
 .gitignore
+.github/
 
 # Ignore compiled files
 *.so

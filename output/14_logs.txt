@@ -1,0 +1,6 @@
+2025-01-04 01:30:30.948 | INFO     | __main__:<module>:77 - Created log file.
+2025-01-04 01:30:30.948 | INFO     | models:transcribe_audio:70 - Transcribing audio using model: whisper_base, language: en, translation: none, language_translation: EN
+2025-01-04 01:30:30.949 | INFO     | models:transcribe_audio:85 - Transcribing file: /app/output/123.mp3
+2025-01-04 01:30:30.949 | INFO     | models:transcribe_audio:94 - Loading model and processor... Progress: 30%
+2025-01-04 01:31:00.736 | INFO     | models:transcribe_audio:115 - Transcribing... Progress: 40%
+2025-01-04 01:31:05.944 | ERROR    | models:transcribe_audio:158 - Transcription failed: database is locked. Progress: 0%

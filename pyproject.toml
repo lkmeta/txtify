@@ -25,6 +25,10 @@ webvtt-py = "0.5.1"
 yt-dlp = "2024.8.6"
 python-multipart = "0.0.7"
 accelerate = "0.21.0"
+llvmlite = "0.43.0" 
+stable-ts = "2.18.0"
+numba = "^0.60.0"
+
 
 
 [tool.poetry.group.dev.dependencies]

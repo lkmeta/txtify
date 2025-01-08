@@ -32,3 +32,6 @@ demo txtify.mp4
 poetry.lock
 .mypy_cache/
 .ruff_cache/
+
+# Requirements file (not needed in production)
+requirements.txt
