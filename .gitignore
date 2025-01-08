@@ -29,7 +29,7 @@ demo txtify.mp4
 .DS_Store
 
 # Poetry and dependency management
-poetry.lock
+# poetry.lock
 .mypy_cache/
 .ruff_cache/
 
