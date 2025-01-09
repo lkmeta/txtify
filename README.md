@@ -83,14 +83,13 @@ cp .env.example .env
 docker-compose up --build -d
 ```
 
+> <sub>**Note:** The -d flag runs the container in detached mode.</sub>
+
 4. Stop the Docker Container
 
 ```sh
 docker-compose down
 ```
-
-> <sub>**Note:** The --env-file option passes your environment variables to the container.</sub>  
->  <sub>**Note:** The -d flag runs the container in detached mode.</sub>
 
 ## Usage
 
