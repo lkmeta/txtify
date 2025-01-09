@@ -42,10 +42,36 @@
 
     <div class="container">
         <h1>Audio and Video to Text for FREE using AI</h1>
+
         <div class="description">
+            Welcome to Txtify! Easily turn your 
+            <a href="#" style="color: var(--primary-color); font-weight: bold;">audio or video to text for free</a>. 
+            Provide a YouTube URL or upload your own files and leverage AI, powered by the new 
+            <a href="https://github.com/jianfch/stable-ts" target="_blank" style="color: var(--primary-color); font-weight: bold;">stable-ts</a> 
+            library for fast and accurate transcriptions.
+            <br><br>
+            Transcribe audio and video in 
+            <span id="transcription-languages" style="color: var(--primary-color); font-weight: bold;"></span> 
+            languages and translate transcriptions to 
+            <span id="translation-languages" style="color: var(--primary-color); font-weight: bold;"></span> 
+            languages. Export in multiple formats including 
+            <span id="file-types" style="color: var(--primary-color); font-weight: bold;"></span>.
+            Txtify supports files up to 
+            <span style="color: var(--primary-color); font-weight: bold;">100MB</span> 
+            and YouTube videos up to 
+            <span style="color: var(--primary-color); font-weight: bold;">10 minutes</span>.
+            <br><br>
+            Please note that this website is a 
+            <span style="color: var(--primary-color); font-weight: bold;">demo version</span> 
+            intended to showcase the functionality of Txtify. To utilize the full features of Txtify, including real data transcription, we recommend self-hosting the application. For detailed instructions on how to set up and run Txtify locally, visit our 
+            <a href="https://github.com/lkmeta/txtify" target="_blank" style="color: var(--primary-color); font-weight: bold;">GitHub repository</a>.
+        </div>
+        
+        <!-- <div class="description">
             Welcome to Txtify! Easily turn your <a style="color: var(--primary-color); font-weight: bold;">audio or
-                video to text for free</a>. Provide a YouTube URL or upload your own files and use AI to ensure fast and
-            accurate transcriptions.
+                video to text for free</a>. Provide a YouTube URL or upload your own files and use AI, powered by the new 
+            <a href="https://github.com/jianfch/stable-ts" target="_blank" style="color: var(--primary-color); font-weight: bold;">stable-ts</a>
+                 library, for fast and accurate transcriptions.
             <br><br>
             Transcribe audio and video in <span id="transcription-languages"
                 style="color: var(--primary-color); font-weight: bold;"></span> languages and translate transcriptions
@@ -53,26 +79,16 @@
             languages.
             Export in multiple formats including <span id="file-types"
                 style="color: var(--primary-color); font-weight: bold;"></span>.
-            <!-- <br><br> -->
             Txtify supports files up to <span style="color: var(--primary-color); font-weight: bold;">100MB</span>
             and YouTube videos up to <span style="color: var(--primary-color); font-weight: bold;">10 minutes</span>.
-
             <br><br>
-            Please note that this website is <span style="color: var(--primary-color); font-weight: bold;">running
-                locally</span> with full features of Txtify,
-            including real data transcription! For any issue or more instructions on
-            how to set up and run Txtify, visit our <a href="https://github.com/lkmeta/txtify" target="_blank"
+            Please note that this website is a <span style="color: var(--primary-color); font-weight: bold;">demo
+                version</span> intended to showcase the functionality of Txtify. To utilize the full features of Txtify,
+            including real data transcription, we recommend self-hosting the application. For detailed instructions on
+            how to set up and run Txtify locally, visit our <a href="https://github.com/lkmeta/txtify" target="_blank"
                 style="color: var(--primary-color); font-weight: bold;">GitHub repository</a>.
 
-
-            <!-- <br><br>
-            Want more control? Self-host Txtify with full features—check <a href="https://lkmeta.com" target="_blank"
-                style="color: var(--primary-color); font-weight: bold;">GitHub</a> repo for instructions. Otherwise, use
-            this
-            limited <a style="color: var(--primary-color); font-weight: bold;">FREE</a> version. -->
-            <!-- <br><br>
-            Enjoy! -->
-        </div>
+        </div> -->
 
         <div class="switch-case">
             <button id="youtube-button" class="active" onclick="showInput('youtube')">YouTube URL</button>
@@ -119,6 +135,7 @@
                 <option value="deepl">DeepL (requires DeepL API key - Highest Accuracy - RECOMMENDED)</option>
             </select>
         </div>
+
         <div class="input-group">
             <label for="language-translation">Choose Language Translation:</label>
             <small>Select the language to translate the transcribed text.</small>

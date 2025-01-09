@@ -14,7 +14,6 @@
 <div align="center">
   <p>
     <img src="https://img.shields.io/badge/ASR-Whisper-1f425f.svg" alt="Whisper">
-    <img src="https://img.shields.io/badge/ASR-SeamlessM4T-1f425f.svg" alt="SeamlessM4T">
     <img src="https://img.shields.io/badge/%F0%9F%A4%97-Models-yellow" alt="Hugging Face">
     <img src="https://img.shields.io/badge/Translation-DeepL-1f425f.svg" alt="DeepL">
     <img src="https://img.shields.io/badge/FastAPI-1f425f.svg" alt="FastAPI">
@@ -122,7 +121,7 @@ To understand how Txtify works, you can use the online simulation demo. Visit [T
 - [x] Integration with DeepL for translations
 - [x] Improved UI/UX
 - [x] Containerized the application
-- [ ] Enhance performance and scalability
+- [x] Enhance performance and scalability
 - [ ] Web browser Whisper option
 
 ## Report Issues
