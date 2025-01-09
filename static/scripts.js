@@ -20,7 +20,7 @@ const translationMapping = {
 document.addEventListener('DOMContentLoaded', function () {
     const transcriptionLanguagesCount = 90;
     const translationLanguagesCount = 37;
-    const fileTypes = ['.txt', '.pdf', '.srt', '.vtt', '.sbv'];
+    const fileTypes = ['.txt', '.srt', '.vtt', '.sbv'];
 
     document.getElementById('transcription-languages').innerText = transcriptionLanguagesCount;
     document.getElementById('translation-languages').innerText = translationLanguagesCount;
