@@ -9,13 +9,13 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10.16"
 uvicorn = "0.22.0"
-fastapi = "0.115.0"
+fastapi = "^0.115.6"
 deepl = "1.19.1"
 fpdf = "1.7.2"
 loguru = "0.7.2"
 psutil = "5.9.8"
 pydub = "0.25.1"
-pytest = "8.2.2"
+pytest = "^7.2.0"
 python-dotenv = "1.0.1"
 resend = "2.1.0"
 srt = "3.5.3"
@@ -28,6 +28,7 @@ accelerate = "0.21.0"
 llvmlite = "0.43.0" 
 stable-ts = "2.18.0"
 numba = "^0.60.0"
+starlette = "^0.40.0"
 
 
 

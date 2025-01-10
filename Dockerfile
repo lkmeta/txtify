@@ -35,7 +35,7 @@ ENV PATH="/root/.local/share/pypoetry/venv/bin:$PATH"
 # Preload the model to avoid loading it on the first request
 # Note: Keep in mind that this will increase the image size and build time
 # Choose the model you want to preload (e.g., openai/whisper-medium)
-# RUN test -d /root/.cache/huggingface || poetry run python -c "from transformers import AutoModelForSpeechSeq2Seq; AutoModelForSpeechSeq2Seq.from_pretrained('openai/whisper-medium')"
+RUN test -d /root/.cache/huggingface || poetry run python -c "from transformers import AutoModelForSpeechSeq2Seq; AutoModelForSpeechSeq2Seq.from_pretrained('openai/whisper-medium')"
 
 # Expose port 8010
 EXPOSE 8010
