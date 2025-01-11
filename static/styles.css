@@ -58,7 +58,7 @@ body {
     top: 0;
     padding: 15px 0;
     z-index: 1000;
-    background-color: rgba(0, 0, 0, 0.8);
+    background-color: rgba(0, 0, 0);
 }
 
 .navbar-content {
@@ -84,7 +84,7 @@ body {
     transform: scale(1.1);
 }
 
-.navbar .logo {
+/* .navbar .logo {
     font-size: 22px;
     font-weight: bold;
     background: linear-gradient(90deg, white 53%, red 47%);
@@ -92,7 +92,27 @@ body {
     -webkit-text-fill-color: transparent;
     text-decoration: none;
 
+} */
+
+.navbar .logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
 }
+
+.navbar .logo span {
+    font-size: 22px;
+    font-weight: bold;
+    background: linear-gradient(90deg, white 53%, red 47%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.logo-image {
+    height: 55px; /* Adjust as needed */
+    margin-right: 0px; 
+}
+
 
 .theme-toggle-wrapper {
     position: absolute;
