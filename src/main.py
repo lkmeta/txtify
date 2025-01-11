@@ -132,7 +132,7 @@ async def submit_contact(
             <p><strong>Message:</strong></p>
             <blockquote>{message}</blockquote>
             <div class="footer">
-                &copy; 2025 Txtify. Created by <a href="https://lkmeta.me" target="_blank">lkmeta</a>.
+                &copy; 2025 Txtify. Created by <a href="https://lkmeta.com" target="_blank">lkmeta</a>.
             </div>
         </div>
     </body>

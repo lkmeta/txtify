@@ -22,7 +22,7 @@
   </p>
 </div>
 
-Txtify is a free open-source web application that transcribes and translates audio from YouTube videos or uploaded media files. It now runs on Docker for easier deployment and includes monitoring capabilities. Leveraging the **`stable-ts`** library and the **`whisper-medium`** model, Txtify offers enhanced transcription accuracy and performance.
+Txtify is a free open-source web application that transcribes and translates audio from YouTube videos or uploaded media files. It now runs on Docker for easier deployment and includes monitoring capabilities. Leveraging the **`stable-ts`** library and the **`whisper`** models, Txtify offers enhanced transcription accuracy and performance.
 
 ## Table of Contents
 
@@ -39,7 +39,6 @@ Txtify is a free open-source web application that transcribes and translates aud
 ## About
 
 Txtify is designed to simplify the process of converting audio and video content into text. Whether you're looking to transcribe a YouTube video or your own audio/video files, Txtify offers an easy-to-use interface and powerful AI models to ensure accuracy and speed. The application supports multiple output formats including `.txt`, `.srt`, `.vtt`, and `.sbv`.
-
 
 ## Demo
 
@@ -79,9 +78,6 @@ cp .env.example .env
 
 3. Run the Docker
 
-> <sub>**Note:** The **whisper-medium** model is pre-selected and downloaded during the Docker build process. This ensures faster and more efficient transcriptions without the need to download the model each time.</sub>
-
-
 ```sh
 docker-compose up --build -d
 ```
@@ -93,12 +89,6 @@ docker-compose up --build -d
 ```sh
 docker-compose down
 ```
-
-### **Why whisper-medium?**
-
-- **Enhanced Performance:** The **whisper-medium** model offers a balanced trade-off between speed and accuracy, making it ideal for a wide range of transcription tasks.
-- **Pre-downloading:** By downloading the model during the Docker image build, you avoid the overhead of fetching it at runtime, leading to quicker startup times and a smoother user experience.
-
 
 ## Usage
 
