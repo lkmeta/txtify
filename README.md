@@ -1,6 +1,6 @@
 <div align="center">
 
-<p align="center"> <img src="https://github.com/lkmeta/txtify/blob/main/static/Txtify.png" width="300px"></p>
+<p align="center"> <img src="https://github.com/lkmeta/txtify/blob/main/static/txtify_github_logo.png" width="400px"></p>
 
 <p><a href="https://txtify-web.vercel.app/">Demo Website</a> | <a href="https://www.youtube.com/watch?v=wha6_4zyXXo">Demo Video</a></p>
 
