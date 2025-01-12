@@ -90,6 +90,20 @@ docker-compose up --build -d
 docker-compose down
 ```
 
+### Installation with Pre-Built Docker Image
+
+If you want to use the pre-built Docker image available on Docker Hub, follow these steps:
+
+1. Pull the Docker Imgae:
+   ```bash
+   docker pull lkmeta/txtify:latest
+   ```
+   
+2. Run the Docker Container
+   ```bash
+    docker run -d -p 8010:8010 lkmeta/txtify:latest
+    ```
+
 ## Usage
 
 ### Access the Application
