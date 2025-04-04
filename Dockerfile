@@ -1,39 +1,35 @@
 # Use an official Python runtime as a parent image
-FROM python:3.12-slim
+FROM python:3.10-slim
 
 # Set the working directory in the container
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including ffmpeg and build tools
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     gcc \
     python3-dev \
-    curl \
-    --no-install-recommends && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    --no-install-recommends \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Poetry
-RUN curl -sSL https://install.python-poetry.org | python3 - && \
-    ln -s /root/.local/bin/poetry /usr/local/bin/poetry
+# Copy the requirements file into the container
+COPY requirements.txt .
 
-# Copy only the pyproject.toml and poetry.lock first (for better caching)
-COPY pyproject.toml poetry.lock ./
+# Upgrade pip
+RUN pip install --no-cache-dir --upgrade pip
 
-# Install only main dependencies (exclude dev dependencies)
-RUN poetry install --no-root --only main
+# Install any dependencies specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the project files into the container
+# Copy the rest of the application code into the container
 COPY . .
 
 # Ensure the Python path includes the src directory
 ENV PYTHONPATH=/app/src
 
-# Add Poetry's virtual environment to the PATH
-ENV PATH="/root/.local/share/pypoetry/venv/bin:$PATH"
-
-# Expose port 8010
+# Expose port 8010 to the outside world
 EXPOSE 8010
 
 # Run the application
-CMD ["poetry", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8010"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8010"]

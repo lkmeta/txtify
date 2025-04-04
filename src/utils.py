@@ -1,7 +1,7 @@
 """
-This file provides utility functions for managing transcription processes, 
-handling media files, and converting transcriptions to various formats such as 
-PDF, SRT, VTT, and SBV. It also includes helper functions for cleaning filenames, 
+This file provides utility functions for managing transcription processes,
+handling media files, and converting transcriptions to various formats such as
+PDF, SRT, VTT, and SBV. It also includes helper functions for cleaning filenames,
 validating YouTube URLs, and managing file cleanup.
 """
 
