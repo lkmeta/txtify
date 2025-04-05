@@ -2,7 +2,7 @@
 
 <p align="center"> <img src="https://github.com/lkmeta/txtify/blob/main/static/txtify_github_logo.png" width="400px"></p>
 
-<p><a href="https://txtify-web.vercel.app/">Demo Website</a> | <a href="https://www.youtube.com/watch?v=wha6_4zyXXo">Demo Video</a></p>
+<p><a href="https://txtify.lkmeta.com/">Demo Website</a> | <a href="https://www.youtube.com/watch?v=wha6_4zyXXo">Demo Video</a></p>
 
 <hr class="custom-line">
 
@@ -126,7 +126,7 @@ docker logs -f txtify_container
 
 ### Online Simulation Demo
 
-To understand how Txtify works, you can use the online simulation demo. Visit [Txtify Website](https://txtify-web.vercel.app/) and follow the instructions to upload your media or enter a YouTube URL for a simulated transcription process.
+To understand how Txtify works, you can use the online simulation demo. Visit [Txtify Website](https://txtify.lkmeta.com/) and follow the instructions to upload your media or enter a YouTube URL for a simulated transcription process.
 
 ## Roadmap
 
@@ -142,7 +142,7 @@ To understand how Txtify works, you can use the online simulation demo. Visit [T
 
 If you encounter any issues, bugs, or have suggestions for improvements, please report them using one of the following methods:
 
-- Contact Form: Visit our [Contact Page](https://txtify-web.vercel.app/contact) and submit your feedback or issue.
+- Contact Form: Visit our [Contact Page](https://txtify.lkmeta.com/contact) and submit your feedback or issue.
 - GitHub Issues: Open an issue on the repository's issue tracker. Please provide detailed information to help us address the problem effectively.
 
 > <sub>Your feedback is valuable and helps us improve Txtify!</sub>
