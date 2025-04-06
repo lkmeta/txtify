@@ -28,8 +28,8 @@ COPY . .
 # Ensure the Python path includes the src directory
 ENV PYTHONPATH=/app/src
 
-# Expose port 8010 to the outside world
-EXPOSE 8010
+# Expose port 8011
+EXPOSE 8011
 
 # Run the application
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8010"]
+CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8011"]

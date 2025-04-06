@@ -59,19 +59,14 @@ tests/
 
 
 
-# For now
-.pre-commit-config.yaml
-old_dock
-README.md
-docker-compose.yml
-
-
-
 # extra
 __pycache__/
 *.py[cod]
+*$py.class
 .git/
 .github/
+.pytest_cache/
+test_data/
 tests/
-output/
-.env
+docs/
+*.md

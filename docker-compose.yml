@@ -8,9 +8,15 @@ services:
     image: lkmeta/txtify:latest
     container_name: txtify_container
     ports:
-      - "8010:8010"
+      - "8011:8011"
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
       - .:/app
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8011/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
