@@ -104,6 +104,13 @@ If you want to use the pre-built Docker image available on Docker Hub, follow th
     docker run -d -p 8010:8010 lkmeta/txtify:latest
     ```
 
+> **Note:** If you're using Unraid or an AMD architecture, check out the **`dev`** branch. It uses a different Docker image that doesn’t include Poetry or other extra libraries. You can pull and run it with:
+> ```bash
+> docker pull lkmeta/txtify:v1
+> docker run -d -p 8011:8011 lkmeta/txtify:v1
+> ```
+
+
 ## Usage
 
 ### Access the Application
