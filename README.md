@@ -96,12 +96,12 @@ If you want to use the pre-built Docker image available on Docker Hub, follow th
 
 1. Pull the Docker Imgae:
    ```bash
-   docker pull lkmeta/txtify:latest
+   docker pull lkmeta/txtify:v1
    ```
    
 2. Run the Docker Container
    ```bash
-    docker run -d -p 8011:8011 lkmeta/txtify:latest
+    docker run -d -p 8011:8011 lkmeta/txtify:v1
     ```
 
 ## Usage
