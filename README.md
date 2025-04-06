@@ -101,14 +101,14 @@ If you want to use the pre-built Docker image available on Docker Hub, follow th
    
 2. Run the Docker Container
    ```bash
-    docker run -d -p 8010:8010 lkmeta/txtify:latest
+    docker run -d -p 8011:8011 lkmeta/txtify:latest
     ```
 
 ## Usage
 
 ### Access the Application
 
-Open your web browser and navigate to `http://localhost:8010` to access Txtify.
+Open your web browser and navigate to `http://localhost:8011` to access Txtify.
 
 ### Monitoring
 
