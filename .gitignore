@@ -1,5 +1,6 @@
 # Pycache files
 __pycache__/
+.pytest_cache/
 
 # Logs and databases
 *.db
@@ -29,9 +30,13 @@ demo txtify.mp4
 .DS_Store
 
 # Poetry and dependency management
-# poetry.lock
 .mypy_cache/
 .ruff_cache/
 
-# Requirements file (not needed in production)
-requirements.txt
+
+# Requirements file
+# requirements.txt
+# docker-compose.yml
+
+# Old files
+old_files/

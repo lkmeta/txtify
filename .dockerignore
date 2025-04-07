@@ -1,11 +1,15 @@
 # Ignore Python cache files
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.pytest_cache/
 
 # Ignore virtual environments
 env/
+venv/
+.env
 *.env
-*.env.*
 
 # Ignore Docker-related files
 # Dockerfile
@@ -51,3 +55,18 @@ tests/
 # poetry.lock
 .mypy_cache/
 .ruff_cache/
+# pyproject.toml
+
+
+
+# extra
+__pycache__/
+*.py[cod]
+*$py.class
+.git/
+.github/
+.pytest_cache/
+test_data/
+tests/
+docs/
+*.md

@@ -96,12 +96,12 @@ If you want to use the pre-built Docker image available on Docker Hub, follow th
 
 1. Pull the Docker Imgae:
    ```bash
-   docker pull lkmeta/txtify:latest
+   docker pull lkmeta/txtify:v1
    ```
    
 2. Run the Docker Container
    ```bash
-    docker run -d -p 8010:8010 lkmeta/txtify:latest
+    docker run -d -p 8011:8011 lkmeta/txtify:v1
     ```
 
 > **Note:** If you're using Unraid or an AMD architecture, check out the **`dev`** branch. It uses a different Docker image that doesn’t include Poetry or other extra libraries. You can pull and run it with:
@@ -115,7 +115,7 @@ If you want to use the pre-built Docker image available on Docker Hub, follow th
 
 ### Access the Application
 
-Open your web browser and navigate to `http://localhost:8010` to access Txtify.
+Open your web browser and navigate to `http://localhost:8011` to access Txtify.
 
 ### Monitoring
 
