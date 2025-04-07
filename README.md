@@ -94,22 +94,21 @@ docker-compose down
 
 If you want to use the pre-built Docker image available on Docker Hub, follow these steps:
 
-1. Pull the Docker Imgae:
+1. Pull the Docker Image:
    ```bash
-   docker pull lkmeta/txtify:v1
+   docker pull lkmeta/txtify:latest
    ```
-   
 2. Run the Docker Container
    ```bash
-    docker run -d -p 8011:8011 lkmeta/txtify:v1
-    ```
+    docker run -d -p 8011:8011 lkmeta/txtify:latest
+   ```
 
-> **Note:** If you're using Unraid or an AMD architecture, check out the **`dev`** branch. It uses a different Docker image that doesn’t include Poetry or other extra libraries. You can pull and run it with:
+> **Note:** If you're using Unraid or an AMD architecture, check out the [docker hub images](https://hub.docker.com/repository/docker/lkmeta/txtify/tags). You can pull and run it with:
+>
 > ```bash
 > docker pull lkmeta/txtify:v1
 > docker run -d -p 8011:8011 lkmeta/txtify:v1
 > ```
-
 
 ## Usage
 
