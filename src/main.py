@@ -7,6 +7,7 @@
 
 import os
 import time
+import uuid
 import zipfile
 from pathlib import Path
 from typing import Optional
@@ -43,26 +44,16 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
-DEFINED_REQUESTS = [
-    "/",
-    "/transcribe",
-    "/status",
-    "/cancel",
-    "/download",
-    "/preview",
-    "/downloadPreview",
-    "/cleanup",
-    "/faq",
-    "/contact",
-    "/submit_contact",
-]
-
 DB = transcriptionsDB(str(OUTPUT_DIR / "transcriptions.db"))
 
 RUNNING_LOCALLY = os.getenv("RUNNING_LOCALLY", "True").lower() == "true"
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-if not RESEND_API_KEY and not RUNNING_LOCALLY:
-    raise ValueError("RESEND_API_KEY is not set")
+CONTACT_EMAIL = os.getenv("CONTACT_EMAIL")
+if not RUNNING_LOCALLY:
+    if not RESEND_API_KEY:
+        raise ValueError("RESEND_API_KEY is not set")
+    if not CONTACT_EMAIL:
+        raise ValueError("CONTACT_EMAIL is not set")
 
 if not RUNNING_LOCALLY:
     resend.api_key = RESEND_API_KEY
@@ -73,11 +64,15 @@ async def read_form(request: Request):
     """
     Render the transcription form.
     """
-    if request.url.path not in DEFINED_REQUESTS:
-        return templates.TemplateResponse("error.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
-    context = {"request": request}
-    return templates.TemplateResponse("index.html", context)
+
+@app.get("/health", response_class=JSONResponse)
+async def health():
+    """
+    Health check used by the docker-compose healthcheck.
+    """
+    return {"status": "ok"}
 
 
 @app.get("/faq", response_class=HTMLResponse)
@@ -85,8 +80,7 @@ async def faq(request: Request):
     """
     Render the FAQ page.
     """
-    context = {"request": request}
-    return templates.TemplateResponse("faq.html", context)
+    return templates.TemplateResponse(request, "faq.html")
 
 
 @app.get("/contact", response_class=HTMLResponse)
@@ -94,8 +88,7 @@ async def contact(request: Request):
     """
     Render the contact page.
     """
-    context = {"request": request}
-    return templates.TemplateResponse("contact.html", context)
+    return templates.TemplateResponse(request, "contact.html")
 
 
 @app.post("/submit_contact")
@@ -148,10 +141,10 @@ async def submit_contact(
     try:
         params = resend.Emails.SendParams(
             from_="Txtify <onboarding@resend.dev>",
-            to=["louiskmeta@gmail.com"],
+            to=[CONTACT_EMAIL],
             subject="Txtify Contact Form Submission",
             html=html_content,
-            headers={"X-Entity-Ref-ID": "123456789"},
+            headers={"X-Entity-Ref-ID": str(uuid.uuid4())},
         )
         resend.Emails.send(params)
         logger.info("Email sent successfully!")
@@ -417,11 +410,9 @@ async def cleanup(pid: int):
     )
 
 
-@app.get("/{request}", response_class=HTMLResponse)
-async def catch_all(request: Request):
+@app.get("/{path}", response_class=HTMLResponse)
+async def catch_all(request: Request, path: str):
     """
     Handle non-defined routes.
     """
-    if request.url.path not in DEFINED_REQUESTS:
-        return templates.TemplateResponse("error.html", {"request": request})
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "error.html", status_code=404)
