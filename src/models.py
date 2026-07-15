@@ -37,7 +37,7 @@ STABLE_MODELS = {
     "openai/whisper-base": "base",
     "openai/whisper-small": "small",
     "openai/whisper-medium": "medium",
-    "openai/whisper-large-v3": "large",
+    "openai/whisper-large-v3": "large-v3",
 }
 
 DEFAULT_MODEL = "whisper_base"
