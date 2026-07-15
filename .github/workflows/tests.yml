@@ -1,0 +1,25 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+      - name: Install dependencies (without the ML stack)
+        run: |
+          pip install --upgrade pip
+          # tests stub torch/stable_whisper (see tests/conftest.py); skip the
+          # multi-GB ML wheels so CI stays fast
+          grep -v -E '^(torch|stable-ts)' requirements.txt > /tmp/reqs.txt
+          pip install -r /tmp/reqs.txt pytest httpx pypdf
+      - name: Run tests
+        run: pytest -v

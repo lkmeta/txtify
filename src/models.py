@@ -37,7 +37,7 @@ STABLE_MODELS = {
     "openai/whisper-base": "base",
     "openai/whisper-small": "small",
     "openai/whisper-medium": "medium",
-    "openai/whisper-large-v3": "large",
+    "openai/whisper-large-v3": "large-v3",
 }
 
 DEFAULT_MODEL = "whisper_base"
@@ -58,7 +58,7 @@ def transcribe_audio(
     model: str,
     translation: str,
     language_translation: str,
-    pid: int,
+    job_id: int,
 ) -> None:
     """
     Transcribe an audio file using stable-whisper. Optionally translate the
@@ -70,7 +70,7 @@ def transcribe_audio(
         model (str): Model key from the MODELS dictionary.
         translation (str): Translation model or 'none' to skip translation.
         language_translation (str): Target language for translation.
-        pid (int): Process ID for tracking in the database.
+        job_id (int): Database job id for tracking.
 
     Returns:
         None
@@ -83,8 +83,8 @@ def transcribe_audio(
 
     if not file_path:
         logger.error("No file path provided. Progress: 0%")
-        DB.update_transcription_status_by_pid(
-            "Error: No file path provided.", "", 0, pid
+        DB.update_transcription_status(
+            "Error: No file path provided.", "", 0, job_id
         )
         return
 
@@ -95,15 +95,15 @@ def transcribe_audio(
 
     try:
         logger.info("Loading stable-whisper model... Progress: 30%")
-        DB.update_transcription_status_by_pid(
-            "Loading transcription model...", "", 30, pid
+        DB.update_transcription_status(
+            "Loading transcription model...", "", 30, job_id
         )
 
         stable_model_name = STABLE_MODELS.get(MODELS.get(model, DEFAULT_MODEL), "base")
         model_instance = load_model(stable_model_name, device=device, cpu_preload=True)
 
         logger.info("Transcribing... Progress: 40%")
-        DB.update_transcription_status_by_pid("Transcribing...", "", 40, pid)
+        DB.update_transcription_status("Transcribing...", "", 40, job_id)
 
         result = model_instance.transcribe(
             file_path,
@@ -114,7 +114,7 @@ def transcribe_audio(
             suppress_silence=True,
         )
 
-        pid_dir = OUTPUT_DIR / str(pid)
+        pid_dir = OUTPUT_DIR / str(job_id)
         pid_dir.mkdir(parents=True, exist_ok=True)
         srt_file = pid_dir / "en_transcription.srt"
 
@@ -123,9 +123,9 @@ def transcribe_audio(
         result.to_txt(str(pid_dir / "transcription.txt"))
 
         logger.info("Saving transcription... Progress: 70%")
-        DB.update_transcription_status_by_pid("Saving transcription...", "", 70, pid)
+        DB.update_transcription_status("Saving transcription...", "", 70, job_id)
 
-        logger.error("saved transcription on: ", str(pid_dir / "transcription.txt"))
+        logger.info(f"Saved transcription to: {pid_dir / 'transcription.txt'}")
         with open(pid_dir / "transcription.txt", "r", encoding="utf-8") as f:
             transcription = f.read()
 
@@ -133,7 +133,7 @@ def transcribe_audio(
         if translation and language.lower() != language_translation.lower():
             if translation.lower() != "none":
                 logger.info("Translating... Progress: 85%")
-                DB.update_transcription_status_by_pid("Translating...", "", 85, pid)
+                DB.update_transcription_status("Translating...", "", 85, job_id)
                 logger.info(f"Translating from {language} to {language_translation}")
                 source_lang = SOURCE_LANGUAGES.get(language.upper())
                 target_lang = TARGET_LANGUAGES.get(language_translation.upper())
@@ -142,7 +142,7 @@ def transcribe_audio(
                         f"Invalid language code: {language} or {language_translation}"
                     )
                 transcription = deepl_translate(
-                    transcription, language, language_translation, pid
+                    transcription, language, language_translation, job_id
                 )
             else:
                 logger.info("Skipping translation (translation='none').")
@@ -156,20 +156,20 @@ def transcribe_audio(
         )
 
         logger.info("Exporting transcription... Progress: 90%")
-        DB.update_transcription_status_by_pid("Exporting transcription...", "", 90, pid)
+        DB.update_transcription_status("Exporting transcription...", "", 90, job_id)
         convert_to_formats(transcription, str(translated_text_file), "all")
 
         logger.info("Completed successfully! Progress: 100%")
-        DB.update_transcription_status_by_pid(
-            "Completed successfully!", str(time.time()), 100, pid
+        DB.update_transcription_status(
+            "Completed successfully!", str(time.time()), 100, job_id
         )
 
     except Exception as e:
         logger.error(f"Transcription failed: {str(e)}. Progress: 0%")
-        DB.update_transcription_status_by_pid("Error", "", 0, pid)
+        DB.update_transcription_status("Error", "", 0, job_id)
 
 
-def deepl_translate(text: str, source_lang: str, target_lang: str, pid: int) -> str:
+def deepl_translate(text: str, source_lang: str, target_lang: str, job_id: int) -> str:
     """
     Translate text using DeepL, updating progress status if errors occur.
 
@@ -177,7 +177,7 @@ def deepl_translate(text: str, source_lang: str, target_lang: str, pid: int) -> 
         text (str): Original text to translate.
         source_lang (str): Source language code.
         target_lang (str): Target language code.
-        pid (int): Process ID for tracking.
+        job_id (int): Database job id for tracking.
 
     Returns:
         str: Translated text, or the original text on failure.
@@ -197,7 +197,7 @@ def deepl_translate(text: str, source_lang: str, target_lang: str, pid: int) -> 
         return result.text
     except Exception as e:
         logger.error(f"Translation failed: {str(e)}. Progress: 0%")
-        DB.update_transcription_status_by_pid("Translation Error", "", 0, pid)
+        DB.update_transcription_status("Translation Error", "", 0, job_id)
         return text
 
 
@@ -227,9 +227,20 @@ def save_final_transcription(
         if match:
             timestamps.append((match.group(1), match.group(2)))
 
-    translated_lines = translated_text.split("\n")
+    translated_lines = [line for line in translated_text.split("\n") if line.strip()]
     if len(translated_lines) != len(timestamps):
-        raise ValueError("Mismatch between timestamps and translated lines.")
+        # DeepL sometimes merges or splits lines. Align what matches, merge any
+        # extra lines into the last block, and pad missing ones instead of
+        # failing the whole job.
+        logger.warning(
+            f"Timestamp/translation count mismatch: {len(timestamps)} timestamps "
+            f"vs {len(translated_lines)} lines. Aligning best-effort."
+        )
+        if len(translated_lines) > len(timestamps):
+            extra = " ".join(translated_lines[len(timestamps) - 1 :])
+            translated_lines = translated_lines[: len(timestamps) - 1] + [extra]
+        else:
+            translated_lines += [""] * (len(timestamps) - len(translated_lines))
 
     final_blocks = []
     for idx, (start, end) in enumerate(timestamps):

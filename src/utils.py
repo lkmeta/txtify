@@ -5,12 +5,11 @@ PDF, SRT, VTT, and SBV. It also includes helper functions for cleaning filenames
 validating YouTube URLs, and managing file cleanup.
 """
 
-import os
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
-from typing import Optional
 
 import psutil
 import yt_dlp
@@ -20,30 +19,16 @@ from pydub import AudioSegment
 
 from db import transcriptionsDB
 
-cwd = "/app/src" if os.getenv("RUNNING_IN_DOCKER") else os.getcwd()
-
-# Global dictionary to store transcription status
-transcription_status = {
-    "progress": 0,
-    "phase": "Initializing...",
-    "model": "",
-    "language": "",
-    "translation": "",
-    "time_taken": 0,
-    "completed": False,
-    "file_path": None,
-    "canceled": False,
-    "pid": None,
-}
-
 BASE_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = BASE_DIR.parent / "output"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 DB = transcriptionsDB(OUTPUT_DIR / "transcriptions.db")
 
-MAX_VIDEO_DURATION = 10 * 60  # 10 minutes in seconds
-MAX_UPLOAD_SIZE_MB = 100  # 100 MB limit
+# User-facing limits. Keep the copy in templates/index.html and
+# templates/faq.html in sync when changing these.
+MAX_VIDEO_DURATION = 15 * 60  # YouTube audio is truncated at 15 minutes
+MAX_UPLOAD_SIZE_MB = 1000  # uploaded files are rejected above 1000 MB
 
 
 def is_valid_youtube_url(url: str) -> bool:
@@ -70,11 +55,14 @@ def is_valid_media_file(filename: str) -> bool:
     Returns:
         bool: True if supported, False otherwise.
     """
-    valid_extensions = ["mp4", "mp3"]
+    # Anything ffmpeg/pydub can decode; keep in sync with the accept list
+    # in templates/index.html.
+    valid_extensions = ["mp3", "mp4", "m4a", "wav", "webm", "ogg", "flac", "aac", "mov"]
     return filename.split(".")[-1].lower() in valid_extensions
 
 
 def handle_transcription(
+    job_id: int,
     youtube_url: str,
     media,
     language: str,
@@ -82,12 +70,13 @@ def handle_transcription(
     translation: str,
     language_translation: str,
     file_export: str,
-) -> Optional[int]:
+) -> bool:
     """
     Handle the transcription process: download YouTube or handle uploaded media,
     then launch a separate transcription subprocess.
 
     Args:
+        job_id (int): Database job id created when the request was inserted.
         youtube_url (str): The YouTube video URL.
         media: Uploaded media file.
         language (str): Transcription language.
@@ -97,7 +86,7 @@ def handle_transcription(
         file_export (str): Export format.
 
     Returns:
-        Optional[int]: The PID of the subprocess, or None on failure.
+        bool: True if the subprocess was launched, False on failure.
     """
     output_file = None
     try:
@@ -133,51 +122,32 @@ def handle_transcription(
             logger.info(f"Downloaded video: {output_file}")
 
         elif media:
-            media_size_mb = len(media.file.read()) / (1024 * 1024)
-            media.file.seek(0)
-            if media_size_mb > MAX_UPLOAD_SIZE_MB:
-                raise Exception(f"Uploaded file exceeds {MAX_UPLOAD_SIZE_MB} MB limit.")
-
             media_filename = clean_filename(media.filename)
             media_file_path = OUTPUT_DIR / media_filename
-            with open(media_file_path, "wb") as buffer:
-                buffer.write(media.file.read())
+            max_bytes = MAX_UPLOAD_SIZE_MB * 1024 * 1024
+            written = 0
+            try:
+                # Stream to disk in chunks; never hold the whole upload in memory.
+                with open(media_file_path, "wb") as buffer:
+                    while chunk := media.file.read(1024 * 1024):
+                        written += len(chunk)
+                        if written > max_bytes:
+                            raise Exception(
+                                f"Uploaded file exceeds {MAX_UPLOAD_SIZE_MB} MB limit."
+                            )
+                        buffer.write(chunk)
+            except Exception:
+                media_file_path.unlink(missing_ok=True)
+                raise
             output_file = convert_to_mp3(media_file_path)
 
         logger.info(f"Transcription started for: {output_file}")
 
-        # Local process
-        # conda_env = "txtify"
-        # process = subprocess.Popen(
-        #     [
-        #         "conda",
-        #         "run",
-        #         "--name",
-        #         conda_env,
-        #         "python",
-        #         "transcribe_process.py",
-        #         str(output_file),
-        #         language,
-        #         model,
-        #         translation,
-        #         language_translation,
-        #         file_export,
-        #     ],
-        #     stdout=subprocess.PIPE,
-        #     stderr=subprocess.PIPE,
-        #     cwd=cwd + "/src",
-        # )
-        # logger.warning(f"Running subprocess in directory: {cwd} + '/src'")
-
-        # stdout, stderr = process.communicate()
-        # logger.warning(f"STDOUT: {stdout.decode()}")
-        # logger.warning(f"STDERR: {stderr.decode()}")
-
-        # # Docker container process
         process = subprocess.Popen(
             [
-                "python",
-                "/app/src/transcribe_process.py",
+                sys.executable,
+                str(BASE_DIR / "transcribe_process.py"),
+                str(job_id),
                 str(output_file),
                 language,
                 model,
@@ -188,39 +158,20 @@ def handle_transcription(
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            # cwd="/app/src",
         )
 
-        # logger.warning(f"Running subprocess in directory: /app/src'")
+        DB.set_process_pid(process.pid, job_id)
+        logger.info(f"Transcription job {job_id} started with PID: {process.pid}")
 
-        # stdout_data, stderr_data = process.communicate()
-        # logger.warning(f"STDOUT: {stdout_data}")
-        # logger.warning(f"STDERR: {stderr_data}")
-
-        pid = process.pid
-        if pid:
-            DB.update_transcription_pid("Processing request...", pid)
-            transcription_status["phase"] = "Processing request..."
-            transcription_status["progress"] = 10
-            transcription_status["pid"] = pid
-            logger.info(f"Transcription process started with PID: {pid}")
-        else:
-            raise Exception("Failed to start transcription process")
-
-        pid_output_dir = OUTPUT_DIR / f"{pid}"
-
-        # Check if pid_output_dir exists and if yes clean it
-        if pid_output_dir.exists():
-            shutil.rmtree(pid_output_dir)
-
-        pid_output_dir.mkdir(parents=True, exist_ok=True)
-        return pid
+        job_output_dir = OUTPUT_DIR / str(job_id)
+        if job_output_dir.exists():
+            shutil.rmtree(job_output_dir)
+        job_output_dir.mkdir(parents=True, exist_ok=True)
+        return True
 
     except Exception as e:
-        transcription_status["phase"] = "Error"
-        transcription_status["progress"] = 0
         logger.error(f"Transcription failed: {str(e)}")
-        return None
+        return False
 
 
 def convert_to_mp3(file_path: Path) -> Path:

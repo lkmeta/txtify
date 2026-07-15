@@ -70,3 +70,16 @@ test_data/
 tests/
 docs/
 *.md
+# Runtime artifacts must never end up in the image
+output/
+*.mp3
+*.mp4
+*.m4a
+*.wav
+*.webm
+*.srt
+*.vtt
+*.sbv
+*.zip
+old_files/
+PORTO VLOG*/
