@@ -31,6 +31,7 @@ Txtify is a free open-source web application that transcribes and translates aud
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
+- [Development](#development)
 - [Roadmap](#roadmap)
 - [Report Issues](#report-issues)
 - [Contributing](#contributing)
@@ -129,6 +130,19 @@ docker logs -f txtify_container
 ### Online Demo
 
 To see Txtify in action, visit the [Txtify Website](https://txtify.lkmeta.com/) and upload your media or enter a YouTube URL to transcribe it.
+
+## Development
+
+```sh
+# Unit/API tests (run without the ML stack — see tests/conftest.py)
+pip install -r requirements-dev.txt
+pytest
+
+# Full end-to-end check against the real Docker image
+./scripts/docker_e2e.sh
+```
+
+Both run in CI: tests on every pull request, plus a Docker image build. If you use Claude Code, `CLAUDE.md` and the project skills/agents under `.claude/` encode the repo's conventions and verification workflow.
 
 ## Roadmap
 
