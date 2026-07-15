@@ -257,7 +257,8 @@ async def status(pid: Optional[int] = None):
         # A worker that died without a terminal DB write (e.g. import crash)
         # would otherwise leave the frontend polling forever.
         worker_pid = status_data[12]
-        if worker_pid and not is_worker_alive(worker_pid) and "Error" not in status_data[8]:
+        already_terminal = "Error" in status_data[8] or status_data[8] == "Canceled"
+        if worker_pid and not already_terminal and not is_worker_alive(worker_pid):
             logger.error(f"Worker for job {pid} died without finishing")
             DB.update_transcription_status("Error", str(time.time()), 0, pid)
             return {
