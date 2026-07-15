@@ -18,8 +18,10 @@ pytest                      # 32+ unit/API tests; runs WITHOUT torch installed
                             # (tests/conftest.py stubs torch/stable_whisper)
 ./scripts/docker_e2e.sh     # full gate: docker build → boot → real transcription
                             # → preview/download checks. Ends with "PASS: docker E2E complete"
-uvicorn main:app --port 8011   # run locally (from src/); ffmpeg required
+uvicorn main:app --port 8011   # quick local iteration only (from src/); ffmpeg required
 ```
+
+**The canonical build is always Docker with the pinned `requirements.txt`** (`docker compose up --build` / `scripts/docker_e2e.sh`). Local venvs are for fast iteration and unit tests only — never treat "works locally" as verified; the deployment artifact is the image.
 
 For quick local work you don't need the ML stack: install `requirements-dev.txt` minus `torch`/`torchaudio`/`stable-ts` (see `.github/workflows/tests.yml` for the exact recipe). Anything touching the worker/transcription path must be verified with `scripts/docker_e2e.sh` — the unit tests stub the model.
 
