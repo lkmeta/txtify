@@ -46,3 +46,5 @@ demo txtify.mp4
 
 # Old files
 old_files/
+# Committed test fixture is an explicit exception to the media ban
+!tests/fixtures/speech.mp3
