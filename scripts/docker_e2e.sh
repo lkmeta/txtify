@@ -34,12 +34,9 @@ done
 code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/nope")
 [ "$code" = "404" ] || { echo "FAIL: unknown route returned $code"; exit 1; }
 
-echo "==> Generating 5s speech-like fixture"
-ffmpeg -hide_banner -loglevel error -y -f lavfi -i "sine=frequency=300:duration=5" "$WORKDIR/clip.mp3"
-
-echo "==> Submitting transcription (whisper tiny)"
+echo "==> Submitting transcription of real speech fixture (whisper tiny)"
 JOB=$(curl -sf -X POST "$BASE/transcribe" \
-  -F media=@"$WORKDIR/clip.mp3" -F language=en -F model=whisper_tiny \
+  -F media=@"tests/fixtures/speech.mp3" -F language=en -F model=whisper_tiny \
   -F translation=none -F language_translation=en | python3 -c 'import json,sys; print(json.load(sys.stdin)["pid"])')
 echo "    job id: $JOB"
 
@@ -54,7 +51,15 @@ done
 [ "$PROGRESS" = "100" ] || { echo "FAIL: timed out"; exit 1; }
 
 echo "==> Preview + downloads"
-curl -sf "$BASE/preview?pid=$JOB" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert all(k in d for k in ("txt","srt","vtt","sbv")), d.keys()'
+# The fixture says "the quick brown fox ..." — assert real words came out.
+curl -sf "$BASE/preview?pid=$JOB" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+assert all(k in d for k in ("txt", "srt", "vtt", "sbv")), d.keys()
+srt = d["srt"]
+assert "quick brown fox" in srt.lower(), "transcription wrong: %r" % srt
+print("    transcribed:", srt.splitlines()[2])
+'
 curl -sf -o "$WORKDIR/result.zip" "$BASE/download?pid=$JOB"
 LISTING=$(unzip -l "$WORKDIR/result.zip")
 echo "$LISTING"
