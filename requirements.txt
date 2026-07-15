@@ -1,6 +1,6 @@
 deepl==1.19.1
 fastapi==0.115.0
-fpdf==1.7.2
+fpdf2==2.8.3
 loguru==0.7.2
 psutil==5.9.8
 pydub==0.25.1
