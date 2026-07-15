@@ -184,7 +184,7 @@ async def transcribe(
                 content={"message": "Invalid file type"}, status_code=400
             )
 
-    DB.insert_transcription(
+    job_id = DB.insert_transcription(
         youtube_url,
         media.filename if media else "",
         language,
@@ -194,12 +194,10 @@ async def transcribe(
         file_export,
         "Processing request...",
         str(time.time()),
-        "",
-        0,
-        0,
     )
 
-    pid = handle_transcription(
+    started = handle_transcription(
+        job_id,
         youtube_url,
         media,
         language,
@@ -209,15 +207,17 @@ async def transcribe(
         file_export,
     )
 
-    if pid:
-        DB.update_transcription_status_by_pid("Processing request...", "", 10, pid)
-    else:
+    if not started:
+        DB.update_transcription_status("Error", str(time.time()), 0, job_id)
         return JSONResponse(
             content={"message": "Failed to start transcription process"},
             status_code=500,
         )
 
-    return {"message": "Transcription started successfully.", "pid": pid}
+    DB.update_transcription_status("Processing request...", "", 10, job_id)
+
+    # The frontend treats this value as an opaque token; it is the job id.
+    return {"message": "Transcription started successfully.", "pid": job_id}
 
 
 @app.get("/status", response_class=JSONResponse)
@@ -230,9 +230,9 @@ async def status(pid: Optional[int] = None):
             status_code=400, detail="PID is required and must be an integer."
         )
 
-    logger.info(f"Getting status for process ID: {pid}")
+    logger.info(f"Getting status for job: {pid}")
 
-    status_data = DB.get_transcription_by_pid(pid)
+    status_data = DB.get_transcription(pid)
     if not status_data:
         return JSONResponse(
             content={"message": "Transcription not found"}, status_code=404
@@ -248,14 +248,14 @@ async def status(pid: Optional[int] = None):
                 if status_data[9]
                 else "In Progress"
             )
-            done = kill_process_by_pid(pid)
+            done = kill_process_by_pid(status_data[12])
 
             logs_file = OUTPUT_DIR / f"{pid}_logs.txt"
             if logs_file.exists():
                 logs_file.rename(OUTPUT_DIR / f"{pid}" / "logs.txt")
 
             if done:
-                logger.info(f"Transcription process {pid} is done!")
+                logger.info(f"Transcription job {pid} is done!")
         except ValueError:
             time_taken = "Invalid data"
 
@@ -279,13 +279,13 @@ async def cancel_transcription(pid: Optional[int] = None):
             status_code=400, detail="PID is required and must be an integer."
         )
 
-    status_data = DB.get_transcription_by_pid(pid)
+    status_data = DB.get_transcription(pid)
     if not status_data:
         return JSONResponse(
             content={"message": "Transcription not found"}, status_code=404
         )
 
-    cancel = kill_process_by_pid(pid)
+    cancel = kill_process_by_pid(status_data[12])
     cleanup_files(pid)
 
     if not cancel:
@@ -293,7 +293,7 @@ async def cancel_transcription(pid: Optional[int] = None):
             content={"message": "Failed to cancel transcription"}, status_code=500
         )
 
-    DB.update_transcription_status_by_pid("Canceled", str(time.time()), 0, pid)
+    DB.update_transcription_status("Canceled", str(time.time()), 0, pid)
     return {"message": "Transcription canceled successfully!"}
 
 

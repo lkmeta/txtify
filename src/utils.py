@@ -5,12 +5,11 @@ PDF, SRT, VTT, and SBV. It also includes helper functions for cleaning filenames
 validating YouTube URLs, and managing file cleanup.
 """
 
-import os
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
-from typing import Optional
 
 import psutil
 import yt_dlp
@@ -19,22 +18,6 @@ from loguru import logger
 from pydub import AudioSegment
 
 from db import transcriptionsDB
-
-cwd = "/app/src" if os.getenv("RUNNING_IN_DOCKER") else os.getcwd()
-
-# Global dictionary to store transcription status
-transcription_status = {
-    "progress": 0,
-    "phase": "Initializing...",
-    "model": "",
-    "language": "",
-    "translation": "",
-    "time_taken": 0,
-    "completed": False,
-    "file_path": None,
-    "canceled": False,
-    "pid": None,
-}
 
 BASE_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = BASE_DIR.parent / "output"
@@ -75,6 +58,7 @@ def is_valid_media_file(filename: str) -> bool:
 
 
 def handle_transcription(
+    job_id: int,
     youtube_url: str,
     media,
     language: str,
@@ -82,12 +66,13 @@ def handle_transcription(
     translation: str,
     language_translation: str,
     file_export: str,
-) -> Optional[int]:
+) -> bool:
     """
     Handle the transcription process: download YouTube or handle uploaded media,
     then launch a separate transcription subprocess.
 
     Args:
+        job_id (int): Database job id created when the request was inserted.
         youtube_url (str): The YouTube video URL.
         media: Uploaded media file.
         language (str): Transcription language.
@@ -97,7 +82,7 @@ def handle_transcription(
         file_export (str): Export format.
 
     Returns:
-        Optional[int]: The PID of the subprocess, or None on failure.
+        bool: True if the subprocess was launched, False on failure.
     """
     output_file = None
     try:
@@ -146,38 +131,11 @@ def handle_transcription(
 
         logger.info(f"Transcription started for: {output_file}")
 
-        # Local process
-        # conda_env = "txtify"
-        # process = subprocess.Popen(
-        #     [
-        #         "conda",
-        #         "run",
-        #         "--name",
-        #         conda_env,
-        #         "python",
-        #         "transcribe_process.py",
-        #         str(output_file),
-        #         language,
-        #         model,
-        #         translation,
-        #         language_translation,
-        #         file_export,
-        #     ],
-        #     stdout=subprocess.PIPE,
-        #     stderr=subprocess.PIPE,
-        #     cwd=cwd + "/src",
-        # )
-        # logger.warning(f"Running subprocess in directory: {cwd} + '/src'")
-
-        # stdout, stderr = process.communicate()
-        # logger.warning(f"STDOUT: {stdout.decode()}")
-        # logger.warning(f"STDERR: {stderr.decode()}")
-
-        # # Docker container process
         process = subprocess.Popen(
             [
-                "python",
-                "/app/src/transcribe_process.py",
+                sys.executable,
+                str(BASE_DIR / "transcribe_process.py"),
+                str(job_id),
                 str(output_file),
                 language,
                 model,
@@ -188,39 +146,20 @@ def handle_transcription(
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            # cwd="/app/src",
         )
 
-        # logger.warning(f"Running subprocess in directory: /app/src'")
+        DB.set_process_pid(process.pid, job_id)
+        logger.info(f"Transcription job {job_id} started with PID: {process.pid}")
 
-        # stdout_data, stderr_data = process.communicate()
-        # logger.warning(f"STDOUT: {stdout_data}")
-        # logger.warning(f"STDERR: {stderr_data}")
-
-        pid = process.pid
-        if pid:
-            DB.update_transcription_pid("Processing request...", pid)
-            transcription_status["phase"] = "Processing request..."
-            transcription_status["progress"] = 10
-            transcription_status["pid"] = pid
-            logger.info(f"Transcription process started with PID: {pid}")
-        else:
-            raise Exception("Failed to start transcription process")
-
-        pid_output_dir = OUTPUT_DIR / f"{pid}"
-
-        # Check if pid_output_dir exists and if yes clean it
-        if pid_output_dir.exists():
-            shutil.rmtree(pid_output_dir)
-
-        pid_output_dir.mkdir(parents=True, exist_ok=True)
-        return pid
+        job_output_dir = OUTPUT_DIR / str(job_id)
+        if job_output_dir.exists():
+            shutil.rmtree(job_output_dir)
+        job_output_dir.mkdir(parents=True, exist_ok=True)
+        return True
 
     except Exception as e:
-        transcription_status["phase"] = "Error"
-        transcription_status["progress"] = 0
         logger.error(f"Transcription failed: {str(e)}")
-        return None
+        return False
 
 
 def convert_to_mp3(file_path: Path) -> Path:
