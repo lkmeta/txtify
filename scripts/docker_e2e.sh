@@ -56,7 +56,12 @@ done
 echo "==> Preview + downloads"
 curl -sf "$BASE/preview?pid=$JOB" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert all(k in d for k in ("txt","srt","vtt","sbv")), d.keys()'
 curl -sf -o "$WORKDIR/result.zip" "$BASE/download?pid=$JOB"
-unzip -l "$WORKDIR/result.zip" | grep -q final_transcription.pdf || { echo "FAIL: pdf missing from zip"; exit 1; }
+LISTING=$(unzip -l "$WORKDIR/result.zip")
+echo "$LISTING"
+case "$LISTING" in
+  *final_transcription.pdf*) ;;
+  *) echo "FAIL: pdf missing from zip"; exit 1 ;;
+esac
 
 echo "==> Validation errors"
 echo x > "$WORKDIR/bad.exe"
