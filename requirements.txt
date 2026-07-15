@@ -8,7 +8,7 @@ pytest==8.2.2
 python-dotenv==1.0.1
 resend==2.1.0
 srt==3.5.3
-torch==2.4.1
+torch==2.12.1
 transformers==4.48.0
 webvtt_py==0.5.1
 yt_dlp==2025.3.31
