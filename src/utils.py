@@ -324,17 +324,14 @@ def convert_to_pdf(text: str, file_path: Path) -> None:
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("Arial", size=12)
+    # Bundled Unicode font so non-Latin scripts (Greek, Cyrillic, ...) render
+    # instead of degrading to "?" via latin-1.
+    pdf.add_font("DejaVu", fname=str(BASE_DIR.parent / "static" / "fonts" / "DejaVuSans.ttf"))
+    pdf.set_font("DejaVu", size=12)
 
     for line in text.split("\n"):
         try:
-            pdf.cell(
-                200,
-                10,
-                txt=line.encode("latin-1", "replace").decode("latin-1"),
-                ln=True,
-                align="L",
-            )
+            pdf.multi_cell(0, 10, text=line, align="L", new_x="LMARGIN", new_y="NEXT")
         except Exception as e:
             logger.error(f"Error writing line to PDF: {str(e)}")
             continue
