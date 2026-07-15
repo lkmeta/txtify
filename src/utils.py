@@ -25,8 +25,10 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 DB = transcriptionsDB(OUTPUT_DIR / "transcriptions.db")
 
-MAX_VIDEO_DURATION = 10 * 60  # 10 minutes in seconds
-MAX_UPLOAD_SIZE_MB = 100  # 100 MB limit
+# User-facing limits. Keep the copy in templates/index.html and
+# templates/faq.html in sync when changing these.
+MAX_VIDEO_DURATION = 15 * 60  # YouTube audio is truncated at 15 minutes
+MAX_UPLOAD_SIZE_MB = 1000  # uploaded files are rejected above 1000 MB
 
 
 def is_valid_youtube_url(url: str) -> bool:
@@ -53,7 +55,9 @@ def is_valid_media_file(filename: str) -> bool:
     Returns:
         bool: True if supported, False otherwise.
     """
-    valid_extensions = ["mp4", "mp3"]
+    # Anything ffmpeg/pydub can decode; keep in sync with the accept list
+    # in templates/index.html.
+    valid_extensions = ["mp3", "mp4", "m4a", "wav", "webm", "ogg", "flac", "aac", "mov"]
     return filename.split(".")[-1].lower() in valid_extensions
 
 
@@ -118,15 +122,23 @@ def handle_transcription(
             logger.info(f"Downloaded video: {output_file}")
 
         elif media:
-            media_size_mb = len(media.file.read()) / (1024 * 1024)
-            media.file.seek(0)
-            if media_size_mb > MAX_UPLOAD_SIZE_MB:
-                raise Exception(f"Uploaded file exceeds {MAX_UPLOAD_SIZE_MB} MB limit.")
-
             media_filename = clean_filename(media.filename)
             media_file_path = OUTPUT_DIR / media_filename
-            with open(media_file_path, "wb") as buffer:
-                buffer.write(media.file.read())
+            max_bytes = MAX_UPLOAD_SIZE_MB * 1024 * 1024
+            written = 0
+            try:
+                # Stream to disk in chunks; never hold the whole upload in memory.
+                with open(media_file_path, "wb") as buffer:
+                    while chunk := media.file.read(1024 * 1024):
+                        written += len(chunk)
+                        if written > max_bytes:
+                            raise Exception(
+                                f"Uploaded file exceeds {MAX_UPLOAD_SIZE_MB} MB limit."
+                            )
+                        buffer.write(chunk)
+            except Exception:
+                media_file_path.unlink(missing_ok=True)
+                raise
             output_file = convert_to_mp3(media_file_path)
 
         logger.info(f"Transcription started for: {output_file}")

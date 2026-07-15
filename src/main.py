@@ -23,6 +23,7 @@ from loguru import logger
 
 from db import transcriptionsDB
 from utils import (
+    MAX_UPLOAD_SIZE_MB,
     cleanup_files,
     handle_transcription,
     is_valid_media_file,
@@ -182,6 +183,13 @@ async def transcribe(
         if not is_valid_media_file(media.filename):
             return JSONResponse(
                 content={"message": "Invalid file type"}, status_code=400
+            )
+        if media.size and media.size > MAX_UPLOAD_SIZE_MB * 1024 * 1024:
+            return JSONResponse(
+                content={
+                    "message": f"Uploaded file exceeds {MAX_UPLOAD_SIZE_MB} MB limit."
+                },
+                status_code=400,
             )
 
     job_id = DB.insert_transcription(
