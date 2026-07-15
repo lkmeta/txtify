@@ -307,8 +307,8 @@ async def download(pid: Optional[int] = None):
             status_code=400, detail="PID is required and must be an integer."
         )
 
-    pid_progress = DB.get_transcription_by_pid(pid)[11]
-    if pid_progress < 100:
+    status_data = DB.get_transcription(pid)
+    if not status_data or status_data[11] < 100:
         return JSONResponse(
             content={"message": "Transcription in progress or not found."},
             status_code=404,
@@ -346,8 +346,8 @@ async def downloadPreview(pid: int, format: str):
     if format not in ["txt", "srt", "vtt", "sbv"]:
         return JSONResponse(content={"message": "Invalid file format"}, status_code=400)
 
-    pid_progress = DB.get_transcription_by_pid(pid)[11]
-    if pid_progress < 100:
+    status_data = DB.get_transcription(pid)
+    if not status_data or status_data[11] < 100:
         return JSONResponse(
             content={"message": "Transcription in progress or not found."},
             status_code=404,
