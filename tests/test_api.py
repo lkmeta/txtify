@@ -70,6 +70,21 @@ def test_transcribe_returns_job_id_and_status(client, monkeypatch):
     assert client.get("/status?pid=99999").status_code == 404
 
 
+def test_download_endpoints_404_for_unknown_or_running_jobs(client, monkeypatch):
+    assert client.get("/download?pid=99999").status_code == 404
+    assert client.get("/downloadPreview?pid=99999&format=srt").status_code == 404
+
+    monkeypatch.setattr(main, "handle_transcription", lambda *a, **k: True)
+    job_id = client.post(
+        "/transcribe",
+        data=_form(),
+        files={"media": ("tone.mp3", io.BytesIO(b"fake-mp3"), "audio/mpeg")},
+    ).json()["pid"]
+    # job exists but is still in progress
+    assert client.get(f"/download?pid={job_id}").status_code == 404
+    assert client.get(f"/downloadPreview?pid={job_id}&format=srt").status_code == 404
+
+
 def test_transcribe_failure_returns_500(client, monkeypatch):
     monkeypatch.setattr(main, "handle_transcription", lambda *a, **k: False)
     r = client.post(
