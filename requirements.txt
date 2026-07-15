@@ -15,4 +15,4 @@ yt_dlp==2025.3.31
 uvicorn==0.22.0
 python-multipart==0.0.18
 accelerate==0.21.0 
-stable-ts==2.18.0
+stable-ts==2.19.1

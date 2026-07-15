@@ -22,7 +22,7 @@
   </p>
 </div>
 
-Txtify is a free open-source web application that transcribes and translates audio from YouTube videos or uploaded media files. It now runs on Docker for easier deployment and includes monitoring capabilities. Leveraging the **`stable-ts`** library and the **`whisper`** models, Txtify offers enhanced transcription accuracy and performance.
+Txtify is a free open-source web application that transcribes and translates audio from YouTube videos or uploaded media files. It runs on Docker for easier deployment. Leveraging the **`stable-ts`** library and the **`whisper`** models, Txtify offers enhanced transcription accuracy and performance.
 
 ## Table of Contents
 
@@ -116,13 +116,9 @@ If you want to use the pre-built Docker image available on Docker Hub, follow th
 
 Open your web browser and navigate to `http://localhost:8011` to access Txtify.
 
-### Monitoring
+### Logs
 
-To monitor the application and the transcription processes:
-
-1. Ensure you have completed the installation steps above.
-
-2. You can view the logs of the running Docker container to monitor the application output.
+To follow the application output and the transcription processes, view the logs of the running Docker container:
 
 ```sh
 docker logs -f txtify_container
@@ -130,9 +126,9 @@ docker logs -f txtify_container
 
 > <sub>**Note:** The -f option follows the log output in real-time.</sub>
 
-### Online Simulation Demo
+### Online Demo
 
-To understand how Txtify works, you can use the online simulation demo. Visit [Txtify Website](https://txtify.lkmeta.com/) and follow the instructions to upload your media or enter a YouTube URL for a simulated transcription process.
+To see Txtify in action, visit the [Txtify Website](https://txtify.lkmeta.com/) and upload your media or enter a YouTube URL to transcribe it.
 
 ## Roadmap
 

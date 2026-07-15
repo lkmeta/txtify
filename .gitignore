@@ -8,11 +8,19 @@ __pycache__/
 # VS Code specific
 .vscode/
 
-# Output directory
-# output/ 
+# Output directory (generated transcriptions, downloads, logs)
+output/
 
-# Everything inside the output directory
-# output/*
+# Media and transcript files must never be committed
+*.mp3
+*.mp4
+*.m4a
+*.wav
+*.webm
+*.srt
+*.vtt
+*.sbv
+*.zip
 
 # Environments
 .env
