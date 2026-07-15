@@ -213,7 +213,7 @@ def save_final_transcription(
         output_file_path (str): Output file path for the merged result.
 
     Returns:
-        str: The fully merged transcription as a single string.
+        list[str]: The merged transcription as numbered SRT blocks.
     """
     with open(srt_file_path, "r", encoding="utf-8") as srt_file:
         srt_content = srt_file.readlines()
@@ -240,7 +240,10 @@ def save_final_transcription(
             extra = " ".join(translated_lines[len(timestamps) - 1 :])
             translated_lines = translated_lines[: len(timestamps) - 1] + [extra]
         else:
-            translated_lines += [""] * (len(timestamps) - len(translated_lines))
+            # Pad with a visible placeholder, never "": the srt/vtt/sbv
+            # converters drop empty lines, which would mispair every
+            # (timestamp, text) couple after the pad point.
+            translated_lines += ["..."] * (len(timestamps) - len(translated_lines))
 
     final_blocks = []
     for idx, (start, end) in enumerate(timestamps):

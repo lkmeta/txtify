@@ -72,6 +72,44 @@ def test_convert_to_sbv(tmp_path):
     assert "00:00:02.000,00:00:04.500\nΓειά σου κόσμε" in content
 
 
+def test_cleanup_files_only_touches_own_job(tmp_path, monkeypatch):
+    monkeypatch.setattr(utils, "OUTPUT_DIR", tmp_path)
+    (tmp_path / "1").mkdir()
+    (tmp_path / "1_audio.mp3").touch()
+    (tmp_path / "1_logs.txt").touch()
+    (tmp_path / "1.zip").touch()
+    (tmp_path / "2_other.mp3").touch()  # concurrent job's input
+    (tmp_path / "2.zip").touch()
+    (tmp_path / "12_other.mp3").touch()  # id prefix must not glob-collide
+
+    utils.cleanup_files(1)
+
+    assert not (tmp_path / "1").exists()
+    assert not (tmp_path / "1_audio.mp3").exists()
+    assert not (tmp_path / "1_logs.txt").exists()
+    assert not (tmp_path / "1.zip").exists()
+    assert (tmp_path / "2_other.mp3").exists()
+    assert (tmp_path / "2.zip").exists()
+    assert (tmp_path / "12_other.mp3").exists()
+
+
+def test_convert_to_mp3_streams_via_ffmpeg(tmp_path):
+    import shutil as _shutil
+    import subprocess as _subprocess
+
+    if not _shutil.which("ffmpeg"):
+        pytest.skip("ffmpeg not installed")
+    wav = tmp_path / "clip.wav"
+    _subprocess.run(
+        ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi",
+         "-i", "sine=frequency=440:duration=1", str(wav)],
+        check=True,
+    )
+    mp3 = utils.convert_to_mp3(wav)
+    assert mp3.suffix == ".mp3" and mp3.stat().st_size > 0
+    assert not wav.exists()
+
+
 def test_convert_to_pdf_preserves_unicode(tmp_path):
     pypdf = pytest.importorskip("pypdf")
     out = tmp_path / "t.pdf"

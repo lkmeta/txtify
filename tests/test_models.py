@@ -35,6 +35,21 @@ def test_deepl_merged_lines_pads(tmp_path):
     assert len(blocks) == 3
 
 
+def test_padded_blocks_keep_srt_converter_aligned(tmp_path):
+    """Padding must survive the srt/vtt/sbv converters: an empty pad line
+    would be dropped by their filters and mispair every following block."""
+    from utils import convert_to_srt
+
+    blocks = run(tmp_path, "a\nb")  # one line short -> last block padded
+    out = tmp_path / "padded.srt"
+    convert_to_srt("\n".join(blocks), out)
+    content = out.read_text(encoding="utf-8")
+    assert "Invalid timestamp" not in content
+    assert "00:00:00,000 --> 00:00:02,000\na" in content
+    assert "00:00:02,000 --> 00:00:04,000\nb" in content
+    assert "00:00:04,000 --> 00:00:06,000\n..." in content
+
+
 def test_deepl_split_lines_merges_extras(tmp_path):
     """Extra translated lines fold into the last block instead of raising."""
     blocks = run(tmp_path, "a\nb\nc\nd\ne")
