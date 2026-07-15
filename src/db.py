@@ -7,6 +7,7 @@ The OS pid of the worker subprocess is stored alongside it for cancellation.
 """
 
 import sqlite3
+from contextlib import closing
 
 
 class transcriptionsDB:
@@ -26,7 +27,7 @@ class transcriptionsDB:
             db_path (str): The path to the database file.
         """
         self.db_path = str(db_path)
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS transcriptions (
@@ -81,7 +82,7 @@ class transcriptionsDB:
         Returns:
             int: The job id of the new record.
         """
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             cursor = conn.execute(
                 """
                 INSERT INTO transcriptions (
@@ -114,7 +115,7 @@ class transcriptionsDB:
         Returns:
             tuple or None: The corresponding transcription record, or None if not found.
         """
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             return conn.execute(
                 "SELECT * FROM transcriptions WHERE id=?", (job_id,)
             ).fetchone()
@@ -134,7 +135,7 @@ class transcriptionsDB:
         Returns:
             None
         """
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             conn.execute(
                 "UPDATE transcriptions SET status=?, completed_at=?, progress=? WHERE id=?",
                 (status, completed_at, progress, job_id),
@@ -151,7 +152,7 @@ class transcriptionsDB:
         Returns:
             None
         """
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             conn.execute(
                 "UPDATE transcriptions SET pid=? WHERE id=?", (pid, job_id)
             )
@@ -166,7 +167,7 @@ class transcriptionsDB:
         Returns:
             int or None: The OS pid, or None if the job does not exist.
         """
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             row = conn.execute(
                 "SELECT pid FROM transcriptions WHERE id=?", (job_id,)
             ).fetchone()
@@ -182,5 +183,5 @@ class transcriptionsDB:
         Returns:
             None
         """
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             conn.execute("DELETE FROM transcriptions WHERE id=?", (job_id,))

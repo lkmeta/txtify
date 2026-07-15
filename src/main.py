@@ -15,6 +15,7 @@ from typing import Optional
 import resend
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.exceptions import HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -28,6 +29,7 @@ from utils import (
     handle_transcription,
     is_valid_media_file,
     is_valid_youtube_url,
+    is_worker_alive,
     kill_process_by_pid,
 )
 
@@ -204,7 +206,12 @@ async def transcribe(
         str(time.time()),
     )
 
-    started = handle_transcription(
+    DB.update_transcription_status("Processing request...", "", 10, job_id)
+
+    # Download/convert can take minutes for large media; run off the event
+    # loop so other requests (status polls) keep being served.
+    started = await run_in_threadpool(
+        handle_transcription,
         job_id,
         youtube_url,
         media,
@@ -221,8 +228,6 @@ async def transcribe(
             content={"message": "Failed to start transcription process"},
             status_code=500,
         )
-
-    DB.update_transcription_status("Processing request...", "", 10, job_id)
 
     # The frontend treats this value as an opaque token; it is the job id.
     return {"message": "Transcription started successfully.", "pid": job_id}
@@ -249,6 +254,21 @@ async def status(pid: Optional[int] = None):
     logger.info(f"Transcription status: {status_data}")
     if status_data[11] < 100:
         time_taken = "In Progress"
+        # A worker that died without a terminal DB write (e.g. import crash)
+        # would otherwise leave the frontend polling forever.
+        worker_pid = status_data[12]
+        already_terminal = "Error" in status_data[8] or status_data[8] == "Canceled"
+        if worker_pid and not already_terminal and not is_worker_alive(worker_pid):
+            logger.error(f"Worker for job {pid} died without finishing")
+            DB.update_transcription_status("Error", str(time.time()), 0, pid)
+            return {
+                "progress": "0",
+                "phase": "Error",
+                "model": status_data[4],
+                "language": status_data[3],
+                "translation": status_data[5],
+                "time_taken": "In Progress",
+            }
     else:
         try:
             time_taken = (

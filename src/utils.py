@@ -15,7 +15,6 @@ import psutil
 import yt_dlp
 from fpdf import FPDF
 from loguru import logger
-from pydub import AudioSegment
 
 from db import transcriptionsDB
 
@@ -55,7 +54,7 @@ def is_valid_media_file(filename: str) -> bool:
     Returns:
         bool: True if supported, False otherwise.
     """
-    # Anything ffmpeg/pydub can decode; keep in sync with the accept list
+    # Anything ffmpeg can decode; keep in sync with the accept list
     # in templates/index.html.
     valid_extensions = ["mp3", "mp4", "m4a", "wav", "webm", "ogg", "flac", "aac", "mov"]
     return filename.split(".")[-1].lower() in valid_extensions
@@ -108,7 +107,10 @@ def handle_transcription(
                 sanitized_title = clean_filename(info_dict["title"])
                 info_dict["title"] = sanitized_title
 
-            ydl_opts["outtmpl"] = str(OUTPUT_DIR / f"{sanitized_title}.%(ext)s")
+            # Prefix with the job id so concurrent jobs never share files.
+            ydl_opts["outtmpl"] = str(
+                OUTPUT_DIR / f"{job_id}_{sanitized_title}.%(ext)s"
+            )
 
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([youtube_url])
@@ -122,8 +124,9 @@ def handle_transcription(
             logger.info(f"Downloaded video: {output_file}")
 
         elif media:
+            # Prefix with the job id so concurrent jobs never share files.
             media_filename = clean_filename(media.filename)
-            media_file_path = OUTPUT_DIR / media_filename
+            media_file_path = OUTPUT_DIR / f"{job_id}_{media_filename}"
             max_bytes = MAX_UPLOAD_SIZE_MB * 1024 * 1024
             written = 0
             try:
@@ -143,6 +146,9 @@ def handle_transcription(
 
         logger.info(f"Transcription started for: {output_file}")
 
+        # Worker output goes straight to the job log file: a PIPE that nobody
+        # reads loses import-time crashes and blocks the worker once full.
+        worker_log = open(OUTPUT_DIR / f"{job_id}_logs.txt", "a")
         process = subprocess.Popen(
             [
                 sys.executable,
@@ -155,10 +161,11 @@ def handle_transcription(
                 language_translation,
                 file_export,
             ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=worker_log,
+            stderr=subprocess.STDOUT,
             text=True,
         )
+        worker_log.close()
 
         DB.set_process_pid(process.pid, job_id)
         logger.info(f"Transcription job {job_id} started with PID: {process.pid}")
@@ -186,9 +193,24 @@ def convert_to_mp3(file_path: Path) -> Path:
     """
     file_extension = file_path.suffix.lower()
     if file_extension != ".mp3":
-        audio = AudioSegment.from_file(file_path)
         mp3_file_path = file_path.with_suffix(".mp3")
-        audio.export(mp3_file_path, format="mp3")
+        # ffmpeg streams the conversion; decoding via pydub loaded the whole
+        # file into RAM as raw PCM (multiple GB for a 1000MB upload).
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-y",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-i",
+                str(file_path),
+                "-codec:a",
+                "libmp3lame",
+                str(mp3_file_path),
+            ],
+            check=True,
+        )
         file_path.unlink()
         logger.info(f"File converted to MP3: {mp3_file_path}")
         return mp3_file_path
@@ -208,6 +230,23 @@ def clean_filename(filename: str) -> str:
     filename = re.sub(r"[^a-zA-Z0-9_.-]", "_", filename)
     filename = re.sub(r"__+", "_", filename)
     return filename
+
+
+def is_worker_alive(pid: int) -> bool:
+    """
+    True if the worker process is still running. Exited workers linger as
+    zombies (the server never wait()s on them), so zombie == dead.
+
+    Args:
+        pid (int): The OS process ID.
+
+    Returns:
+        bool: True if running, False if exited or never existed.
+    """
+    try:
+        return psutil.Process(pid).status() != psutil.STATUS_ZOMBIE
+    except (psutil.NoSuchProcess, psutil.AccessDenied):
+        return False
 
 
 def kill_process_by_pid(pid: int) -> bool:
@@ -459,14 +498,14 @@ def cleanup_files(pid: int) -> None:
     Returns:
         None
     """
-    pid_directory = OUTPUT_DIR / str(pid)
-    if pid_directory.exists():
-        shutil.rmtree(pid_directory)
+    job_directory = OUTPUT_DIR / str(pid)
+    if job_directory.exists():
+        shutil.rmtree(job_directory)
 
-        for file in OUTPUT_DIR.iterdir():
-            if file.suffix in [".mp3", ".zip"]:
-                file.unlink()
+    # Only this job's artifacts — deleting every *.mp3/*.zip used to destroy
+    # concurrently running jobs' inputs.
+    for file in OUTPUT_DIR.glob(f"{pid}_*"):
+        file.unlink(missing_ok=True)
+    (OUTPUT_DIR / f"{pid}.zip").unlink(missing_ok=True)
 
-        logger.info(f"Files cleaned up for PID: {pid}")
-    else:
-        logger.warning(f"No files found to clean up for PID: {pid}")
+    logger.info(f"Files cleaned up for job: {pid}")

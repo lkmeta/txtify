@@ -19,8 +19,9 @@ def test_unknown_route_is_404(client):
 
 
 def test_transcribe_invalid_youtube_url(client):
-    r = client.post("/transcribe", data=_form(), files={})
-    r = client.post("/transcribe", data={**_form(), "youtube_url": "http://not-youtube.com/x"})
+    r = client.post(
+        "/transcribe", data={**_form(), "youtube_url": "http://not-youtube.com/x"}
+    )
     assert r.status_code == 400
     assert "Invalid YouTube URL" in r.json()["message"]
 
