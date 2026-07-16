@@ -39,7 +39,7 @@ Txtify is a free open-source web application that transcribes and translates aud
 
 ## About
 
-Txtify is designed to simplify the process of converting audio and video content into text. Whether you're looking to transcribe a YouTube video or your own audio/video files, Txtify offers an easy-to-use interface and powerful AI models to ensure accuracy and speed. The application supports multiple output formats including `.txt`, `.srt`, `.vtt`, and `.sbv`.
+Txtify is designed to simplify the process of converting audio and video content into text. Whether you're looking to transcribe a YouTube video or your own audio/video files, Txtify offers an easy-to-use interface and powerful AI models to ensure accuracy and speed. The application supports multiple output formats including `.txt`, `.srt`, `.vtt`, `.sbv`, and `.pdf`.
 
 ## Demo
 
@@ -118,6 +118,8 @@ If you want to use the pre-built Docker image available on Docker Hub, follow th
 ### Access the Application
 
 Open your web browser and navigate to `http://localhost:8011` to access Txtify.
+
+> **Note:** Txtify has no authentication — every job is reachable by its numeric id. Keep it on localhost or behind your own reverse proxy/auth if you expose it.
 
 ### Logs
 
