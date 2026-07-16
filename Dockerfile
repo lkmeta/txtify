@@ -31,5 +31,9 @@ ENV PYTHONPATH=/app/src
 # Expose port 8011
 EXPOSE 8011
 
+# Healthcheck via stdlib — the image does not ship curl
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8011/health', timeout=5)" || exit 1
+
 # Run the application
 CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8011"]

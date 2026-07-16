@@ -101,8 +101,10 @@ If you want to use the pre-built Docker image available on Docker Hub, follow th
    ```
 2. Run the Docker Container
    ```bash
-    docker run -d -p 8011:8011 lkmeta/txtify:latest
+   docker run -d -p 8011:8011 --env-file .env -v ./output:/app/output lkmeta/txtify:latest
    ```
+
+> <sub>`--env-file .env` provides your DeepL API key (translation silently stays disabled without it); `-v ./output:/app/output` keeps transcriptions and job state on your machine across container restarts.</sub>
 
 > **Note:** If you're using Unraid or an AMD architecture, check out the [docker hub images](https://hub.docker.com/repository/docker/lkmeta/txtify/tags). You can pull and run it with:
 >
