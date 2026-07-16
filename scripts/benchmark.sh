@@ -21,6 +21,7 @@ IMAGE=txtify:bench
 NAME=txtify_bench
 FIXTURE=tests/fixtures/speech.mp3
 EXPECT="quick brown fox"
+REFERENCE="the quick brown fox jumps over the lazy dog welcome to txtify your transcription assistant"
 if [ "$#" -gt 0 ]; then MODELS=("$@"); else
   MODELS=(whisper_tiny whisper_base whisper_small whisper_medium whisper_large)
 fi
@@ -53,6 +54,25 @@ submit_and_wait() {  # args: extra curl -F options...; sets DUR and SRT
   curl -sf -X POST "$BASE/cleanup?pid=$job" >/dev/null || true
 }
 
+wer() {  # word error rate (%) of SRT $1's text lines vs $REFERENCE
+  python3 - "$REFERENCE" "$1" <<'PY'
+import re, sys
+# keep only subtitle text lines (drop indices and timestamp lines)
+text = " ".join(
+    l for l in sys.argv[2].splitlines()
+    if l.strip() and "-->" not in l and not l.strip().isdigit()
+)
+norm = lambda s: re.sub(r"[^a-z0-9' ]", " ", s.lower()).split()
+ref, hyp = norm(sys.argv[1]), norm(text)
+d = list(range(len(hyp) + 1))
+for i, r in enumerate(ref, 1):
+    prev, d[0] = d[0], i
+    for j, h in enumerate(hyp, 1):
+        prev, d[j] = d[j], min(d[j] + 1, d[j - 1] + 1, prev + (r != h))
+print(f"{100 * d[len(hyp)] / max(1, len(ref)):.0f}%")
+PY
+}
+
 ROWS=""
 for model in "${MODELS[@]}"; do
   echo "==> $model"
@@ -60,10 +80,11 @@ for model in "${MODELS[@]}"; do
        -F translation=none -F language_translation=en; then
     line=$(printf '%s\n' "$SRT" | sed -n 3p)
     if printf '%s' "$SRT" | tr '[:upper:]' '[:lower:]' | /usr/bin/grep -q "$EXPECT"; then ok="yes"; else ok="NO"; fi
-    ROWS="$ROWS| $model | ${DUR}s | $ok | $line |
+    W=$(wer "$SRT")
+    ROWS="$ROWS| $model | ${DUR}s | $ok | $W | $line |
 "
   else
-    ROWS="$ROWS| $model | FAILED | - | - |
+    ROWS="$ROWS| $model | FAILED | - | - | - |
 "
   fi
 done
@@ -74,10 +95,10 @@ if /usr/bin/grep -qE '^DEEPL_API_KEY=..' .env 2>/dev/null; then
        -F translation=deepl -F language_translation=EL; then
     line=$(printf '%s\n' "$SRT" | sed -n 3p)
     if printf '%s' "$SRT" | /usr/bin/grep -q '[α-ωΑ-Ω]'; then ok="yes"; else ok="NO"; fi
-    ROWS="$ROWS| deepl en→el (base) | ${DUR}s | $ok | $line |
+    ROWS="$ROWS| deepl en→el (base) | ${DUR}s | $ok | - | $line |
 "
   else
-    ROWS="$ROWS| deepl en→el (base) | FAILED | - | - |
+    ROWS="$ROWS| deepl en→el (base) | FAILED | - | - | - |
 "
   fi
 else
@@ -89,15 +110,15 @@ if [ "${BENCH_YOUTUBE:-0}" = "1" ]; then
   if submit_and_wait -F "youtube_url=https://www.youtube.com/watch?v=jNQXAC9IVRw" \
        -F language=en -F model=whisper_tiny -F translation=none -F language_translation=en; then
     line=$(printf '%s\n' "$SRT" | sed -n 3p)
-    ROWS="$ROWS| youtube (tiny) | ${DUR}s | yes | $line |
+    ROWS="$ROWS| youtube (tiny) | ${DUR}s | yes | - | $line |
 "
   else
-    ROWS="$ROWS| youtube (tiny) | FAILED | - | - |
+    ROWS="$ROWS| youtube (tiny) | FAILED | - | - | - |
 "
   fi
 fi
 
 echo
-echo "| run | wall time | text ok | first transcribed line |"
-echo "|-----|-----------|---------|------------------------|"
+echo "| run | wall time | text ok | WER | first transcribed line |"
+echo "|-----|-----------|---------|-----|------------------------|"
 printf '%s' "$ROWS"
