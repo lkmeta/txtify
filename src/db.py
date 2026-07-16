@@ -173,6 +173,24 @@ class transcriptionsDB:
             ).fetchone()
             return row[0] if row else None
 
+    def get_active_jobs(self):
+        """
+        Return (id, pid, created_at) for jobs still in flight: progress < 100
+        and not in a terminal status.
+
+        Returns:
+            list[tuple]: The active rows.
+        """
+        with closing(self._connect()) as conn, conn:
+            return conn.execute(
+                """
+                SELECT id, pid, created_at FROM transcriptions
+                WHERE progress < 100
+                  AND status != 'Canceled'
+                  AND status NOT LIKE '%Error%'
+                """
+            ).fetchall()
+
     def delete_transcription(self, job_id: int) -> None:
         """
         Delete a transcription record by job id.

@@ -55,3 +55,25 @@ def test_deepl_split_lines_merges_extras(tmp_path):
     blocks = run(tmp_path, "a\nb\nc\nd\ne")
     assert len(blocks) == 3
     assert "c d e" in blocks[2]
+
+
+def test_terminal_write_never_overwrites_canceled(tmp_path, monkeypatch):
+    import db as db_mod
+    import models
+
+    test_db = db_mod.transcriptionsDB(str(tmp_path / "t.db"))
+    monkeypatch.setattr(models, "DB", test_db)
+    job = test_db.insert_transcription(
+        "", "f.mp3", "en", "whisper_tiny", "none", "en",
+        "all", "Transcribing...", "1.0",
+    )
+    test_db.update_transcription_status("Canceled", "2.0", 0, job)
+    models._update_status_unless_canceled("Completed successfully!", "3.0", 100, job)
+    assert test_db.get_transcription(job)[8] == "Canceled"
+
+    other = test_db.insert_transcription(
+        "", "f.mp3", "en", "whisper_tiny", "none", "en",
+        "all", "Transcribing...", "1.0",
+    )
+    models._update_status_unless_canceled("Completed successfully!", "3.0", 100, other)
+    assert test_db.get_transcription(other)[8] == "Completed successfully!"

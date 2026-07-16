@@ -11,8 +11,6 @@ services:
       - "8011:8011"
     environment:
       - PYTHONUNBUFFERED=1
-    volumes:
-      - .:/app
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8011/health" ]

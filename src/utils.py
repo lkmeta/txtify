@@ -40,7 +40,11 @@ def is_valid_youtube_url(url: str) -> bool:
     Returns:
         bool: True if valid, False otherwise.
     """
-    regex = r"^(https?\:\/\/)?(www\.youtube\.com|youtu\.be)\/.+$"
+    # Single videos only — playlist/channel URLs would download every entry.
+    regex = (
+        r"^(https?://)?(www\.)?"
+        r"(youtube\.com/(watch\?v=|shorts/|live/)[\w-]+|youtu\.be/[\w-]+)"
+    )
     return re.match(regex, url) is not None
 
 
@@ -92,6 +96,7 @@ def handle_transcription(
         if youtube_url:
             ydl_opts = {
                 "format": "bestaudio/best",
+                "noplaylist": True,
                 "postprocessors": [
                     {
                         "key": "FFmpegExtractAudio",
@@ -99,27 +104,39 @@ def handle_transcription(
                         "preferredquality": "192",
                     }
                 ],
+                # Backstop truncation for media with no duration metadata
+                # (e.g. live streams); normal videos over the limit are
+                # rejected outright below.
                 "postprocessor_args": ["-t", str(MAX_VIDEO_DURATION)],
             }
 
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info_dict = ydl.extract_info(youtube_url, download=False)
                 sanitized_title = clean_filename(info_dict["title"])
-                info_dict["title"] = sanitized_title
+
+            duration = info_dict.get("duration")
+            if duration and duration > MAX_VIDEO_DURATION:
+                DB.update_transcription_status(
+                    f"Error: video exceeds {MAX_VIDEO_DURATION // 60} minute limit",
+                    "",
+                    0,
+                    job_id,
+                )
+                logger.error(
+                    f"Job {job_id}: video is {duration}s, over the "
+                    f"{MAX_VIDEO_DURATION}s limit"
+                )
+                return False
 
             # Prefix with the job id so concurrent jobs never share files.
+            # The FFmpegExtractAudio postprocessor always produces mp3, so the
+            # final path is known — no prepare_filename suffix guessing.
             ydl_opts["outtmpl"] = str(
                 OUTPUT_DIR / f"{job_id}_{sanitized_title}.%(ext)s"
             )
-
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([youtube_url])
-                output_file = ydl.prepare_filename(info_dict)
-
-                if output_file.endswith(".webm"):
-                    output_file = output_file.replace(".webm", ".mp3")
-                elif output_file.endswith(".m4a"):
-                    output_file = output_file.replace(".m4a", ".mp3")
+            output_file = str(OUTPUT_DIR / f"{job_id}_{sanitized_title}.mp3")
 
             logger.info(f"Downloaded video: {output_file}")
 
@@ -146,6 +163,13 @@ def handle_transcription(
 
         logger.info(f"Transcription started for: {output_file}")
 
+        # Prepare the job output dir BEFORE spawning the worker — a fast
+        # worker (cached model) could otherwise write into a dir we then wipe.
+        job_output_dir = OUTPUT_DIR / str(job_id)
+        if job_output_dir.exists():
+            shutil.rmtree(job_output_dir)
+        job_output_dir.mkdir(parents=True, exist_ok=True)
+
         # Worker output goes straight to the job log file: a PIPE that nobody
         # reads loses import-time crashes and blocks the worker once full.
         worker_log = open(OUTPUT_DIR / f"{job_id}_logs.txt", "a")
@@ -169,11 +193,6 @@ def handle_transcription(
 
         DB.set_process_pid(process.pid, job_id)
         logger.info(f"Transcription job {job_id} started with PID: {process.pid}")
-
-        job_output_dir = OUTPUT_DIR / str(job_id)
-        if job_output_dir.exists():
-            shutil.rmtree(job_output_dir)
-        job_output_dir.mkdir(parents=True, exist_ok=True)
         return True
 
     except Exception as e:
@@ -251,31 +270,37 @@ def is_worker_alive(pid: int) -> bool:
 
 def kill_process_by_pid(pid: int) -> bool:
     """
-    Terminate a process by its PID.
+    Kill a process and all its children.
 
     Args:
         pid (int): The process ID.
 
     Returns:
-        bool: True if terminated, False otherwise.
+        bool: True if the process was killed, False if it was already gone
+        (or not killable).
     """
     try:
         process = psutil.Process(pid)
         for proc in process.children(recursive=True):
-            proc.kill()
+            try:
+                proc.kill()
+            except psutil.NoSuchProcess:
+                pass
+        process.kill()
         return True
     except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
         return False
 
 
 def convert_to_formats(
-    transcription_text: str, base_file_path: str, export_format: str
+    transcription_text: list, base_file_path: str, export_format: str
 ) -> None:
     """
     Convert the transcription text to various formats.
 
     Args:
-        transcription_text (str): The raw transcription text.
+        transcription_text (list[str]): The transcription as SRT blocks
+            (as returned by save_final_transcription).
         base_file_path (str): Base path for output files.
         export_format (str): Desired format ('pdf', 'srt', 'vtt', 'sbv', or 'all').
 

@@ -1,8 +1,7 @@
 """
-This file provides functionality for audio transcription and translation using 
-Hugging Face models (stable_whisper) and the DeepL API. It transcribes audio 
-files, performs optional translation, and updates the transcription database 
-accordingly.
+This file provides functionality for audio transcription (Whisper via
+stable-ts) and translation (DeepL API). It transcribes audio files, performs
+optional translation, and updates the transcription database accordingly.
 """
 
 import os
@@ -88,9 +87,6 @@ def transcribe_audio(
         )
         return
 
-    if file_path.endswith(".m4a"):
-        file_path = file_path.replace(".m4a", ".mp3")
-
     logger.info(f"Transcribing file: {file_path}")
 
     try:
@@ -130,22 +126,26 @@ def transcribe_audio(
             transcription = f.read()
 
         # Perform translation if requested
-        if translation and language.lower() != language_translation.lower():
-            if translation.lower() != "none":
-                logger.info("Translating... Progress: 85%")
-                DB.update_transcription_status("Translating...", "", 85, job_id)
-                logger.info(f"Translating from {language} to {language_translation}")
-                source_lang = SOURCE_LANGUAGES.get(language.upper())
-                target_lang = TARGET_LANGUAGES.get(language_translation.upper())
-                if not source_lang or not target_lang:
-                    raise ValueError(
-                        f"Invalid language code: {language} or {language_translation}"
-                    )
-                transcription = deepl_translate(
-                    transcription, language, language_translation, job_id
+        translation_failed = False
+        if (
+            translation
+            and translation.lower() != "none"
+            and language.lower() != language_translation.lower()
+        ):
+            logger.info("Translating... Progress: 85%")
+            DB.update_transcription_status("Translating...", "", 85, job_id)
+            logger.info(f"Translating from {language} to {language_translation}")
+            if not TARGET_LANGUAGES.get(language_translation.upper()):
+                raise ValueError(
+                    f"Invalid target language code: {language_translation}"
                 )
-            else:
-                logger.info("Skipping translation (translation='none').")
+            # 'auto' -> None lets DeepL detect the source language itself.
+            source_lang = None if language.lower() == "auto" else language.upper()
+            if source_lang and source_lang not in SOURCE_LANGUAGES:
+                raise ValueError(f"Invalid source language code: {language}")
+            transcription, translation_failed = deepl_translate(
+                transcription, source_lang, language_translation, job_id
+            )
 
         srt_file = str(pid_dir / "en_transcription.srt")
         translated_text_file = str(pid_dir / "final_transcription.txt")
@@ -159,30 +159,52 @@ def transcribe_audio(
         DB.update_transcription_status("Exporting transcription...", "", 90, job_id)
         convert_to_formats(transcription, str(translated_text_file), "all")
 
-        logger.info("Completed successfully! Progress: 100%")
-        DB.update_transcription_status(
-            "Completed successfully!", str(time.time()), 100, job_id
+        final_status = (
+            "Completed (translation failed)"
+            if translation_failed
+            else "Completed successfully!"
         )
+        logger.info(f"{final_status} Progress: 100%")
+        _update_status_unless_canceled(final_status, str(time.time()), 100, job_id)
 
     except Exception as e:
         logger.error(f"Transcription failed: {str(e)}. Progress: 0%")
-        DB.update_transcription_status("Error", "", 0, job_id)
+        _update_status_unless_canceled("Error", "", 0, job_id)
 
 
-def deepl_translate(text: str, source_lang: str, target_lang: str, job_id: int) -> str:
+def _update_status_unless_canceled(
+    status: str, completed_at: str, progress: int, job_id: int
+) -> None:
     """
-    Translate text using DeepL, updating progress status if errors occur.
+    Terminal status write that never overwrites a cancellation: a canceled
+    worker keeps running (whisper compute is uninterruptible mid-call), so
+    without this check it would flip 'Canceled' back to a completed state.
+    """
+    row = DB.get_transcription(job_id)
+    if row and row[8] == "Canceled":
+        logger.info(f"Job {job_id} was canceled; skipping final status write.")
+        return
+    DB.update_transcription_status(status, completed_at, progress, job_id)
+
+
+def deepl_translate(
+    text: str, source_lang, target_lang: str, job_id: int
+) -> tuple[str, bool]:
+    """
+    Translate text using DeepL.
 
     Args:
         text (str): Original text to translate.
-        source_lang (str): Source language code.
+        source_lang (str | None): Source language code, or None for DeepL
+            auto-detection.
         target_lang (str): Target language code.
         job_id (int): Database job id for tracking.
 
     Returns:
-        str: Translated text, or the original text on failure.
+        tuple[str, bool]: (translated text, failed) — on failure the original
+        text is returned with failed=True so the job can finish honestly.
     """
-    logger.info(f"Translating text from {source_lang} to {target_lang}")
+    logger.info(f"Translating text from {source_lang or 'auto'} to {target_lang}")
 
     if not DEEPL_API_KEY:
         raise ValueError("DEEPL_API_KEY is not set in the environment variables.")
@@ -191,14 +213,13 @@ def deepl_translate(text: str, source_lang: str, target_lang: str, job_id: int) 
         translator = deepl.Translator(DEEPL_API_KEY)
         result = translator.translate_text(
             text,
-            source_lang=source_lang.upper(),
+            source_lang=source_lang,
             target_lang=target_lang.upper(),
         )
-        return result.text
+        return result.text, False
     except Exception as e:
-        logger.error(f"Translation failed: {str(e)}. Progress: 0%")
-        DB.update_transcription_status("Translation Error", "", 0, job_id)
-        return text
+        logger.error(f"Translation failed: {str(e)}")
+        return text, True
 
 
 def save_final_transcription(

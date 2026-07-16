@@ -12,18 +12,14 @@ const modelMapping = {
 
 const translationMapping = {
     none: 'Don\'t Translate',
-    deepl: 'DeepL',
-    whisper: 'Whisper'
+    deepl: 'DeepL'
 };
 
 
 document.addEventListener('DOMContentLoaded', function () {
-    const transcriptionLanguagesCount = 90;
-    const translationLanguagesCount = 37;
+    // Counts are filled in from the fetched language JSONs (single source of
+    // truth) in populateLanguageDropdown / populateTranslationDropdown.
     const fileTypes = ['.txt', '.srt', '.vtt', '.sbv'];
-
-    document.getElementById('transcription-languages').innerText = transcriptionLanguagesCount;
-    document.getElementById('translation-languages').innerText = translationLanguagesCount;
     document.getElementById('file-types').innerText = fileTypes.join(', ');
 });
 
@@ -152,7 +148,7 @@ function transcribe() {
 
     // Validate file upload
     if (mediaUpload && !isValidMediaFile(mediaUpload)) {
-        showAlert('Invalid File', 'Please upload a valid MP4 or MP3 file.');
+        showAlert('Invalid File', 'Please upload a supported audio/video file (.mp3, .mp4, .m4a, .wav, .webm, .ogg, .flac, .aac, .mov).');
         return;
     }
 
@@ -183,7 +179,11 @@ function transcribe() {
             currentPid = response.pid;  // Store the PID
             startStatusCheck(currentPid);
         } else {
-            showAlert('Error', 'Failed to transcribe the media.');
+            let message = 'Failed to transcribe the media.';
+            try {
+                message = JSON.parse(xhr.responseText).message || message;
+            } catch (e) { /* keep generic message */ }
+            showAlert('Error', message);
             document.getElementById('progressOverlay').style.display = 'none';
         }
     };
@@ -221,7 +221,7 @@ function startStatusCheck(pid) {
             }
         };
         xhr.send();
-    }, 8011);
+    }, 3000);
 }
 
 function isValidYoutubeUrl(url) {
@@ -230,7 +230,8 @@ function isValidYoutubeUrl(url) {
 }
 
 function isValidMediaFile(file) {
-    const validExtensions = ['mp4', 'mp3'];
+    // Keep in sync with is_valid_media_file in src/utils.py.
+    const validExtensions = ['mp3', 'mp4', 'm4a', 'wav', 'webm', 'ogg', 'flac', 'aac', 'mov'];
     const fileExtension = file.name.split('.').pop().toLowerCase();
     return validExtensions.includes(fileExtension);
 }
@@ -440,6 +441,8 @@ function populateLanguageDropdown() {
 
     // Set English as default selected language
     languageChoice.value = 'en';
+
+    document.getElementById('transcription-languages').innerText = Object.keys(languagesData).length;
 }
 
 function updateLanguageCodes() {
@@ -487,6 +490,8 @@ function populateTranslationDropdown(languages) {
 
     // Set default language
     languageTranslation.value = 'EN';
+
+    document.getElementById('translation-languages').innerText = Object.keys(languages).length;
 }
 
 document.addEventListener('DOMContentLoaded', function () {
