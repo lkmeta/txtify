@@ -42,6 +42,41 @@ def test_get_missing_job(tmp_path):
     assert db.get_process_pid(42) is None
 
 
+def test_terminal_status_never_overwritten(tmp_path):
+    db = make_db(tmp_path)
+    a = insert(db)
+    db.update_transcription_status("Canceled", "1.0", 0, a)
+    db.update_transcription_status("Transcribing...", "", 40, a)  # late worker write
+    assert db.get_transcription(a)["status"] == "Canceled"
+
+    b = insert(db)
+    db.update_transcription_status("Error", "1.0", 0, b)
+    db.update_transcription_status("Completed successfully!", "2.0", 100, b)
+    assert db.get_transcription(b)["status"] == "Error"
+
+
+def test_mark_orphans_as_error(tmp_path):
+    db = make_db(tmp_path)
+    running = insert(db)
+    done = insert(db)
+    canceled = insert(db)
+    db.update_transcription_status("Transcribing...", "", 40, running)
+    db.update_transcription_status("Completed successfully!", "2.0", 100, done)
+    db.update_transcription_status("Canceled", "1.0", 0, canceled)
+
+    assert db.mark_orphans_as_error() == 1
+    assert db.get_transcription(running)["status"] == "Error"
+    assert db.get_transcription(done)["status"] == "Completed successfully!"
+    assert db.get_transcription(canceled)["status"] == "Canceled"
+
+
+def test_rows_support_named_access(tmp_path):
+    db = make_db(tmp_path)
+    a = insert(db, "el")
+    row = db.get_transcription(a)
+    assert row["language"] == "el" and row["progress"] == 0 and row["id"] == a
+
+
 def test_delete(tmp_path):
     db = make_db(tmp_path)
     a = insert(db)

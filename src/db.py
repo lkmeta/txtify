@@ -50,6 +50,7 @@ class transcriptionsDB:
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path, timeout=30)
+        conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         return conn
 
@@ -136,8 +137,13 @@ class transcriptionsDB:
             None
         """
         with closing(self._connect()) as conn, conn:
+            # Terminal states (Canceled / any Error) are never overwritten —
+            # e.g. a worker update must not race past a user's cancel.
             conn.execute(
-                "UPDATE transcriptions SET status=?, completed_at=?, progress=? WHERE id=?",
+                """
+                UPDATE transcriptions SET status=?, completed_at=?, progress=?
+                WHERE id=? AND status != 'Canceled' AND status NOT LIKE '%Error%'
+                """,
                 (status, completed_at, progress, job_id),
             )
 
@@ -172,6 +178,24 @@ class transcriptionsDB:
                 "SELECT pid FROM transcriptions WHERE id=?", (job_id,)
             ).fetchone()
             return row[0] if row else None
+
+    def mark_orphans_as_error(self) -> int:
+        """
+        Mark all unfinished jobs as Error. Called at server startup: workers
+        from a previous container run can never complete.
+
+        Returns:
+            int: Number of rows updated.
+        """
+        with closing(self._connect()) as conn, conn:
+            cursor = conn.execute(
+                """
+                UPDATE transcriptions SET status='Error', progress=0
+                WHERE progress < 100 AND status != 'Canceled'
+                      AND status NOT LIKE '%Error%'
+                """
+            )
+            return cursor.rowcount
 
     def delete_transcription(self, job_id: int) -> None:
         """
