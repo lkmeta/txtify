@@ -152,7 +152,7 @@ function transcribe() {
 
     // Validate file upload
     if (mediaUpload && !isValidMediaFile(mediaUpload)) {
-        showAlert('Invalid File', 'Please upload a valid MP4 or MP3 file.');
+        showAlert('Invalid File', 'Please upload a supported media file (.mp3, .mp4, .m4a, .wav, .webm, .ogg, .flac, .aac, .mov).');
         return;
     }
 
@@ -176,16 +176,29 @@ function transcribe() {
     // Send request
     const xhr = new XMLHttpRequest();
     xhr.open('POST', '/transcribe', true);
+    // Large uploads: show transfer progress so the UI never looks frozen
+    xhr.upload.onprogress = function (event) {
+        if (event.lengthComputable && mediaUpload) {
+            const percent = Math.round((event.loaded / event.total) * 100);
+            document.getElementById('progressPhase').innerText =
+                percent < 100 ? `Uploading... ${percent}%` : 'Upload complete, processing...';
+        }
+    };
     xhr.onload = function () {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
-            console.log(response);
             currentPid = response.pid;  // Store the PID
             startStatusCheck(currentPid);
         } else {
-            showAlert('Error', 'Failed to transcribe the media.');
+            let message = 'Failed to transcribe the media.';
+            try { message = JSON.parse(xhr.responseText).message || message; } catch (e) { }
+            showAlert('Error', message);
             document.getElementById('progressOverlay').style.display = 'none';
         }
+    };
+    xhr.onerror = function () {
+        showAlert('Error', 'Network error while uploading. Please try again.');
+        document.getElementById('progressOverlay').style.display = 'none';
     };
     xhr.send(formData);
 }
@@ -206,6 +219,17 @@ function startStatusCheck(pid) {
             if (xhr.status === 200) {
                 const response = JSON.parse(xhr.responseText);
 
+                if (response.phase.includes('Error') || response.phase === 'Canceled') {
+                    clearInterval(transcriptionInterval);
+                    document.getElementById('progressPhase').innerText =
+                        response.phase === 'Canceled'
+                            ? 'Transcription canceled.'
+                            : 'Transcription failed. Check the job logs or try again.';
+                    document.querySelector('.cancel-button').classList.add('hidden');
+                    document.querySelector('.close-button').classList.remove('hidden');
+                    document.querySelector('.spinner').style.display = 'none';
+                    return;
+                }
                 updateProgress(response.progress, response.phase, response.model, response.language, response.translation, response.time_taken);
                 if (response.progress >= 100) {
                     clearInterval(transcriptionInterval);
@@ -215,10 +239,12 @@ function startStatusCheck(pid) {
                     document.querySelector('.download-button').classList.remove('hidden');
                     document.querySelector('.close-button').classList.remove('hidden');
                 }
-            } else {
-                showAlert('Error', 'Failed to check the transcription status.');
-
+            } else if (xhr.status === 404) {
+                clearInterval(transcriptionInterval);
+                showAlert('Error', 'Transcription job not found.');
+                document.getElementById('progressOverlay').style.display = 'none';
             }
+            // transient failures: keep polling silently
         };
         xhr.send();
     }, 8011);
@@ -230,7 +256,8 @@ function isValidYoutubeUrl(url) {
 }
 
 function isValidMediaFile(file) {
-    const validExtensions = ['mp4', 'mp3'];
+    // Keep in sync with valid_extensions in src/utils.py
+    const validExtensions = ['mp3', 'mp4', 'm4a', 'wav', 'webm', 'ogg', 'flac', 'aac', 'mov'];
     const fileExtension = file.name.split('.').pop().toLowerCase();
     return validExtensions.includes(fileExtension);
 }
@@ -278,6 +305,16 @@ document.querySelector('.download-button').addEventListener('click', downloadFil
 
 
 // preview section
+function setStat(id, title, value) {
+    const el = document.getElementById(id);
+    el.textContent = '';
+    const titleSpan = document.createElement('span');
+    titleSpan.className = 'stat-title';
+    titleSpan.textContent = title;
+    el.appendChild(titleSpan);
+    el.appendChild(document.createTextNode(` ${value}`));
+}
+
 function updateProgress(progress, phase, model, language, translation, timeTaken) {
     const modelName = modelMapping[model] || model;
     const translationName = translationMapping[translation] || translation;
@@ -285,18 +322,11 @@ function updateProgress(progress, phase, model, language, translation, timeTaken
     // Update the progress bar
     document.getElementById('progressPercentage').innerText = `${progress}%`;
     document.getElementById('progressPhase').innerText = phase;
-    document.getElementById('statsModel').innerHTML = `<span class="stat-title">Model:</span> ${modelName}`;
-    // document.getElementById('statsLanguage').innerHTML = `<span class="stat-title">Language:</span> ${language}`;
-    document.getElementById('statsTranslation').innerHTML = `<span class="stat-title">Translation:</span> ${translationName}`;
-    document.getElementById('statsTime').innerHTML = `<span class="stat-title">Time Taken:</span> ${timeTaken} seconds`;
-
-
-    // if "In Progress" then show "Time Taken: In Progress"
-    if (timeTaken === 'In Progress') {
-        document.getElementById('statsTime').innerHTML = `<span class="stat-title">Time Taken:</span> ${timeTaken}`;
-    } else {
-        document.getElementById('statsTime').innerHTML = `<span class="stat-title">Time Taken:</span> ${timeTaken} seconds`;
-    }
+    // textContent on the value node: these strings are echoed back by the
+    // server from user input and must never be parsed as HTML
+    setStat('statsModel', 'Model:', modelName);
+    setStat('statsTranslation', 'Translation:', translationName);
+    setStat('statsTime', 'Time Taken:', timeTaken === 'In Progress' ? timeTaken : `${timeTaken} seconds`);
 
     // If phase is not "Initializing..." then unhide the cancel button
     if (phase !== 'Initializing...') {
