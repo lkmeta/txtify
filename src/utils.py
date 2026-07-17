@@ -232,10 +232,25 @@ def clean_filename(filename: str) -> str:
     return filename
 
 
+def _worker_process(pid: int):
+    """
+    Return the psutil.Process for a *worker* pid, or None. Guards against OS
+    pid reuse: if the pid now belongs to an unrelated process, it is not ours.
+    """
+    try:
+        process = psutil.Process(pid)
+        if any("transcribe_process.py" in part for part in process.cmdline()):
+            return process
+    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        pass
+    return None
+
+
 def is_worker_alive(pid: int) -> bool:
     """
     True if the worker process is still running. Exited workers linger as
-    zombies (the server never wait()s on them), so zombie == dead.
+    zombies (the server never wait()s on them), so zombie == dead; a recycled
+    pid belonging to another process also counts as dead.
 
     Args:
         pid (int): The OS process ID.
@@ -243,15 +258,16 @@ def is_worker_alive(pid: int) -> bool:
     Returns:
         bool: True if running, False if exited or never existed.
     """
+    process = _worker_process(pid)
     try:
-        return psutil.Process(pid).status() != psutil.STATUS_ZOMBIE
-    except (psutil.NoSuchProcess, psutil.AccessDenied):
+        return process is not None and process.status() != psutil.STATUS_ZOMBIE
+    except psutil.NoSuchProcess:
         return False
 
 
 def kill_process_by_pid(pid: int) -> bool:
     """
-    Terminate a process by its PID.
+    Terminate a worker process and its children by its PID.
 
     Args:
         pid (int): The process ID.
@@ -259,10 +275,13 @@ def kill_process_by_pid(pid: int) -> bool:
     Returns:
         bool: True if terminated, False otherwise.
     """
+    process = _worker_process(pid)
+    if process is None:
+        return False
     try:
-        process = psutil.Process(pid)
         for proc in process.children(recursive=True):
             proc.kill()
+        process.kill()
         return True
     except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
         return False

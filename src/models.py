@@ -196,8 +196,10 @@ def deepl_translate(text: str, source_lang: str, target_lang: str, job_id: int) 
         )
         return result.text
     except Exception as e:
-        logger.error(f"Translation failed: {str(e)}. Progress: 0%")
-        DB.update_transcription_status("Translation Error", "", 0, job_id)
+        # Degrade gracefully: keep the original text and let the job finish.
+        # Writing an Error status here would (a) be terminal under the DB's
+        # no-overwrite rule and (b) look like job death to pollers.
+        logger.warning(f"Translation failed, keeping original text: {str(e)}")
         return text
 
 

@@ -49,6 +49,11 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 DB = transcriptionsDB(str(OUTPUT_DIR / "transcriptions.db"))
 
+# Workers from a previous container run can never finish their jobs.
+_orphans = DB.mark_orphans_as_error()
+if _orphans:
+    logger.warning(f"Marked {_orphans} unfinished jobs from a previous run as Error")
+
 RUNNING_LOCALLY = os.getenv("RUNNING_LOCALLY", "True").lower() == "true"
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 CONTACT_EMAIL = os.getenv("CONTACT_EMAIL")
@@ -252,31 +257,33 @@ async def status(pid: Optional[int] = None):
         )
 
     logger.info(f"Transcription status: {status_data}")
-    if status_data[11] < 100:
+    if status_data["progress"] < 100:
         time_taken = "In Progress"
         # A worker that died without a terminal DB write (e.g. import crash)
         # would otherwise leave the frontend polling forever.
-        worker_pid = status_data[12]
-        already_terminal = "Error" in status_data[8] or status_data[8] == "Canceled"
+        worker_pid = status_data["pid"]
+        already_terminal = (
+            "Error" in status_data["status"] or status_data["status"] == "Canceled"
+        )
         if worker_pid and not already_terminal and not is_worker_alive(worker_pid):
             logger.error(f"Worker for job {pid} died without finishing")
             DB.update_transcription_status("Error", str(time.time()), 0, pid)
             return {
                 "progress": "0",
                 "phase": "Error",
-                "model": status_data[4],
-                "language": status_data[3],
-                "translation": status_data[5],
+                "model": status_data["model"],
+                "language": status_data["language"],
+                "translation": status_data["translation"],
                 "time_taken": "In Progress",
             }
     else:
         try:
             time_taken = (
-                str(round(float(status_data[10]) - float(status_data[9]), 2))
-                if status_data[9]
+                str(round(float(status_data["completed_at"]) - float(status_data["created_at"]), 2))
+                if status_data["created_at"]
                 else "In Progress"
             )
-            done = kill_process_by_pid(status_data[12])
+            done = kill_process_by_pid(status_data["pid"])
 
             logs_file = OUTPUT_DIR / f"{pid}_logs.txt"
             if logs_file.exists():
@@ -288,11 +295,11 @@ async def status(pid: Optional[int] = None):
             time_taken = "Invalid data"
 
     return {
-        "progress": str(status_data[11]),
-        "phase": status_data[8],
-        "model": status_data[4],
-        "language": status_data[3],
-        "translation": status_data[5],
+        "progress": str(status_data["progress"]),
+        "phase": status_data["status"],
+        "model": status_data["model"],
+        "language": status_data["language"],
+        "translation": status_data["translation"],
         "time_taken": time_taken,
     }
 
@@ -313,15 +320,11 @@ async def cancel_transcription(pid: Optional[int] = None):
             content={"message": "Transcription not found"}, status_code=404
         )
 
-    cancel = kill_process_by_pid(status_data[12])
-    cleanup_files(pid)
-
-    if not cancel:
-        return JSONResponse(
-            content={"message": "Failed to cancel transcription"}, status_code=500
-        )
-
+    # Best effort: the worker may already be dead — cancel must still succeed.
+    if not kill_process_by_pid(status_data["pid"]):
+        logger.info(f"No live worker to kill for job {pid}")
     DB.update_transcription_status("Canceled", str(time.time()), 0, pid)
+    cleanup_files(pid)
     return {"message": "Transcription canceled successfully!"}
 
 
@@ -336,7 +339,7 @@ async def download(pid: Optional[int] = None):
         )
 
     status_data = DB.get_transcription(pid)
-    if not status_data or status_data[11] < 100:
+    if not status_data or status_data["progress"] < 100:
         return JSONResponse(
             content={"message": "Transcription in progress or not found."},
             status_code=404,
@@ -375,7 +378,7 @@ async def downloadPreview(pid: int, format: str):
         return JSONResponse(content={"message": "Invalid file format"}, status_code=400)
 
     status_data = DB.get_transcription(pid)
-    if not status_data or status_data[11] < 100:
+    if not status_data or status_data["progress"] < 100:
         return JSONResponse(
             content={"message": "Transcription in progress or not found."},
             status_code=404,
