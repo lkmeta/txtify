@@ -1,0 +1,26 @@
+name: Docker E2E
+
+on:
+  pull_request:
+    paths:
+      - "requirements.txt"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "docker-compose.yml"
+      - "src/**"
+      - "scripts/docker_e2e.sh"
+      - "tests/fixtures/**"
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run end-to-end gate (build, boot, real transcription, exports)
+        run: ./scripts/docker_e2e.sh
+        env:
+          # no DEEPL key in CI: the transcription leg is the gate; translation
+          # is covered by scripts/benchmark.sh locally
+          DEEPL_API_KEY: ""
