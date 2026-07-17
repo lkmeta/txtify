@@ -48,3 +48,6 @@ demo txtify.mp4
 old_files/
 # Committed test fixture is an explicit exception to the media ban
 !tests/fixtures/speech.mp3
+
+# Local-only agent notes
+CLAUDE.local.md
