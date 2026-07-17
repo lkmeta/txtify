@@ -5,6 +5,7 @@
     - RUNNING_LOCALLY: Set to 'False' to enable email sending. Otherwise, 'True' for local usage.
 """
 
+import html
 import os
 import time
 import uuid
@@ -108,6 +109,10 @@ async def submit_contact(
     """
     Submit the contact form (sends an email if not running locally).
     """
+    # User input goes into an HTML email — escape it (phishing/injection vector)
+    name = html.escape(name or "")
+    email = html.escape(email or "")
+    message = html.escape(message or "")
     html_content = f"""
     <!DOCTYPE html>
     <html lang="en">
