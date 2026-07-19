@@ -1,0 +1,26 @@
+name: Published Image Check
+
+# Weekly gate on what users actually pull from Docker Hub: boots
+# lkmeta/txtify:latest and runs every casual scenario end-to-end
+# (health, pages, mp3 + mkv transcription with word-accuracy asserts,
+# honest translation failure, validation errors, zip/pdf export).
+# Fails loudly if a broken image ever gets published.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      image:
+        description: "Image to check"
+        default: "lkmeta/txtify:latest"
+        required: false
+
+jobs:
+  e2e-published:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run E2E against published image
+        run: IMAGE="${{ github.event.inputs.image || 'lkmeta/txtify:latest' }}" ./scripts/docker_e2e.sh

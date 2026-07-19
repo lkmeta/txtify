@@ -4,17 +4,26 @@
 # polls /status until the transcription completes, and checks every export.
 #
 # Usage: ./scripts/docker_e2e.sh [port]
+#   IMAGE=lkmeta/txtify:latest ./scripts/docker_e2e.sh   # test a published
+#   image instead of building from the working tree (used by the scheduled
+#   published-image check so a broken push gets caught, not discovered).
 set -euo pipefail
 
 PORT="${1:-8077}"
-IMAGE=txtify:e2e
+IMAGE="${IMAGE:-}"
 NAME=txtify_e2e
 BASE="http://127.0.0.1:${PORT}"
 WORKDIR="$(mktemp -d)"
 trap 'docker rm -f $NAME >/dev/null 2>&1 || true; rm -rf "$WORKDIR"' EXIT
 
-echo "==> Building image"
-docker build -q -t $IMAGE .
+if [ -z "$IMAGE" ]; then
+  IMAGE=txtify:e2e
+  echo "==> Building image"
+  docker build -q -t $IMAGE .
+else
+  echo "==> Testing published image: $IMAGE"
+  docker pull -q "$IMAGE"
+fi
 
 echo "==> Starting container"
 docker run -d --rm --name $NAME -p "${PORT}:8011" $IMAGE >/dev/null
@@ -67,6 +76,26 @@ case "$LISTING" in
   *final_transcription.pdf*) ;;
   *) echo "FAIL: pdf missing from zip"; exit 1 ;;
 esac
+
+echo "==> MKV upload (video container path — converted to mp3 by ffmpeg in-app)"
+docker cp tests/fixtures/speech.mp3 "$NAME:/tmp/speech.mp3" >/dev/null
+docker exec $NAME ffmpeg -y -loglevel error -i /tmp/speech.mp3 -c:a aac /tmp/speech.mkv
+docker cp "$NAME:/tmp/speech.mkv" "$WORKDIR/speech.mkv" >/dev/null
+MKVJOB=$(curl -sf -X POST "$BASE/transcribe" \
+  -F media=@"$WORKDIR/speech.mkv" -F language=en -F model=whisper_tiny \
+  -F translation=none -F language_translation=en | python3 -c 'import json,sys; print(json.load(sys.stdin)["pid"])')
+for _ in $(seq 1 60); do
+  P=$(curl -sf "$BASE/status?pid=$MKVJOB" | python3 -c 'import json,sys; print(json.load(sys.stdin)["progress"])')
+  [ "$P" = "100" ] && break
+  [ "$P" = "0" ] && { echo "FAIL: mkv job errored"; exit 1; }
+  sleep 5
+done
+[ "$P" = "100" ] || { echo "FAIL: mkv timed out"; exit 1; }
+curl -sf "$BASE/preview?pid=$MKVJOB" | python3 -c '
+import json, sys
+assert "quick brown fox" in json.load(sys.stdin)["txt"].lower(), "mkv transcription wrong"
+print("    mkv transcribed correctly")
+'
 
 echo "==> Translation path (no DeepL key in this container -> honest failure status)"
 TJOB=$(curl -sf -X POST "$BASE/transcribe" \
