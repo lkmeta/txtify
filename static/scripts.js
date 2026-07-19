@@ -155,7 +155,7 @@ function transcribe() {
 
     // Validate file upload
     if (mediaUpload && !isValidMediaFile(mediaUpload)) {
-        showAlert('Invalid File', 'Please upload a supported media file (.mp3, .mp4, .m4a, .wav, .webm, .ogg, .flac, .aac, .mov).');
+        showAlert('Invalid File', 'Please upload a supported media file (.mp3, .mp4, .m4a, .wav, .webm, .ogg, .flac, .aac, .mov, .mkv, .avi).');
         return;
     }
 
@@ -269,7 +269,7 @@ function isValidYoutubeUrl(url) {
 
 function isValidMediaFile(file) {
     // Keep in sync with valid_extensions in src/utils.py
-    const validExtensions = ['mp3', 'mp4', 'm4a', 'wav', 'webm', 'ogg', 'flac', 'aac', 'mov'];
+    const validExtensions = ['mp3', 'mp4', 'm4a', 'wav', 'webm', 'ogg', 'flac', 'aac', 'mov', 'mkv', 'avi'];
     const fileExtension = file.name.split('.').pop().toLowerCase();
     return validExtensions.includes(fileExtension);
 }

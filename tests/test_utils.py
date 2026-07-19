@@ -27,6 +27,8 @@ def test_clean_filename():
         ("a.m4a", True),
         ("a.wav", True),
         ("a.webm", True),
+        ("a.mkv", True),
+        ("a.AVI", True),
         ("a.exe", False),
         ("a.txt", False),
     ],

@@ -63,7 +63,7 @@ def is_valid_media_file(filename: str) -> bool:
     """
     # Anything ffmpeg can decode; keep in sync with the accept list
     # in templates/index.html.
-    valid_extensions = ["mp3", "mp4", "m4a", "wav", "webm", "ogg", "flac", "aac", "mov"]
+    valid_extensions = ["mp3", "mp4", "m4a", "wav", "webm", "ogg", "flac", "aac", "mov", "mkv", "avi"]
     return filename.split(".")[-1].lower() in valid_extensions
 
 
