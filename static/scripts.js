@@ -224,10 +224,14 @@ function startStatusCheck(pid) {
 
                 if (response.phase.includes('Error') || response.phase === 'Canceled') {
                     clearInterval(transcriptionInterval);
+                    // Show the server's actual error (it carries the cause and
+                    // a hardware hint) instead of a generic failure line.
                     document.getElementById('progressPhase').innerText =
                         response.phase === 'Canceled'
                             ? 'Transcription canceled.'
-                            : 'Transcription failed. Check the job logs or try again.';
+                            : (response.phase.startsWith('Error:')
+                                ? response.phase
+                                : 'Transcription failed. Check the job logs or try again.');
                     document.querySelector('.cancel-button').classList.add('hidden');
                     document.querySelector('.close-button').classList.remove('hidden');
                     document.querySelector('.spinner').style.display = 'none';

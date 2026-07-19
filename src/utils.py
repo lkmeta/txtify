@@ -5,6 +5,7 @@ PDF, SRT, VTT, and SBV. It also includes helper functions for cleaning filenames
 validating YouTube URLs, and managing file cleanup.
 """
 
+import os
 import re
 import shutil
 import subprocess
@@ -24,10 +25,10 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 DB = transcriptionsDB(OUTPUT_DIR / "transcriptions.db")
 
-# User-facing limits. Keep the copy in templates/index.html and
-# templates/faq.html in sync when changing these.
-MAX_VIDEO_DURATION = 15 * 60  # YouTube audio is truncated at 15 minutes
-MAX_UPLOAD_SIZE_MB = 1000  # uploaded files are rejected above 1000 MB
+# User-facing limits, overridable per deployment. Keep the copy in
+# templates/index.html and templates/faq.html in sync when changing defaults.
+MAX_VIDEO_DURATION = int(os.getenv("MAX_VIDEO_DURATION", 15 * 60))  # seconds; longer videos are rejected
+MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB", 1000))  # uploads above this are rejected
 
 
 def is_valid_youtube_url(url: str) -> bool:
