@@ -68,6 +68,22 @@ case "$LISTING" in
   *) echo "FAIL: pdf missing from zip"; exit 1 ;;
 esac
 
+echo "==> Translation path (no DeepL key in this container -> honest failure status)"
+TJOB=$(curl -sf -X POST "$BASE/transcribe" \
+  -F media=@"tests/fixtures/speech.mp3" -F language=en -F model=whisper_tiny \
+  -F translation=deepl -F language_translation=EL | python3 -c 'import json,sys; print(json.load(sys.stdin)["pid"])')
+for _ in $(seq 1 60); do
+  TPHASE=$(curl -sf "$BASE/status?pid=$TJOB" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["progress"], d["phase"])')
+  case "$TPHASE" in "100 "*) break ;; "0 "*) break ;; esac
+  sleep 5
+done
+echo "    final: $TPHASE"
+case "$TPHASE" in
+  "100 Completed (translation failed)") ;;  # keyless container: exports ship untranslated, status is honest
+  "100 Completed successfully!") ;;         # container has a working key (local runs)
+  *) echo "FAIL: translation job ended as '$TPHASE'"; exit 1 ;;
+esac
+
 echo "==> Validation errors"
 echo x > "$WORKDIR/bad.exe"
 code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/transcribe" \

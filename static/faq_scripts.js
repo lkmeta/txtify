@@ -24,7 +24,21 @@ function fetchLanguagesFAQ(file, elementId) {
 function toggleTheme() {
     document.body.classList.toggle('light-theme');
     document.body.classList.toggle('dark-theme');
+    localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
 }
 
 document.getElementById('themeToggle').addEventListener('change', toggleTheme);
+
+// Apply the saved theme choice so it persists across pages and reloads
+if (localStorage.getItem('theme') === 'light') {
+    document.body.classList.replace('dark-theme', 'light-theme');
+    document.getElementById('themeToggle').checked = true;
+}
+
+const menuToggle = document.getElementById('menuToggle');
+const navLinks = document.getElementById('navLinks');
+menuToggle.addEventListener('click', function () {
+    const open = navLinks.classList.toggle('active');
+    menuToggle.setAttribute('aria-expanded', open);
+});
 

@@ -1,8 +1,11 @@
 """
-    Before running the application, ensure the following environment variables are set:
-    - DEEPL_API_KEY: DeepL API key (required for translation).
-    - RESEND_API_KEY: Resend API key (required for sending emails).
-    - RUNNING_LOCALLY: Set to 'False' to enable email sending. Otherwise, 'True' for local usage.
+    Environment variables:
+    - DEEPL_API_KEY: DeepL API key (required only for translation).
+    - RUNNING_LOCALLY: 'True' (default) disables email sending; set to 'False'
+      to enable the contact form email, which then requires:
+    - RESEND_API_KEY: Resend API key.
+    - CONTACT_EMAIL: address that receives contact form submissions.
+    - MAX_CONCURRENT_JOBS: max transcriptions running at once (default 2).
 """
 
 import html
@@ -24,6 +27,7 @@ from fastapi.templating import Jinja2Templates
 from loguru import logger
 
 from db import transcriptionsDB
+from deepl_languages import SOURCE_LANGUAGES, TARGET_LANGUAGES
 from utils import (
     MAX_UPLOAD_SIZE_MB,
     cleanup_files,
@@ -56,6 +60,8 @@ if _orphans:
     logger.warning(f"Marked {_orphans} unfinished jobs from a previous run as Error")
 
 RUNNING_LOCALLY = os.getenv("RUNNING_LOCALLY", "True").lower() == "true"
+# Each job is a full whisper process; uncapped concurrency OOMs the container.
+MAX_CONCURRENT_JOBS = int(os.getenv("MAX_CONCURRENT_JOBS", "2"))
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 CONTACT_EMAIL = os.getenv("CONTACT_EMAIL")
 if not RUNNING_LOCALLY:
@@ -172,6 +178,28 @@ async def submit_contact(
         )
 
 
+def _count_active_jobs() -> int:
+    """
+    Number of jobs genuinely in flight. Rows with pid=0 are still in the
+    download phase — counted only while recent, so a row orphaned by a server
+    crash mid-download can't wedge the concurrency cap forever.
+    """
+    now = time.time()
+    count = 0
+    for _job_id, pid, created_at in DB.get_active_jobs():
+        if pid:
+            if is_worker_alive(pid):
+                count += 1
+        else:
+            try:
+                recent = now - float(created_at) < 3600
+            except (TypeError, ValueError):
+                recent = False
+            if recent:
+                count += 1
+    return count
+
+
 @app.post("/transcribe", response_class=JSONResponse)
 async def transcribe(
     youtube_url: str = Form(None),
@@ -203,6 +231,35 @@ async def transcribe(
                 },
                 status_code=400,
             )
+    else:
+        return JSONResponse(
+            content={"message": "Provide a YouTube URL or a media file."},
+            status_code=400,
+        )
+
+    if translation and translation.lower() != "none":
+        if language_translation.upper() not in TARGET_LANGUAGES:
+            return JSONResponse(
+                content={
+                    "message": f"Translation to '{language_translation}' is not supported."
+                },
+                status_code=400,
+            )
+        if language.lower() != "auto" and language.upper() not in SOURCE_LANGUAGES:
+            return JSONResponse(
+                content={
+                    "message": f"Translation from '{language}' is not supported."
+                },
+                status_code=400,
+            )
+
+    if _count_active_jobs() >= MAX_CONCURRENT_JOBS:
+        return JSONResponse(
+            content={
+                "message": "Server is busy with other transcriptions. Try again shortly."
+            },
+            status_code=429,
+        )
 
     job_id = DB.insert_transcription(
         youtube_url,
@@ -233,6 +290,17 @@ async def transcribe(
     )
 
     if not started:
+        # handle_transcription may have written an informative status
+        # (e.g. the video-length rejection) — surface it instead of a
+        # generic failure, and don't clobber it.
+        row = DB.get_transcription(job_id)
+        if row and row["status"].startswith("Error:"):
+            return JSONResponse(
+                content={"message": row["status"].removeprefix("Error: ")},
+                status_code=400,
+            )
+        if row and row["status"] == "Canceled":
+            return JSONResponse(content={"message": "Transcription canceled."})
         DB.update_transcription_status("Error", str(time.time()), 0, job_id)
         return JSONResponse(
             content={"message": "Failed to start transcription process"},
@@ -288,14 +356,12 @@ async def status(pid: Optional[int] = None):
                 if status_data["created_at"]
                 else "In Progress"
             )
-            done = kill_process_by_pid(status_data["pid"])
-
+            # No kill here: the worker exits on its own after its final
+            # DB write; kill_process_by_pid would be a no-op at best.
             logs_file = OUTPUT_DIR / f"{pid}_logs.txt"
-            if logs_file.exists():
-                logs_file.rename(OUTPUT_DIR / f"{pid}" / "logs.txt")
-
-            if done:
-                logger.info(f"Transcription job {pid} is done!")
+            job_dir = OUTPUT_DIR / str(pid)
+            if logs_file.exists() and job_dir.exists():
+                logs_file.rename(job_dir / "logs.txt")
         except ValueError:
             time_taken = "Invalid data"
 
@@ -325,11 +391,19 @@ async def cancel_transcription(pid: Optional[int] = None):
             content={"message": "Transcription not found"}, status_code=404
         )
 
-    # Best effort: the worker may already be dead — cancel must still succeed.
-    if not kill_process_by_pid(status_data["pid"]):
-        logger.info(f"No live worker to kill for job {pid}")
+    if status_data["progress"] >= 100:
+        return JSONResponse(
+            content={"message": "Transcription already completed"}, status_code=400
+        )
+
+    # Mark canceled BEFORE killing: terminal states are atomic in the DB, so
+    # even a worker that survives the kill can't flip the job back.
     DB.update_transcription_status("Canceled", str(time.time()), 0, pid)
+    # Best effort; False just means the worker is already gone (or the job
+    # never spawned one — pid 0 is filtered by the worker-identity guard).
+    kill_process_by_pid(status_data["pid"])
     cleanup_files(pid)
+
     return {"message": "Transcription canceled successfully!"}
 
 
@@ -357,12 +431,21 @@ async def download(pid: Optional[int] = None):
             content={"message": "Transcription folder not found"}, status_code=404
         )
 
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-        for root, dirs, files in os.walk(folder_path):
-            for file in files:
-                file_path = Path(root) / file
-                arcname = file_path.relative_to(folder_path)
-                zipf.write(file_path, arcname)
+    if not zip_path.exists():
+        # Build to a unique temp path then rename, so neither concurrent
+        # readers nor concurrent builders ever see a half-written zip;
+        # run off the event loop.
+        def build_zip():
+            tmp_path = OUTPUT_DIR / f"{pid}.zip.{uuid.uuid4().hex}.tmp"
+            with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(folder_path):
+                    for file in files:
+                        file_path = Path(root) / file
+                        arcname = file_path.relative_to(folder_path)
+                        zipf.write(file_path, arcname)
+            tmp_path.rename(zip_path)
+
+        await run_in_threadpool(build_zip)
 
     logger.info(f"Downloading zip file: {zip_path}")
     if zip_path.exists():
@@ -389,7 +472,9 @@ async def downloadPreview(pid: int, format: str):
             status_code=404,
         )
 
-    file_path = OUTPUT_DIR / str(pid) / f"transcription.{format}"
+    # The worker writes the final (possibly translated) exports as
+    # final_transcription.<ext>; transcription.txt is the raw whisper output.
+    file_path = OUTPUT_DIR / str(pid) / f"final_transcription.{format}"
     logger.info(f"Downloading file: {file_path}")
 
     if file_path.exists():
@@ -428,10 +513,14 @@ async def preview(pid: int):
                 "sbv": sbv_content,
             }
         )
-    except Exception as e:
+    except FileNotFoundError:
         return JSONResponse(
-            content={"message": f"Failed to fetch the preview: {str(e)}"},
-            status_code=500,
+            content={"message": "Preview not found"}, status_code=404
+        )
+    except Exception:
+        logger.exception(f"Failed to fetch the preview for job {pid}")
+        return JSONResponse(
+            content={"message": "Failed to fetch the preview"}, status_code=500
         )
 
 

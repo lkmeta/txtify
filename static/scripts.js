@@ -12,18 +12,14 @@ const modelMapping = {
 
 const translationMapping = {
     none: 'Don\'t Translate',
-    deepl: 'DeepL',
-    whisper: 'Whisper'
+    deepl: 'DeepL'
 };
 
 
 document.addEventListener('DOMContentLoaded', function () {
-    const transcriptionLanguagesCount = 90;
-    const translationLanguagesCount = 37;
-    const fileTypes = ['.txt', '.srt', '.vtt', '.sbv'];
-
-    document.getElementById('transcription-languages').innerText = transcriptionLanguagesCount;
-    document.getElementById('translation-languages').innerText = translationLanguagesCount;
+    // Counts are filled in from the fetched language JSONs (single source of
+    // truth) in populateLanguageDropdown / populateTranslationDropdown.
+    const fileTypes = ['.txt', '.srt', '.vtt', '.sbv', '.pdf'];
     document.getElementById('file-types').innerText = fileTypes.join(', ');
 });
 
@@ -49,9 +45,16 @@ function showInput(type) {
 function toggleTheme() {
     document.body.classList.toggle('light-theme');
     document.body.classList.toggle('dark-theme');
+    localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
 }
 
 document.getElementById('themeToggle').addEventListener('change', toggleTheme);
+
+// Apply the saved theme choice so it persists across pages and reloads
+if (localStorage.getItem('theme') === 'light') {
+    document.body.classList.replace('dark-theme', 'light-theme');
+    document.getElementById('themeToggle').checked = true;
+}
 
 function showAlert(title, message) {
     document.getElementById('alertTitle').innerText = title;
@@ -233,7 +236,12 @@ function startStatusCheck(pid) {
                 updateProgress(response.progress, response.phase, response.model, response.language, response.translation, response.time_taken);
                 if (response.progress >= 100) {
                     clearInterval(transcriptionInterval);
-                    document.getElementById('progressPhase').innerText = 'Completed successfully! Download your files below.';
+                    // Show the real final status — e.g. "Completed (translation
+                    // failed)" must not be presented as full success.
+                    document.getElementById('progressPhase').innerText =
+                        response.phase === 'Completed successfully!'
+                            ? 'Completed successfully! Download your files below.'
+                            : response.phase + ' — download your files below.';
                     // document.querySelector('.cancel-button').style.display = 'none';
                     document.querySelector('.cancel-button').classList.add('hidden');
                     document.querySelector('.download-button').classList.remove('hidden');
@@ -247,7 +255,7 @@ function startStatusCheck(pid) {
             // transient failures: keep polling silently
         };
         xhr.send();
-    }, 8011);
+    }, 3000);
 }
 
 function isValidYoutubeUrl(url) {
@@ -470,6 +478,8 @@ function populateLanguageDropdown() {
 
     // Set English as default selected language
     languageChoice.value = 'en';
+
+    document.getElementById('transcription-languages').innerText = Object.keys(languagesData).length;
 }
 
 function updateLanguageCodes() {
@@ -517,6 +527,8 @@ function populateTranslationDropdown(languages) {
 
     // Set default language
     languageTranslation.value = 'EN';
+
+    document.getElementById('translation-languages').innerText = Object.keys(languages).length;
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -548,14 +560,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-document.addEventListener('DOMContentLoaded', function () {
-    const menuToggle = document.getElementById('menuToggle');
-    const navLinks = document.getElementById('navLinks');
-
-    menuToggle.addEventListener('click', function () {
-        navLinks.classList.toggle('active');
-    });
-});
 
 
 
@@ -585,4 +589,14 @@ function cleanUp() {
 document.querySelector('.close-button').addEventListener('click', function () {
     cleanUp();
     closeProgress();
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    const menuToggle = document.getElementById('menuToggle');
+    const navLinks = document.getElementById('navLinks');
+
+    menuToggle.addEventListener('click', function () {
+        const open = navLinks.classList.toggle('active');
+        menuToggle.setAttribute('aria-expanded', open);
+    });
 });

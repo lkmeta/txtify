@@ -7,23 +7,26 @@
     <title>Txtify</title>
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Exo:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script async defer src="https://buttons.github.io/buttons.js"></script>
     <script src="/static/faq_scripts.js"></script>
 </head>
 
 <body class="dark-theme">
-    <div class="navbar">
+    <nav class="navbar" aria-label="Main">
         <div class="navbar-content">
             <!-- <a href="/" class="logo">Txtify</a> -->
             <a href="/" class="logo">
                 <img src="/static/txtify_logo.png" alt="Txtify Logo" class="logo-image">
                 <span>Txtify</span>
             </a>            
-            <div class="menu-toggle" id="menuToggle">
-                <i class="fa fa-bars"></i>
-            </div>
+            <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="navLinks">
+                <i class="fa fa-bars" aria-hidden="true"></i>
+            </button>
             <div class="nav-links" id="navLinks">
                 <a href="/">Application</a>
                 <a href="/faq">FAQ</a>
@@ -34,13 +37,13 @@
             </div>
             <div class="theme-toggle-wrapper">
                 <label class="theme-toggle">
-                    <input type="checkbox" id="themeToggle">
+                    <input type="checkbox" id="themeToggle" aria-label="Toggle light and dark theme">
                     <div class="toggle-body"></div>
                     <div class="celestial-body"></div>
                 </label>
             </div>
         </div>
-    </div>
+    </nav>
 
     <div class="container_faq">
         <h1>Frequently Asked Questions (FAQ)</h1>
@@ -238,10 +241,10 @@
         </div>
     </div>
 
-    <div class="footer">
-        &copy; 2025 Txt<span style="color: var(--primary-color);">ify</span>. Created with <i
-            class="fa-solid fa-heart heart"></i> by <a href="https://lkmeta.com" target="_blank">lkmeta</a>.
-    </div>
+    <footer class="footer">
+        &copy; 2026 Txt<span style="color: var(--primary-color);">ify</span>. Created with <i
+            class="fa-solid fa-heart heart" aria-hidden="true"></i> by <a href="https://lkmeta.com" target="_blank">lkmeta</a>.
+    </footer>
 
 
     <!-- <script src="/static/scripts.js"></script> -->

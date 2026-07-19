@@ -118,3 +118,29 @@ def test_convert_to_pdf_preserves_unicode(tmp_path):
     assert "Γειά σου κόσμε" in text
     assert "Привет мир" in text
     assert "?" not in text
+
+
+def test_is_valid_youtube_url_rejects_playlists_and_channels():
+    assert not utils.is_valid_youtube_url(
+        "https://www.youtube.com/playlist?list=PL123"
+    )
+    assert not utils.is_valid_youtube_url("https://www.youtube.com/@somechannel")
+    assert utils.is_valid_youtube_url("https://www.youtube.com/shorts/abc123DEF")
+
+
+def test_kill_process_by_pid_kills_the_process_itself():
+    import subprocess as _subprocess
+    import time as _time
+
+    import sys as _sys
+
+    # cmdline must look like a worker: the kill guard refuses unrelated
+    # processes (OS pid reuse protection)
+    proc = _subprocess.Popen(
+        [_sys.executable, "-c", "import time; time.sleep(30)", "transcribe_process.py"]
+    )
+    assert utils.kill_process_by_pid(proc.pid) is True
+    proc.wait(timeout=5)
+    assert proc.returncode is not None
+    _time.sleep(0)
+    assert utils.kill_process_by_pid(proc.pid) is False

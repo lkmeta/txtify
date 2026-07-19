@@ -153,3 +153,105 @@ def _form():
         "translation": "none",
         "language_translation": "en",
     }
+
+
+def test_transcribe_requires_url_or_file(client):
+    r = client.post("/transcribe", data=_form())
+    assert r.status_code == 400
+    assert "YouTube URL or a media file" in r.json()["message"]
+
+
+def test_transcribe_rejects_unsupported_translation_combo(client):
+    # source language whisper supports but DeepL doesn't
+    r = client.post(
+        "/transcribe",
+        data={**_form(), "language": "hi", "translation": "deepl",
+              "language_translation": "EN"},
+        files={"media": ("a.mp3", io.BytesIO(b"x"), "audio/mpeg")},
+    )
+    assert r.status_code == 400
+    assert "not supported" in r.json()["message"]
+
+    # invalid target language
+    r = client.post(
+        "/transcribe",
+        data={**_form(), "translation": "deepl", "language_translation": "XX"},
+        files={"media": ("a.mp3", io.BytesIO(b"x"), "audio/mpeg")},
+    )
+    assert r.status_code == 400
+
+
+def test_transcribe_allows_auto_source_translation(client, monkeypatch):
+    monkeypatch.setattr(main, "handle_transcription", lambda *a, **k: True)
+    r = client.post(
+        "/transcribe",
+        data={**_form(), "language": "auto", "translation": "deepl",
+              "language_translation": "EL"},
+        files={"media": ("a.mp3", io.BytesIO(b"x"), "audio/mpeg")},
+    )
+    assert r.status_code == 200
+
+
+def test_transcribe_busy_returns_429(client, monkeypatch):
+    monkeypatch.setattr(main, "MAX_CONCURRENT_JOBS", 0)
+    r = client.post(
+        "/transcribe",
+        data=_form(),
+        files={"media": ("a.mp3", io.BytesIO(b"x"), "audio/mpeg")},
+    )
+    assert r.status_code == 429
+
+
+def _completed_job(client, monkeypatch, tmp_path):
+    """Insert a completed job with real export files in a temp OUTPUT_DIR."""
+    monkeypatch.setattr(main, "handle_transcription", lambda *a, **k: True)
+    monkeypatch.setattr(main, "OUTPUT_DIR", tmp_path)
+    job_id = client.post(
+        "/transcribe",
+        data=_form(),
+        files={"media": ("a.mp3", io.BytesIO(b"x"), "audio/mpeg")},
+    ).json()["pid"]
+    main.DB.update_transcription_status("Completed successfully!", "2.0", 100, job_id)
+    job_dir = tmp_path / str(job_id)
+    job_dir.mkdir()
+    for ext in ("txt", "srt", "vtt", "sbv"):
+        (job_dir / f"final_transcription.{ext}").write_text(
+            f"content-{ext}", encoding="utf-8"
+        )
+    return job_id
+
+
+def test_download_preview_serves_final_files(client, monkeypatch, tmp_path):
+    job_id = _completed_job(client, monkeypatch, tmp_path)
+    for fmt in ("txt", "srt", "vtt", "sbv"):
+        r = client.get(f"/downloadPreview?pid={job_id}&format={fmt}")
+        assert r.status_code == 200, fmt
+        assert r.content.decode() == f"content-{fmt}"
+
+
+def test_preview_missing_files_is_404(client, monkeypatch, tmp_path):
+    monkeypatch.setattr(main, "OUTPUT_DIR", tmp_path)
+    r = client.get("/preview?pid=12345")
+    assert r.status_code == 404
+    assert "Preview not found" in r.json()["message"]
+
+
+def test_cancel_completed_job_is_400_and_keeps_files(client, monkeypatch, tmp_path):
+    job_id = _completed_job(client, monkeypatch, tmp_path)
+    r = client.post(f"/cancel?pid={job_id}")
+    assert r.status_code == 400
+    assert (tmp_path / str(job_id) / "final_transcription.txt").exists()
+
+
+def test_cancel_running_job_marks_canceled(client, monkeypatch):
+    monkeypatch.setattr(main, "handle_transcription", lambda *a, **k: True)
+    monkeypatch.setattr(main, "kill_process_by_pid", lambda pid: False)
+    monkeypatch.setattr(main, "cleanup_files", lambda pid: None)
+    job_id = client.post(
+        "/transcribe",
+        data=_form(),
+        files={"media": ("a.mp3", io.BytesIO(b"x"), "audio/mpeg")},
+    ).json()["pid"]
+    r = client.post(f"/cancel?pid={job_id}")
+    assert r.status_code == 200
+    assert main.DB.get_transcription(job_id)[8] == "Canceled"
