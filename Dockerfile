@@ -19,6 +19,13 @@ COPY requirements.txt .
 # Upgrade pip
 RUN pip install --no-cache-dir --upgrade pip
 
+# CPU-only torch first: the default amd64 wheels bundle ~2.5 GB of CUDA
+# libraries this app never uses (inference is CPU-only). Same pinned
+# versions as requirements.txt — keep them identical, a torch/torchaudio
+# mismatch crashes the worker at import.
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu \
+    torch==2.9.1 torchaudio==2.9.1
+
 # Install any dependencies specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
