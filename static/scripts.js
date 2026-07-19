@@ -483,7 +483,10 @@ function populateLanguageDropdown() {
     // Set English as default selected language
     languageChoice.value = 'en';
 
-    document.getElementById('transcription-languages').innerText = Object.keys(languagesData).length;
+    // Auto-Detect is an option, not a language — keep the count honest
+    // (the website derives the same number and its CI checks for drift).
+    document.getElementById('transcription-languages').innerText =
+        Object.values(languagesData).filter(l => l.name !== 'Auto-Detect').length;
 }
 
 function updateLanguageCodes() {
