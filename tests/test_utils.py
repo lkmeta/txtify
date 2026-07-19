@@ -144,3 +144,21 @@ def test_kill_process_by_pid_kills_the_process_itself():
     assert proc.returncode is not None
     _time.sleep(0)
     assert utils.kill_process_by_pid(proc.pid) is False
+
+
+def test_limits_overridable_via_env(monkeypatch):
+    import importlib
+
+    monkeypatch.setenv("MAX_UPLOAD_SIZE_MB", "50")
+    monkeypatch.setenv("MAX_VIDEO_DURATION", "120")
+    import utils
+
+    importlib.reload(utils)
+    assert utils.MAX_UPLOAD_SIZE_MB == 50
+    assert utils.MAX_VIDEO_DURATION == 120
+
+    monkeypatch.delenv("MAX_UPLOAD_SIZE_MB")
+    monkeypatch.delenv("MAX_VIDEO_DURATION")
+    importlib.reload(utils)
+    assert utils.MAX_UPLOAD_SIZE_MB == 1000
+    assert utils.MAX_VIDEO_DURATION == 900

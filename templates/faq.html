@@ -169,9 +169,10 @@
 
             <h2>Limitations</h2>
             <h3>Are there any limitations?</h3>
-            <p>Yes, this version has limitations. You can upload files up to 1000MB or transcribe YouTube videos up
-                to 15 minutes. However, when you self-host Txtify, you can modify and run the application without these
-                limitations, giving you full control over the transcription process.</p>
+            <p>By default you can upload files up to 1000MB and transcribe YouTube videos up to 15 minutes. These
+                are safety defaults, not hard limits: set the <code>MAX_UPLOAD_SIZE_MB</code> and
+                <code>MAX_VIDEO_DURATION</code> (seconds) environment variables to raise or remove them for your
+                own deployment. Keep in mind that longer media needs proportionally more time, disk, and memory.</p>
 
 
             <!-- <h3>____________________________________________________________</h3> -->

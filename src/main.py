@@ -340,10 +340,16 @@ async def status(pid: Optional[int] = None):
         )
         if worker_pid and not already_terminal and not is_worker_alive(worker_pid):
             logger.error(f"Worker for job {pid} died without finishing")
-            DB.update_transcription_status("Error", str(time.time()), 0, pid)
+            died_msg = (
+                "Error: the transcription worker stopped unexpectedly. "
+                "This is usually the machine running out of memory for the "
+                "selected model — try a smaller model (e.g. base). "
+                f"Details in output/{pid}_logs.txt."
+            )
+            DB.update_transcription_status(died_msg, str(time.time()), 0, pid)
             return {
                 "progress": "0",
-                "phase": "Error",
+                "phase": died_msg,
                 "model": status_data["model"],
                 "language": status_data["language"],
                 "translation": status_data["translation"],
