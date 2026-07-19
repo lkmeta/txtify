@@ -7,24 +7,27 @@
     <title>Txtify</title>
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Exo:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script async defer src="https://buttons.github.io/buttons.js"></script>
 
 </head>
 
 
 <body class="dark-theme">
-    <div class="navbar">
+    <nav class="navbar" aria-label="Main">
         <div class="navbar-content">
             <!-- <a href="/" class="logo">Txtify</a> -->
             <a href="/" class="logo">
                 <img src="/static/txtify_logo.png" alt="Txtify Logo" class="logo-image">
                 <span>Txtify</span>
             </a>            
-            <div class="menu-toggle" id="menuToggle">
-                <i class="fa fa-bars"></i>
-            </div>
+            <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="navLinks">
+                <i class="fa fa-bars" aria-hidden="true"></i>
+            </button>
             <div class="nav-links" id="navLinks">
                 <a href="/">Application</a>
                 <a href="/faq">FAQ</a>
@@ -35,13 +38,13 @@
             </div>
             <div class="theme-toggle-wrapper">
                 <label class="theme-toggle">
-                    <input type="checkbox" id="themeToggle">
+                    <input type="checkbox" id="themeToggle" aria-label="Toggle light and dark theme">
                     <div class="toggle-body"></div>
                     <div class="celestial-body"></div>
                 </label>
             </div>
         </div>
-    </div>
+    </nav>
 
 
 
@@ -50,7 +53,7 @@
 
         <div class="description">
             Welcome to Txtify! Easily turn your 
-            <a href="#" style="color: var(--primary-color); font-weight: bold;">audio or video to text for free</a>. 
+            <span style="color: var(--primary-color); font-weight: bold;">audio or video to text for free</span>.
             Provide a YouTube URL or upload your own files and leverage AI, powered by the new 
             <a href="https://github.com/jianfch/stable-ts" target="_blank" style="color: var(--primary-color); font-weight: bold;">stable-ts</a> 
             library for fast and accurate transcriptions.
@@ -65,35 +68,7 @@
             <span style="color: var(--primary-color); font-weight: bold;">1000MB</span> 
             and YouTube videos up to 
             <span style="color: var(--primary-color); font-weight: bold;">15 minutes</span>.
-            <br><br>
-            Please note that this website is a 
-            <span style="color: var(--primary-color); font-weight: bold;">demo version</span> 
-            intended to showcase the functionality of Txtify. To utilize the full features of Txtify, including real data transcription, we recommend self-hosting the application. For detailed instructions on how to set up and run Txtify locally, visit our 
-            <a href="https://github.com/lkmeta/txtify" target="_blank" style="color: var(--primary-color); font-weight: bold;">GitHub repository</a>.
         </div>
-        
-        <!-- <div class="description">
-            Welcome to Txtify! Easily turn your <a style="color: var(--primary-color); font-weight: bold;">audio or
-                video to text for free</a>. Provide a YouTube URL or upload your own files and use AI, powered by the new 
-            <a href="https://github.com/jianfch/stable-ts" target="_blank" style="color: var(--primary-color); font-weight: bold;">stable-ts</a>
-                 library, for fast and accurate transcriptions.
-            <br><br>
-            Transcribe audio and video in <span id="transcription-languages"
-                style="color: var(--primary-color); font-weight: bold;"></span> languages and translate transcriptions
-            to <span id="translation-languages" style="color: var(--primary-color); font-weight: bold;"></span>
-            languages.
-            Export in multiple formats including <span id="file-types"
-                style="color: var(--primary-color); font-weight: bold;"></span>.
-            Txtify supports files up to <span style="color: var(--primary-color); font-weight: bold;">1000MB</span>
-            and YouTube videos up to <span style="color: var(--primary-color); font-weight: bold;">15 minutes</span>.
-            <br><br>
-            Please note that this website is a <span style="color: var(--primary-color); font-weight: bold;">demo
-                version</span> intended to showcase the functionality of Txtify. To utilize the full features of Txtify,
-            including real data transcription, we recommend self-hosting the application. For detailed instructions on
-            how to set up and run Txtify locally, visit our <a href="https://github.com/lkmeta/txtify" target="_blank"
-                style="color: var(--primary-color); font-weight: bold;">GitHub repository</a>.
-
-        </div> -->
 
         <div class="switch-case">
             <button id="youtube-button" class="active" onclick="showInput('youtube')">YouTube URL</button>
@@ -162,17 +137,17 @@
             <button id="transcribeButton">Transcribe</button>
         </div>
     </div>
-    <div class="footer">
-        &copy; 2025 Txt<span style="color: var(--primary-color);">ify</span>. Created with <i
-            class="fa-solid fa-heart heart"></i> by <a href="https://lkmeta.com" target="_blank">lkmeta</a>.
-    </div>
+    <footer class="footer">
+        &copy; 2026 Txt<span style="color: var(--primary-color);">ify</span>. Created with <i
+            class="fa-solid fa-heart heart" aria-hidden="true"></i> by <a href="https://lkmeta.com" target="_blank">lkmeta</a>.
+    </footer>
 
 
 
 
     <!-- Alert Box Structure -->
     <div class="alert-overlay" id="alertOverlay">
-        <div class="alert-box">
+        <div class="alert-box" role="alertdialog" aria-labelledby="alertTitle" aria-describedby="alertMessage">
             <h2 id="alertTitle">Alert</h2>
             <p id="alertMessage">This is an alert message.</p>
             <button onclick="closeAlert()">OK</button>
@@ -205,8 +180,8 @@
                     <button class="tab-button" onclick="showPreview('sbv')">.sbv</button>
                 </div>
                 <div class="preview-content" id="previewContent">
-                    <button class="download-emoji" onclick="downloadCurrentPreview()"><i
-                            class="fa-solid fa-download"></i></button>
+                    <button class="download-emoji" onclick="downloadCurrentPreview()" aria-label="Download current preview"><i
+                            class="fa-solid fa-download" aria-hidden="true"></i></button>
 
                     <pre id="previewText" class="hidden"></pre>
                     <pre id="previewSRT" class="hidden"></pre>
