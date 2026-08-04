@@ -27,6 +27,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from loguru import logger
 
+import status as job_status  # aliased: the /status route defines a `status` name
 from db import transcriptionsDB
 from deepl_languages import SOURCE_LANGUAGES, TARGET_LANGUAGES
 from utils import (
@@ -296,11 +297,11 @@ async def transcribe(
         translation,
         language_translation,
         file_export,
-        "Processing request...",
+        job_status.PROCESSING,
         str(time.time()),
     )
 
-    DB.update_transcription_status("Processing request...", "", 10, job_id)
+    DB.update_transcription_status(job_status.PROCESSING, "", 10, job_id)
 
     # Download/convert can take minutes for large media; run off the event
     # loop so other requests (status polls) keep being served.
@@ -321,14 +322,16 @@ async def transcribe(
         # (e.g. the video-length rejection) — surface it instead of a
         # generic failure, and don't clobber it.
         row = DB.get_transcription(job_id)
-        if row and row["status"].startswith("Error:"):
+        # Only an informative "Error: <detail>" is surfaced to the user (400);
+        # a bare "Error" still falls through to the generic 500 below.
+        if row and row["status"].startswith(job_status.ERROR_PREFIX):
             return JSONResponse(
-                content={"message": row["status"].removeprefix("Error: ")},
+                content={"message": row["status"].removeprefix(f"{job_status.ERROR_PREFIX} ")},
                 status_code=400,
             )
-        if row and row["status"] == "Canceled":
+        if row and job_status.is_canceled(row["status"]):
             return JSONResponse(content={"message": "Transcription canceled."})
-        DB.update_transcription_status("Error", str(time.time()), 0, job_id)
+        DB.update_transcription_status(job_status.ERROR, str(time.time()), 0, job_id)
         return JSONResponse(
             content={"message": "Failed to start transcription process"},
             status_code=500,
@@ -362,13 +365,11 @@ async def status(pid: Optional[int] = None):
         # A worker that died without a terminal DB write (e.g. import crash)
         # would otherwise leave the frontend polling forever.
         worker_pid = status_data["pid"]
-        already_terminal = (
-            "Error" in status_data["status"] or status_data["status"] == "Canceled"
-        )
+        already_terminal = job_status.is_locked(status_data["status"])
         if worker_pid and not already_terminal and not is_worker_alive(worker_pid):
             logger.error(f"Worker for job {pid} died without finishing")
-            died_msg = (
-                "Error: the transcription worker stopped unexpectedly. "
+            died_msg = job_status.error(
+                "the transcription worker stopped unexpectedly. "
                 "This is usually the machine running out of memory for the "
                 "selected model — try a smaller model (e.g. base). "
                 f"Details in output/{pid}_logs.txt."
@@ -431,7 +432,7 @@ async def cancel_transcription(pid: Optional[int] = None):
 
     # Mark canceled BEFORE killing: terminal states are atomic in the DB, so
     # even a worker that survives the kill can't flip the job back.
-    DB.update_transcription_status("Canceled", str(time.time()), 0, pid)
+    DB.update_transcription_status(job_status.CANCELED, str(time.time()), 0, pid)
     # Best effort; False just means the worker is already gone (or the job
     # never spawned one — pid 0 is filtered by the worker-identity guard).
     kill_process_by_pid(status_data["pid"])

@@ -18,6 +18,7 @@ import yt_dlp
 from fpdf import FPDF
 from loguru import logger
 
+import status
 from db import transcriptionsDB
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -126,7 +127,7 @@ def handle_transcription(
             duration = info_dict.get("duration")
             if duration and duration > MAX_VIDEO_DURATION:
                 DB.update_transcription_status(
-                    f"Error: video exceeds {MAX_VIDEO_DURATION // 60} minute limit",
+                    status.error(f"video exceeds {MAX_VIDEO_DURATION // 60} minute limit"),
                     "",
                     0,
                     job_id,
@@ -176,7 +177,7 @@ def handle_transcription(
         # canceled meanwhile — spawning would resurrect the job's files and
         # run an uncounted whisper process.
         row = DB.get_transcription(job_id)
-        if row and row["status"] == "Canceled":
+        if row and status.is_canceled(row["status"]):
             logger.info(f"Job {job_id} canceled during preparation; not spawning")
             return False
 
