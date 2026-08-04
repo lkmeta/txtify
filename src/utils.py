@@ -210,6 +210,7 @@ def handle_transcription(
         worker_log.close()
 
         DB.set_process_pid(process.pid, job_id)
+        _unreaped_workers.add(process.pid)
         logger.info(f"Transcription job {job_id} started with PID: {process.pid}")
         return True
 
@@ -300,6 +301,35 @@ def is_worker_alive(pid: int) -> bool:
         return process is not None and process.status() != psutil.STATUS_ZOMBIE
     except psutil.NoSuchProcess:
         return False
+
+
+# Workers are spawned fire-and-forget; uvicorn never wait()s on them, so a
+# finished or killed worker lingers as a zombie holding a pid slot until the
+# container restarts. Track the pids we spawn and reap them ourselves.
+_unreaped_workers: set = set()
+
+
+def reap_workers() -> int:
+    """
+    Reap any of our finished worker subprocesses so they don't linger as
+    zombies. Non-blocking and targeted: it only waits on pids WE spawned, never
+    ``waitpid(-1)`` — a wildcard reap would steal the ffmpeg/yt_dlp children that
+    ``subprocess.run`` reaps internally and make those calls raise.
+
+    Returns:
+        int: number of workers reaped this call.
+    """
+    reaped = 0
+    for pid in list(_unreaped_workers):
+        try:
+            done, _ = os.waitpid(pid, os.WNOHANG)
+        except (ChildProcessError, OSError):
+            _unreaped_workers.discard(pid)  # not our child / already reaped
+            continue
+        if done:  # (pid, status) => reaped; (0, 0) => still running, keep for later
+            _unreaped_workers.discard(pid)
+            reaped += 1
+    return reaped
 
 
 def kill_process_by_pid(pid: int) -> bool:

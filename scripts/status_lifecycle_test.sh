@@ -113,10 +113,12 @@ echo "==> FINAL: no worker is still EXECUTING (zombies counted separately)"
 RUNNING=$(docker exec "$NAME" sh -c "for p in /proc/[0-9]*; do read _ c st _ </\$p/stat 2>/dev/null; echo \$c \$st; done" 2>/dev/null | grep -i 'transcribe' | grep -vw Z)
 [ -z "$RUNNING" ] && pass "no worker still executing" || fail "worker(s) still executing: $RUNNING"
 
-echo "==> OBSERVE: zombie (defunct) workers awaiting reap — pre-existing, separate from this PR"
-ZCOUNT=$(docker exec "$NAME" sh -c "grep -l 'Z' /proc/[0-9]*/stat 2>/dev/null | wc -l" 2>/dev/null | tr -d ' ')
-echo "  note: $ZCOUNT zombie process(es) present (uvicorn does not reap exited/killed workers)"
+echo "==> FINAL-B: worker zombies are reaped (no defunct workers left behind)"
+zcount() { docker exec "$NAME" sh -c "for s in /proc/[0-9]*/stat; do awk '{print \$3}' \$s 2>/dev/null; done | grep -c '^Z$'" 2>/dev/null | tr -d ' '; }
+Z=$(zcount)
+for _ in $(seq 1 20); do [ "$Z" = 0 ] && break; sleep 1; Z=$(zcount); done  # reaper runs on an interval
+[ "$Z" = 0 ] && pass "no zombie workers remain (reaper cleaned them up)" || fail "$Z zombie worker(s) still present"
 
 echo
-[ "$FAIL" = 0 ] && echo "PASS: status machine verified — every terminal path correct, worker code always stops" \
+[ "$FAIL" = 0 ] && echo "PASS: status machine verified — every terminal path correct, no leftover processes" \
               || { echo "FAILURES above"; exit 1; }

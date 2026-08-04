@@ -136,6 +136,36 @@ def test_purge_expired_jobs_removes_old_keeps_recent(tmp_path, monkeypatch):
     assert utils.purge_expired_jobs(retention_days=0) == 0
 
 
+def test_reap_workers_reaps_finished_but_keeps_running(monkeypatch):
+    import os as _os
+    import subprocess as _subprocess
+    import sys as _sys
+    import time as _time
+
+    monkeypatch.setattr(utils, "_unreaped_workers", set())
+
+    # A worker that exits immediately becomes a zombie until reaped.
+    finished = _subprocess.Popen([_sys.executable, "-c", "import sys; sys.exit(0)"])
+    utils._unreaped_workers.add(finished.pid)
+    reaped = 0
+    for _ in range(60):  # retry until it has exited and gets reaped
+        reaped = utils.reap_workers()
+        if reaped:
+            break
+        _time.sleep(0.05)
+    assert reaped == 1
+    assert finished.pid not in utils._unreaped_workers
+    finished.returncode = 0  # we already reaped it; keep Popen.__del__ quiet
+
+    # A still-running worker is left alone.
+    running = _subprocess.Popen([_sys.executable, "-c", "import time; time.sleep(30)"])
+    utils._unreaped_workers.add(running.pid)
+    assert utils.reap_workers() == 0
+    assert running.pid in utils._unreaped_workers
+    running.kill()
+    running.wait()
+
+
 def test_convert_to_mp3_streams_via_ffmpeg(tmp_path):
     import shutil as _shutil
     import subprocess as _subprocess

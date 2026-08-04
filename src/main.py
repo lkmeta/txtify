@@ -39,6 +39,7 @@ from utils import (
     is_worker_alive,
     kill_process_by_pid,
     purge_expired_jobs,
+    reap_workers,
 )
 
 load_dotenv()
@@ -85,6 +86,26 @@ async def _schedule_retention_sweep() -> None:
 
     asyncio.create_task(_loop())
     logger.info(f"Periodic retention sweep armed: every {RETENTION_SWEEP_HOURS}h")
+
+
+# uvicorn doesn't reap the fire-and-forget worker subprocesses, so a finished or
+# killed worker would linger as a zombie. Reap ours on a short interval.
+REAP_INTERVAL_SECONDS = int(os.getenv("REAP_INTERVAL_SECONDS", "10"))
+
+
+@app.on_event("startup")
+async def _schedule_worker_reaper() -> None:
+    async def _loop() -> None:
+        while True:
+            await asyncio.sleep(REAP_INTERVAL_SECONDS)
+            try:
+                n = reap_workers()  # WNOHANG, targeted — safe to call in the loop
+                if n:
+                    logger.info(f"Reaped {n} finished worker(s)")
+            except Exception as e:
+                logger.warning(f"Worker reaper failed: {e}")
+
+    asyncio.create_task(_loop())
 
 
 RUNNING_LOCALLY = os.getenv("RUNNING_LOCALLY", "True").lower() == "true"
@@ -436,6 +457,7 @@ async def cancel_transcription(pid: Optional[int] = None):
     # Best effort; False just means the worker is already gone (or the job
     # never spawned one — pid 0 is filtered by the worker-identity guard).
     kill_process_by_pid(status_data["pid"])
+    reap_workers()  # don't leave the just-killed worker as a zombie
     cleanup_files(pid)
 
     return {"message": "Transcription canceled successfully!"}
