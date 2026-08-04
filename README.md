@@ -106,6 +106,8 @@ If you want to use the pre-built Docker image available on Docker Hub, follow th
 
 > <sub>`--env-file .env` provides your DeepL API key (translation silently stays disabled without it); `-v ./output:/app/output` keeps transcriptions and job state on your machine across container restarts.</sub>
 
+> <sub>Old jobs in `output/` are swept after `RETENTION_DAYS` (default 7) — at startup and every `RETENTION_SWEEP_HOURS` (default 12) — so the volume doesn't grow without bound; set `RETENTION_DAYS=0` to keep everything.</sub>
+
 > **Note:** If you're using Unraid or an AMD architecture, check out the [docker hub images](https://hub.docker.com/repository/docker/lkmeta/txtify/tags). You can pull and run it with:
 >
 > ```bash

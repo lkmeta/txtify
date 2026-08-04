@@ -95,6 +95,47 @@ def test_cleanup_files_only_touches_own_job(tmp_path, monkeypatch):
     assert (tmp_path / "12_other.mp3").exists()
 
 
+def test_purge_expired_jobs_removes_old_keeps_recent(tmp_path, monkeypatch):
+    import time
+
+    from db import transcriptionsDB
+
+    db = transcriptionsDB(str(tmp_path / "t.db"))
+    monkeypatch.setattr(utils, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr(utils, "DB", db)
+
+    now = time.time()
+
+    def make_job(created_at, status, progress):
+        job_id = db.insert_transcription(
+            "", "", "en", "whisper_tiny", "none", "en", "all", status,
+            str(created_at),
+        )
+        db.update_transcription_status(status, "", progress, job_id)
+        (tmp_path / str(job_id)).mkdir()
+        (tmp_path / f"{job_id}_audio.mp3").touch()
+        return job_id
+
+    old_done = make_job(now - 10 * 86400, "Completed successfully!", 100)  # swept
+    old_active = make_job(now - 10 * 86400, "Processing", 30)  # old but LIVE — kept
+    fresh = make_job(now - 60, "Completed successfully!", 100)  # recent — kept
+
+    removed = utils.purge_expired_jobs(retention_days=7)
+
+    assert removed == 1
+    assert db.get_transcription(old_done) is None
+    assert not (tmp_path / str(old_done)).exists()
+    assert not (tmp_path / f"{old_done}_audio.mp3").exists()
+    # An in-flight job is never swept, no matter how old — protects a live worker.
+    assert db.get_transcription(old_active) is not None
+    assert (tmp_path / str(old_active)).exists()
+    assert db.get_transcription(fresh) is not None
+    assert (tmp_path / str(fresh)).exists()
+
+    # retention_days <= 0 disables the sweep entirely.
+    assert utils.purge_expired_jobs(retention_days=0) == 0
+
+
 def test_convert_to_mp3_streams_via_ffmpeg(tmp_path):
     import shutil as _shutil
     import subprocess as _subprocess

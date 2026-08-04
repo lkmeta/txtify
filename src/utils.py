@@ -10,6 +10,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import psutil
@@ -29,6 +30,11 @@ DB = transcriptionsDB(OUTPUT_DIR / "transcriptions.db")
 # templates/index.html and templates/faq.html in sync when changing defaults.
 MAX_VIDEO_DURATION = int(os.getenv("MAX_VIDEO_DURATION", 15 * 60))  # seconds; longer videos are rejected
 MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB", 1000))  # uploads above this are rejected
+
+# Job outputs (media, transcripts, zip, DB row) are never cleaned up otherwise,
+# so a long-running self-host slowly fills its disk. Sweep anything older than
+# this at startup. Set to 0 to keep everything forever.
+RETENTION_DAYS = int(os.getenv("RETENTION_DAYS", 7))
 
 
 def is_valid_youtube_url(url: str) -> bool:
@@ -563,3 +569,31 @@ def cleanup_files(pid: int) -> None:
     (OUTPUT_DIR / f"{pid}.zip").unlink(missing_ok=True)
 
     logger.info(f"Files cleaned up for job: {pid}")
+
+
+def purge_expired_jobs(retention_days: int = RETENTION_DAYS) -> int:
+    """
+    Delete output files and DB rows for jobs older than ``retention_days``.
+
+    Called once at startup so a long-running deployment doesn't accumulate
+    every job's media/transcripts/zip on disk (and rows in the DB) forever.
+    A running job is never touched — its ``created_at`` is recent, so it can't
+    be older than the window.
+
+    Args:
+        retention_days (int): Age threshold in days. ``<= 0`` disables the
+            sweep and keeps everything.
+
+    Returns:
+        int: Number of jobs removed.
+    """
+    if retention_days <= 0:
+        return 0
+    cutoff = time.time() - retention_days * 86400
+    ids = DB.get_expired_job_ids(cutoff)
+    for job_id in ids:
+        cleanup_files(job_id)
+        DB.delete_transcription(job_id)
+    if ids:
+        logger.info(f"Retention sweep removed {len(ids)} job(s) older than {retention_days} day(s)")
+    return len(ids)

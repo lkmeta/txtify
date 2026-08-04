@@ -13,7 +13,9 @@ function fetchLanguagesFAQ(file, elementId) {
             } else {
                 languages = Object.values(data.target_languages);
             }
-            document.getElementById(elementId).innerText = languages.join(', ');
+            // The list <p> may be commented out in the template — skip if absent.
+            const el = document.getElementById(elementId);
+            if (el) el.innerText = languages.join(', ');
         })
         .catch(error => {
             console.error(`Error fetching ${file}:`, error);

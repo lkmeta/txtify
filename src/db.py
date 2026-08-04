@@ -215,6 +215,41 @@ class transcriptionsDB:
                 """
             ).fetchall()
 
+    def get_expired_job_ids(self, cutoff: float) -> list:
+        """
+        Return the ids of jobs created before ``cutoff`` (Unix seconds) that
+        are not still in flight, for the retention sweep.
+
+        In-flight jobs are excluded explicitly (same definition as
+        ``get_active_jobs``) rather than relying on "an old job can't be
+        running" — so even a tiny ``RETENTION_DAYS`` can never delete files
+        out from under a live worker. Finished/errored/canceled jobs stay
+        eligible so their disk is reclaimed.
+
+        ``created_at`` is stored as a stringified Unix float; compare it as
+        REAL and skip blank values so they are never treated as "epoch 0".
+        (If that storage format ever changes to e.g. ISO datetimes, this CAST
+        would match every row — keep created_at a Unix-seconds string.)
+
+        Args:
+            cutoff (float): Unix timestamp; jobs older than this are returned.
+
+        Returns:
+            list[int]: The expired job ids.
+        """
+        with closing(self._connect()) as conn, conn:
+            rows = conn.execute(
+                """
+                SELECT id FROM transcriptions
+                WHERE created_at != '' AND CAST(created_at AS REAL) < ?
+                  AND NOT (progress < 100
+                           AND status != 'Canceled'
+                           AND status NOT LIKE '%Error%')
+                """,
+                (cutoff,),
+            ).fetchall()
+            return [row[0] for row in rows]
+
     def delete_transcription(self, job_id: int) -> None:
         """
         Delete a transcription record by job id.
