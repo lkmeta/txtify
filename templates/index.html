@@ -18,6 +18,8 @@
 
 
 <body class="dark-theme">
+    <!-- Apply saved theme before first paint to avoid a dark→light flash -->
+    <script>if(localStorage.getItem('theme')==='light')document.body.classList.replace('dark-theme','light-theme');</script>
     <nav class="navbar" aria-label="Main">
         <div class="navbar-content">
             <!-- <a href="/" class="logo">Txtify</a> -->
