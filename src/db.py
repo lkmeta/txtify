@@ -9,6 +9,8 @@ The OS pid of the worker subprocess is stored alongside it for cancellation.
 import sqlite3
 from contextlib import closing
 
+from status import ERROR, NOT_LOCKED_SQL
+
 
 class transcriptionsDB:
     """
@@ -140,9 +142,9 @@ class transcriptionsDB:
             # Terminal states (Canceled / any Error) are never overwritten —
             # e.g. a worker update must not race past a user's cancel.
             conn.execute(
-                """
+                f"""
                 UPDATE transcriptions SET status=?, completed_at=?, progress=?
-                WHERE id=? AND status != 'Canceled' AND status NOT LIKE '%Error%'
+                WHERE id=? AND {NOT_LOCKED_SQL}
                 """,
                 (status, completed_at, progress, job_id),
             )
@@ -189,11 +191,11 @@ class transcriptionsDB:
         """
         with closing(self._connect()) as conn, conn:
             cursor = conn.execute(
-                """
-                UPDATE transcriptions SET status='Error', progress=0
-                WHERE progress < 100 AND status != 'Canceled'
-                      AND status NOT LIKE '%Error%'
-                """
+                f"""
+                UPDATE transcriptions SET status=?, progress=0
+                WHERE progress < 100 AND {NOT_LOCKED_SQL}
+                """,
+                (ERROR,),
             )
             return cursor.rowcount
 
@@ -207,11 +209,9 @@ class transcriptionsDB:
         """
         with closing(self._connect()) as conn, conn:
             return conn.execute(
-                """
+                f"""
                 SELECT id, pid, created_at FROM transcriptions
-                WHERE progress < 100
-                  AND status != 'Canceled'
-                  AND status NOT LIKE '%Error%'
+                WHERE progress < 100 AND {NOT_LOCKED_SQL}
                 """
             ).fetchall()
 
@@ -239,12 +239,10 @@ class transcriptionsDB:
         """
         with closing(self._connect()) as conn, conn:
             rows = conn.execute(
-                """
+                f"""
                 SELECT id FROM transcriptions
                 WHERE created_at != '' AND CAST(created_at AS REAL) < ?
-                  AND NOT (progress < 100
-                           AND status != 'Canceled'
-                           AND status NOT LIKE '%Error%')
+                  AND NOT (progress < 100 AND {NOT_LOCKED_SQL})
                 """,
                 (cutoff,),
             ).fetchall()

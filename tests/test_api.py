@@ -255,3 +255,25 @@ def test_cancel_running_job_marks_canceled(client, monkeypatch):
     r = client.post(f"/cancel?pid={job_id}")
     assert r.status_code == 200
     assert main.DB.get_transcription(job_id)[8] == "Canceled"
+
+
+def test_status_marks_error_when_worker_died(client, monkeypatch):
+    # A worker that crashed (e.g. OOM) without a terminal DB write would leave
+    # the frontend polling forever; /status must detect the dead pid and flip
+    # the job to an informative Error. This exercises the is_locked / error()
+    # refactor on the dead-worker path.
+    monkeypatch.setattr(main, "handle_transcription", lambda *a, **k: True)
+    job_id = client.post(
+        "/transcribe",
+        data=_form(),
+        files={"media": ("a.mp3", io.BytesIO(b"x"), "audio/mpeg")},
+    ).json()["pid"]
+    main.DB.set_process_pid(999999, job_id)
+    main.DB.update_transcription_status("Transcribing...", "", 40, job_id)
+    monkeypatch.setattr(main, "is_worker_alive", lambda pid: False)
+
+    phase = client.get(f"/status?pid={job_id}").json()["phase"]
+    assert phase.startswith("Error:")
+    assert "stopped unexpectedly" in phase
+    # Now terminal: a later poll stays Error (is_locked stops re-detection).
+    assert client.get(f"/status?pid={job_id}").json()["phase"].startswith("Error:")

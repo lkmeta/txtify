@@ -9,6 +9,7 @@ FastAPI web app that transcribes/translates audio & video: YouTube URL or upload
 - `src/transcribe_process.py` — worker entrypoint; receives the job id as `argv[1]`. Never look up "the latest row" — that reintroduces the concurrency race fixed in #15.
 - `src/models.py` — stable-ts transcription + DeepL translation. DeepL may merge/split lines; `save_final_transcription` aligns best-effort and must never raise on count mismatch.
 - `src/db.py` — per-operation SQLite connections with WAL (async handlers + worker subprocesses share the file). Don't add a module-level shared connection.
+- `src/status.py` — **single source of truth for job status strings and the terminal-state guard.** The status values are a contract: the frontend (`static/scripts.js`) branches on the exact strings via `/status`'s `phase` (`=== 'Completed successfully!'`, `=== 'Canceled'`, `.includes('Error')`, `.startsWith('Error:')`), and existing DB rows store them — change a VALUE only with a matching frontend change + migration. Use the constants/predicates (`PROCESSING`, `CANCELED`, `error()`, `is_locked()`, `NOT_LOCKED_SQL`), never hardcode a status string or the `!= 'Canceled' AND NOT LIKE '%Error%'` guard. `test_status.py` asserts `is_locked` (Python) and `NOT_LOCKED_SQL` (SQLite) agree on every status.
 - Job outputs live in `output/<job id>/`; `output/` is gitignored and dockerignored — media, transcripts, and `.db` files must never be committed or baked into the image.
 
 ## Commands
@@ -21,6 +22,10 @@ pytest                      # 32+ unit/API tests; runs WITHOUT torch installed
 uvicorn main:app --port 8011   # quick local iteration only (from src/); ffmpeg required
 ./scripts/benchmark.sh         # all whisper models + DeepL translation through the real
                                # API in Docker; compare against BENCHMARK.md baseline
+./scripts/status_lifecycle_test.sh  # against a running container on 8011: verifies every
+                               # status terminal path on the REAL worker — cancel, worker
+                               # crash (dead-worker detection), orphan recovery, happy path,
+                               # and that no worker is left executing. Ends "PASS: status machine verified"
 ```
 
 **The canonical build is always Docker with the pinned `requirements.txt`** (`docker compose up --build` / `scripts/docker_e2e.sh`). Local venvs are for fast iteration and unit tests only — never treat "works locally" as verified; the deployment artifact is the image.

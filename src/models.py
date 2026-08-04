@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from loguru import logger
 from stable_whisper import load_model
 
+import status
 from db import transcriptionsDB
 from deepl_languages import SOURCE_LANGUAGES, TARGET_LANGUAGES
 from utils import convert_to_formats
@@ -83,7 +84,7 @@ def transcribe_audio(
     if not file_path:
         logger.error("No file path provided. Progress: 0%")
         DB.update_transcription_status(
-            "Error: No file path provided.", "", 0, job_id
+            status.error("No file path provided."), "", 0, job_id
         )
         return
 
@@ -92,14 +93,14 @@ def transcribe_audio(
     try:
         logger.info("Loading stable-whisper model... Progress: 30%")
         DB.update_transcription_status(
-            "Loading transcription model...", "", 30, job_id
+            status.LOADING, "", 30, job_id
         )
 
         stable_model_name = STABLE_MODELS.get(MODELS.get(model, DEFAULT_MODEL), "base")
         model_instance = load_model(stable_model_name, device=device, cpu_preload=True)
 
         logger.info("Transcribing... Progress: 40%")
-        DB.update_transcription_status("Transcribing...", "", 40, job_id)
+        DB.update_transcription_status(status.TRANSCRIBING, "", 40, job_id)
 
         result = model_instance.transcribe(
             file_path,
@@ -119,7 +120,7 @@ def transcribe_audio(
         result.to_txt(str(pid_dir / "transcription.txt"))
 
         logger.info("Saving transcription... Progress: 70%")
-        DB.update_transcription_status("Saving transcription...", "", 70, job_id)
+        DB.update_transcription_status(status.SAVING, "", 70, job_id)
 
         logger.info(f"Saved transcription to: {pid_dir / 'transcription.txt'}")
         with open(pid_dir / "transcription.txt", "r", encoding="utf-8") as f:
@@ -133,7 +134,7 @@ def transcribe_audio(
             and language.lower() != language_translation.lower()
         ):
             logger.info("Translating... Progress: 85%")
-            DB.update_transcription_status("Translating...", "", 85, job_id)
+            DB.update_transcription_status(status.TRANSLATING, "", 85, job_id)
             logger.info(f"Translating from {language} to {language_translation}")
             if not TARGET_LANGUAGES.get(language_translation.upper()):
                 raise ValueError(
@@ -156,20 +157,20 @@ def transcribe_audio(
         )
 
         logger.info("Exporting transcription... Progress: 90%")
-        DB.update_transcription_status("Exporting transcription...", "", 90, job_id)
+        DB.update_transcription_status(status.EXPORTING, "", 90, job_id)
         convert_to_formats(transcription, str(translated_text_file), "all")
 
         final_status = (
-            "Completed (translation failed)"
+            status.COMPLETED_TRANSLATION_FAILED
             if translation_failed
-            else "Completed successfully!"
+            else status.COMPLETED
         )
         logger.info(f"{final_status} Progress: 100%")
         DB.update_transcription_status(final_status, str(time.time()), 100, job_id)
 
     except Exception as e:
         logger.error(f"Transcription failed: {str(e)}. Progress: 0%")
-        DB.update_transcription_status("Error", "", 0, job_id)
+        DB.update_transcription_status(status.ERROR, "", 0, job_id)
 
 
 
