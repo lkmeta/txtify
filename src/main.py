@@ -8,6 +8,7 @@
     - MAX_CONCURRENT_JOBS: max transcriptions running at once (default 2).
 """
 
+import asyncio
 import html
 import os
 import time
@@ -36,6 +37,7 @@ from utils import (
     is_valid_youtube_url,
     is_worker_alive,
     kill_process_by_pid,
+    purge_expired_jobs,
 )
 
 load_dotenv()
@@ -58,6 +60,31 @@ DB = transcriptionsDB(str(OUTPUT_DIR / "transcriptions.db"))
 _orphans = DB.mark_orphans_as_error()
 if _orphans:
     logger.warning(f"Marked {_orphans} unfinished jobs from a previous run as Error")
+
+# Reclaim disk from old jobs so a long-running self-host doesn't fill up.
+purge_expired_jobs()
+
+# The startup sweep above only fires on (re)start; a container that runs for
+# weeks without restarting would still accumulate. Also sweep on an interval.
+RETENTION_SWEEP_HOURS = int(os.getenv("RETENTION_SWEEP_HOURS", "12"))
+
+
+@app.on_event("startup")
+async def _schedule_retention_sweep() -> None:
+    if RETENTION_SWEEP_HOURS <= 0:  # 0 disables the periodic sweep (startup-only)
+        return
+
+    async def _loop() -> None:
+        while True:
+            await asyncio.sleep(RETENTION_SWEEP_HOURS * 3600)
+            try:
+                await run_in_threadpool(purge_expired_jobs)
+            except Exception as e:  # never let a sweep error kill the loop
+                logger.warning(f"Periodic retention sweep failed: {e}")
+
+    asyncio.create_task(_loop())
+    logger.info(f"Periodic retention sweep armed: every {RETENTION_SWEEP_HOURS}h")
+
 
 RUNNING_LOCALLY = os.getenv("RUNNING_LOCALLY", "True").lower() == "true"
 # Each job is a full whisper process; uncapped concurrency OOMs the container.
