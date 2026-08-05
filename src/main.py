@@ -177,11 +177,22 @@ def _fmt_time(created_at: str) -> str:
         return "—"
 
 
-def _fmt_duration(created_at: str, completed_at: str) -> str:
+def _duration_secs(created_at: str, completed_at: str):
     try:
-        return f"{round(float(completed_at) - float(created_at), 1)}s"
+        return round(float(completed_at) - float(created_at), 1)
     except (TypeError, ValueError):
-        return "—"
+        return None
+
+
+def _status_class(status: str, progress: int) -> str:
+    """Category used for the status badge color on the history page."""
+    if job_status.is_canceled(status):
+        return "canceled"
+    if job_status.is_error(status):
+        return "error"
+    if progress >= 100:
+        return "success"
+    return "progress"
 
 
 @app.get("/history", response_class=HTMLResponse)
@@ -196,15 +207,23 @@ async def history(request: Request):
         # Downloadable once the exports exist (progress 100) and the job is not
         # canceled/errored — covers both success and "translation failed".
         downloadable = row["progress"] >= 100 and not job_status.is_locked(row["status"])
+        secs = _duration_secs(row["created_at"], row["completed_at"])
+        try:
+            created_ts = float(row["created_at"])
+        except (TypeError, ValueError):
+            created_ts = 0.0
         jobs.append(
             {
                 "id": row["id"],
                 "created": _fmt_time(row["created_at"]),
-                "duration": _fmt_duration(row["created_at"], row["completed_at"]),
+                "created_ts": created_ts,  # raw, for sorting
+                "duration": f"{secs}s" if secs is not None else "—",
+                "duration_secs": secs if secs is not None else -1,  # raw, for sorting
                 "model": MODEL_LABELS.get(row["model"], row["model"]),
                 "language": row["language"],
                 "translation": row["translation"],
                 "status": row["status"],
+                "status_class": _status_class(row["status"], row["progress"]),
                 "progress": row["progress"],
                 "downloadable": downloadable,
             }

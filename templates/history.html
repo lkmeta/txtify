@@ -13,6 +13,46 @@
     <link href="https://fonts.googleapis.com/css2?family=Exo:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <style>
+        .history-wrap { max-width: 1100px; margin: 0 auto; padding: 0 1rem 3rem; }
+        .history-sub { text-align: center; opacity: .75; margin-bottom: 1.5rem; }
+        /* Solid panel so the table stays readable over the page background image. */
+        .history-scroll {
+            overflow-x: auto; border-radius: 10px; border: 1px solid rgba(127, 127, 127, .25);
+            background: rgba(17, 18, 22, .86); box-shadow: 0 6px 24px rgba(0, 0, 0, .35);
+        }
+        body.light-theme .history-scroll { background: rgba(255, 255, 255, .92); }
+        table.history { border-collapse: collapse; width: 100%; font-size: .92rem; }
+        table.history td:nth-child(2) { white-space: nowrap; }
+        table.history thead th {
+            position: sticky; top: 0; background: var(--primary-color); color: #fff;
+            text-align: left; padding: .7rem .85rem; font-weight: 700; white-space: nowrap;
+        }
+        table.history th.sortable { cursor: pointer; user-select: none; }
+        table.history th.sortable::after { content: " \2195"; opacity: .5; font-size: .85em; }
+        table.history th.sort-asc::after { content: " \25B2"; opacity: 1; }
+        table.history th.sort-desc::after { content: " \25BC"; opacity: 1; }
+        table.history td { padding: .6rem .85rem; border-top: 1px solid rgba(127, 127, 127, .18); vertical-align: middle; }
+        table.history tbody tr:nth-child(even) { background: rgba(127, 127, 127, .06); }
+        table.history tbody tr:hover { background: rgba(127, 127, 127, .16); }
+        table.history td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        table.history td.id { font-variant-numeric: tabular-nums; opacity: .7; }
+        .badge {
+            display: inline-block; padding: .18em .7em; border-radius: 999px;
+            font-size: .78rem; font-weight: 700; white-space: nowrap; line-height: 1.4;
+            max-width: 320px; overflow: hidden; text-overflow: ellipsis; vertical-align: middle;
+        }
+        .badge.success { color: #1a7f37; background: rgba(35, 134, 54, .16); }
+        .badge.error   { color: #e5484d; background: rgba(229, 72, 77, .16); }
+        .badge.canceled{ color: #bb8009; background: rgba(210, 153, 34, .18); }
+        .badge.progress{ color: #2a6fdb; background: rgba(56, 132, 222, .16); }
+        body.dark-theme .badge.success { color: #4ac26b; }
+        body.dark-theme .badge.canceled { color: #e2b53a; }
+        body.dark-theme .badge.progress { color: #6aa8ff; }
+        .dl-link { color: var(--primary-color); font-weight: 700; white-space: nowrap; text-decoration: none; }
+        .dl-link:hover { text-decoration: underline; }
+        .history-empty { text-align: center; margin-top: 2.5rem; }
+    </style>
 </head>
 
 <body class="dark-theme">
@@ -46,41 +86,40 @@
         </div>
     </nav>
 
-    <div class="container_faq">
-        <h1>Transcription History</h1>
-        <p style="text-align:center;">Your past transcriptions on this machine. Old jobs are removed automatically by the retention policy.</p>
+    <div class="history-wrap">
+        <h1 style="text-align:center;">Transcription History</h1>
+        <p class="history-sub">Your past transcriptions on this machine — click a column to sort. Old jobs are removed automatically by the retention policy.</p>
 
         {% if jobs %}
-        <div class="table-container">
-            <table class="model-table">
+        <div class="history-scroll">
+            <table class="history" id="historyTable">
                 <thead>
                     <tr>
-                        <th>#</th>
-                        <th>When</th>
-                        <th>Duration</th>
-                        <th>Model</th>
-                        <th>Language</th>
-                        <th>Translation</th>
-                        <th>Status</th>
+                        <th class="sortable" data-type="number">#</th>
+                        <th class="sortable sort-desc" data-type="number">When</th>
+                        <th class="sortable" data-type="number">Duration</th>
+                        <th class="sortable" data-type="text">Model</th>
+                        <th class="sortable" data-type="text">Language</th>
+                        <th class="sortable" data-type="text">Translation</th>
+                        <th class="sortable" data-type="text">Status</th>
                         <th>Files</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for job in jobs %}
                     <tr>
-                        <td>{{ job.id }}</td>
-                        <td>{{ job.created }}</td>
-                        <td>{{ job.duration }}</td>
+                        <td class="id" data-sort-value="{{ job.id }}">{{ job.id }}</td>
+                        <td data-sort-value="{{ job.created_ts }}">{{ job.created }}</td>
+                        <td class="num" data-sort-value="{{ job.duration_secs }}">{{ job.duration }}</td>
                         <td>{{ job.model }}</td>
                         <td>{{ job.language }}</td>
                         <td>{{ job.translation }}</td>
-                        <td>{{ job.status }}</td>
+                        <td data-sort-value="{{ job.status }}"><span class="badge {{ job.status_class }}" title="{{ job.status }}">{{ job.status }}</span></td>
                         <td>
                             {% if job.downloadable %}
-                            <a href="/download?pid={{ job.id }}" style="color: var(--primary-color); font-weight: bold;">
-                                <i class="fa-solid fa-download" aria-hidden="true"></i> .zip</a>
+                            <a class="dl-link" href="/download?pid={{ job.id }}"><i class="fa-solid fa-download" aria-hidden="true"></i> .zip</a>
                             {% else %}
-                            —
+                            <span style="opacity:.4;">—</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -89,7 +128,7 @@
             </table>
         </div>
         {% else %}
-        <p style="text-align:center; margin-top:2rem;">No transcriptions yet. <a href="/" style="color: var(--primary-color); font-weight: bold;">Start one →</a></p>
+        <p class="history-empty">No transcriptions yet. <a class="dl-link" href="/">Start one →</a></p>
         {% endif %}
     </div>
 
@@ -99,6 +138,7 @@
     </footer>
 
     <script src="/static/faq_scripts.js"></script>
+    <script src="/static/history.js"></script>
 </body>
 
 </html>
