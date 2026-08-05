@@ -40,8 +40,10 @@
             background: rgba(17, 18, 22, .86); box-shadow: 0 6px 24px rgba(0, 0, 0, .35);
         }
         body.light-theme .history-scroll { background: rgba(255, 255, 255, .92); }
-        table.history { border-collapse: collapse; width: 100%; font-size: .92rem; }
+        /* Fixed layout: column widths stay put when filtering changes the rows. */
+        table.history { border-collapse: collapse; width: 100%; font-size: .92rem; table-layout: fixed; min-width: 900px; }
         table.history td:nth-child(2) { white-space: nowrap; }
+        table.history td.model { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         table.history thead th {
             position: sticky; top: 0; background: var(--primary-color); color: #fff;
             text-align: left; padding: .7rem .8rem; font-weight: 700; white-space: nowrap;
@@ -146,6 +148,16 @@
 
         <div class="history-scroll">
             <table class="history" id="historyTable">
+                <colgroup>
+                    <col style="width:46px">
+                    <col style="width:132px">
+                    <col style="width:128px">
+                    <col style="width:82px">
+                    <col style="width:120px">
+                    <col style="width:92px">
+                    <col>
+                    <col style="width:198px">
+                </colgroup>
                 <thead>
                     <tr>
                         <th class="sortable" data-type="number">#</th>
@@ -167,7 +179,7 @@
                             {% if job.source_is_url %}<a href="{{ job.source_full }}" target="_blank" rel="noopener"><i class="fa-brands fa-youtube" aria-hidden="true"></i> YouTube</a>{% else %}{{ job.source_full }}{% endif %}
                         </td>
                         <td class="num" data-sort-value="{{ job.duration_secs }}">{{ job.duration }}</td>
-                        <td>{{ job.model }}</td>
+                        <td class="model" title="{{ job.model }}">{{ job.model }}</td>
                         <td>{{ job.lang }}</td>
                         <td data-sort-value="{{ job.status }}"><span class="badge {{ job.status_class }}" title="{{ job.status }}">{{ job.status }}</span></td>
                         <td>
