@@ -101,10 +101,10 @@ If you want to use the pre-built Docker image available on Docker Hub, follow th
    ```
 2. Run the Docker Container
    ```bash
-   docker run -d -p 8011:8011 --env-file .env -v ./output:/app/output lkmeta/txtify:latest
+   docker run -d -p 8011:8011 --env-file .env -v ./output:/app/output -v txtify-cache:/root/.cache lkmeta/txtify:latest
    ```
 
-> <sub>`--env-file .env` provides your DeepL API key (translation silently stays disabled without it); `-v ./output:/app/output` keeps transcriptions and job state on your machine across container restarts.</sub>
+> <sub>`--env-file .env` provides your DeepL API key (translation silently stays disabled without it); `-v ./output:/app/output` keeps transcriptions and job state on your machine across container restarts; `-v txtify-cache:/root/.cache` keeps downloaded Whisper models so they aren't re-downloaded when you pull a new image.</sub>
 
 > <sub>Old jobs in `output/` are swept after `RETENTION_DAYS` (default 7) — at startup and every `RETENTION_SWEEP_HOURS` (default 12) — so the volume doesn't grow without bound; set `RETENTION_DAYS=0` to keep everything.</sub>
 
