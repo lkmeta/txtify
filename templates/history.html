@@ -14,8 +14,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script async defer src="https://buttons.github.io/buttons.js"></script>
     <style>
-        /* margin-top clears the fixed navbar (matches .container_faq). */
-        .history-wrap { max-width: 1180px; margin: 100px auto 0; padding: 0 1rem 3rem; }
+        /* margin-top clears the fixed navbar (matches .container_faq). A solid,
+           theme-flipping panel keeps all text readable in both themes (the page
+           background is always the dark hero image). */
+        .history-wrap {
+            max-width: 1180px; margin: 100px auto 3rem; padding: 1.75rem 1.5rem 2rem;
+            background: rgba(18, 19, 24, .92); border: 1px solid rgba(127, 127, 127, .22);
+            border-radius: 16px; box-shadow: 0 8px 30px rgba(0, 0, 0, .35);
+        }
+        body.light-theme .history-wrap { background: rgba(252, 252, 253, .96); }
         .history-sub { text-align: center; opacity: .75; margin-bottom: 1.25rem; }
         .history-sub code { font-size: .85em; }
 
@@ -30,16 +37,15 @@
         .stat.active { border-color: var(--primary-color); box-shadow: inset 0 0 0 1px var(--primary-color); }
         .stat b { font-size: 1.45rem; font-variant-numeric: tabular-nums; }
         .stat span { font-size: .8rem; opacity: .8; }
-        .stat[data-filter=success] b { color: #4ac26b; }
+        /* Default (light theme): darker shades for contrast on the light panel. */
+        .stat[data-filter=success] b { color: #1a7f37; }
         .stat[data-filter=error] b { color: #e5484d; }
-        .stat[data-filter=canceled] b { color: #e2b53a; }
+        .stat[data-filter=canceled] b { color: #bb8009; }
+        body.dark-theme .stat[data-filter=success] b { color: #4ac26b; }
+        body.dark-theme .stat[data-filter=canceled] b { color: #e2b53a; }
 
-        /* Solid panel so the table stays readable over the page background image. */
-        .history-scroll {
-            overflow-x: auto; border-radius: 10px; border: 1px solid rgba(127, 127, 127, .25);
-            background: rgba(17, 18, 22, .86); box-shadow: 0 6px 24px rgba(0, 0, 0, .35);
-        }
-        body.light-theme .history-scroll { background: rgba(255, 255, 255, .92); }
+        /* The table sits on the .history-wrap panel, so its own background is transparent. */
+        .history-scroll { overflow-x: auto; border-radius: 10px; border: 1px solid rgba(127, 127, 127, .25); }
         /* Fixed layout: column widths stay put when filtering changes the rows. */
         table.history { border-collapse: collapse; width: 100%; font-size: .92rem; table-layout: fixed; min-width: 900px; }
         table.history td:nth-child(2) { white-space: nowrap; }
@@ -151,14 +157,14 @@
         <div class="history-scroll">
             <table class="history" id="historyTable">
                 <colgroup>
-                    <col style="width:46px">
-                    <col style="width:132px">
-                    <col style="width:128px">
-                    <col style="width:82px">
-                    <col style="width:120px">
-                    <col style="width:92px">
-                    <col>
-                    <col style="width:198px">
+                    <col style="width:5%">   <!-- # -->
+                    <col style="width:13%">  <!-- When -->
+                    <col style="width:13%">  <!-- Source -->
+                    <col style="width:8%">   <!-- Duration -->
+                    <col style="width:13%">  <!-- Model -->
+                    <col style="width:10%">  <!-- Language -->
+                    <col style="width:17%">  <!-- Status -->
+                    <col style="width:21%">  <!-- Actions -->
                 </colgroup>
                 <thead>
                     <tr>
