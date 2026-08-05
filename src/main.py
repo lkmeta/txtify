@@ -518,7 +518,7 @@ async def downloadPreview(pid: int, format: str):
     if format == "Text":
         format = "txt"
 
-    if format not in ["txt", "srt", "vtt", "sbv"]:
+    if format not in ["txt", "srt", "vtt", "sbv", "pdf"]:
         return JSONResponse(content={"message": "Invalid file format"}, status_code=400)
 
     status_data = DB.get_transcription(pid)

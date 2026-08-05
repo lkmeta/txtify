@@ -423,18 +423,18 @@ function showPreview(format) {
     }
 }
 
-function downloadCurrentPreview() {
-    let activeTab = document.querySelector('.tab-button.active').innerText.toLowerCase();
-    activeTab = activeTab.replace('.', '');
+// Download one export directly (used by the .pdf button, which has no text
+// preview, and by the preview download icon for the active text tab).
+function downloadFormat(format) {
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', `/downloadPreview?pid=${currentPid}&format=${activeTab}`, true);
+    xhr.open('GET', `/downloadPreview?pid=${currentPid}&format=${format}`, true);
     xhr.responseType = 'blob';
     xhr.onload = function () {
         if (xhr.status === 200) {
             const url = window.URL.createObjectURL(xhr.response);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `transcription.${activeTab}`;  // File name
+            a.download = `transcription.${format}`;
             document.body.appendChild(a);
             a.click();
             a.remove();
@@ -443,6 +443,11 @@ function downloadCurrentPreview() {
         }
     };
     xhr.send();
+}
+
+function downloadCurrentPreview() {
+    const activeTab = document.querySelector('.tab-button.active').innerText.toLowerCase().replace('.', '');
+    downloadFormat(activeTab);
 }
 
 let languagesData = {};

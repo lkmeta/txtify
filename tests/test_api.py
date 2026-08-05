@@ -214,7 +214,7 @@ def _completed_job(client, monkeypatch, tmp_path):
     main.DB.update_transcription_status("Completed successfully!", "2.0", 100, job_id)
     job_dir = tmp_path / str(job_id)
     job_dir.mkdir()
-    for ext in ("txt", "srt", "vtt", "sbv"):
+    for ext in ("txt", "srt", "vtt", "sbv", "pdf"):
         (job_dir / f"final_transcription.{ext}").write_text(
             f"content-{ext}", encoding="utf-8"
         )
@@ -223,7 +223,7 @@ def _completed_job(client, monkeypatch, tmp_path):
 
 def test_download_preview_serves_final_files(client, monkeypatch, tmp_path):
     job_id = _completed_job(client, monkeypatch, tmp_path)
-    for fmt in ("txt", "srt", "vtt", "sbv"):
+    for fmt in ("txt", "srt", "vtt", "sbv", "pdf"):
         r = client.get(f"/downloadPreview?pid={job_id}&format={fmt}")
         assert r.status_code == 200, fmt
         assert r.content.decode() == f"content-{fmt}"
