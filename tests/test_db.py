@@ -36,6 +36,14 @@ def test_concurrent_jobs_do_not_cross_wire(tmp_path):
     assert db.get_process_pid(a) == 1111
 
 
+def test_list_jobs_newest_first_and_capped(tmp_path):
+    db = make_db(tmp_path)
+    ids = [insert(db) for _ in range(3)]
+    rows = db.list_jobs()
+    assert [r["id"] for r in rows] == list(reversed(ids))  # newest first
+    assert len(db.list_jobs(limit=2)) == 2
+
+
 def test_get_missing_job(tmp_path):
     db = make_db(tmp_path)
     assert db.get_transcription(42) is None

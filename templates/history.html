@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Txtify</title>
+    <title>Txtify — History</title>
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,11 +20,10 @@
     <script>if(localStorage.getItem('theme')==='light')document.body.classList.replace('dark-theme','light-theme');</script>
     <nav class="navbar" aria-label="Main">
         <div class="navbar-content">
-            <!-- <a href="/" class="logo">Txtify</a> -->
             <a href="/" class="logo">
                 <img src="/static/txtify_logo.png" alt="Txtify Logo" class="logo-image">
                 <span>Txtify</span>
-            </a>            
+            </a>
             <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="navLinks">
                 <i class="fa fa-bars" aria-hidden="true"></i>
             </button>
@@ -47,38 +46,51 @@
         </div>
     </nav>
 
-    <div class="container">
-        <h1>Contact <span style="color: var(--text-color-dark); font-weight: bold;">Txt</span>ify</h1>
-        <p>Please contact us directly at <a href="mailto:louiskmeta@gmail.com"
-                style="color: var(--primary-color); font-weight: bold;">louiskmeta@gmail.com</a> or through this form.
-        </p>
-        <form id="contact-form" action="/submit-contact" method="POST">
-            <div class="input-group-contact">
-                <label for="name">Full Name</label>
-                <input type="text" id="name" name="name" placeholder="First & last name" required>
-            </div>
-            <div class="input-group-contact">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" placeholder="For example: john@company.com" required>
-            </div>
-            <div class="input-group-contact">
-                <label for="message">How can we help you?</label>
-                <textarea id="message" name="message" placeholder="Describe your issue or question here..." rows="8"
-                    required></textarea>
-            </div>
-            <button type="submit" class="submit-button">Submit <i class="fa-solid fa-paper-plane"></i></button>
+    <div class="container_faq">
+        <h1>Transcription History</h1>
+        <p style="text-align:center;">Your past transcriptions on this machine. Old jobs are removed automatically by the retention policy.</p>
 
-
-            <br><br>
-
-            <h2>Stay Updated</h2>
-            <a>If you liked Txtify, consider giving it a star on GitHub to stay updated with the latest versions
-                and features. Your support is appreciated!</a> <br>
-            <a class="github-button" href="https://github.com/lkmeta/txtify"
-                data-color-scheme="no-preference: light; light: light; dark: dark;" data-size="large"
-                aria-label="Star lkmeta/txtify on GitHub">Star</a>
-
-        </form>
+        {% if jobs %}
+        <div class="table-container">
+            <table class="model-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>When</th>
+                        <th>Duration</th>
+                        <th>Model</th>
+                        <th>Language</th>
+                        <th>Translation</th>
+                        <th>Status</th>
+                        <th>Files</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in jobs %}
+                    <tr>
+                        <td>{{ job.id }}</td>
+                        <td>{{ job.created }}</td>
+                        <td>{{ job.duration }}</td>
+                        <td>{{ job.model }}</td>
+                        <td>{{ job.language }}</td>
+                        <td>{{ job.translation }}</td>
+                        <td>{{ job.status }}</td>
+                        <td>
+                            {% if job.downloadable %}
+                            <a href="/download?pid={{ job.id }}" style="color: var(--primary-color); font-weight: bold;">
+                                <i class="fa-solid fa-download" aria-hidden="true"></i> .zip</a>
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="text-align:center; margin-top:2rem;">No transcriptions yet. <a href="/" style="color: var(--primary-color); font-weight: bold;">Start one →</a></p>
+        {% endif %}
     </div>
 
     <footer class="footer">
@@ -86,17 +98,7 @@
             class="fa-solid fa-heart heart" aria-hidden="true"></i> by <a href="https://lkmeta.com" target="_blank">lkmeta</a>.
     </footer>
 
-    <!-- Alert Box Structure -->
-    <div class="alert-overlay" id="alertOverlay">
-        <div class="alert-box" role="alertdialog" aria-labelledby="alertTitle" aria-describedby="alertMessage">
-            <h2 id="alertTitle">Alert</h2>
-            <p id="alertMessage">This is an alert message.</p>
-            <button onclick="closeAlert()">OK</button>
-        </div>
-    </div>
-
-
-    <script src="/static/contact_scripts.js"></script>
+    <script src="/static/faq_scripts.js"></script>
 </body>
 
 </html>

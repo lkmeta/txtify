@@ -10,8 +10,26 @@ def test_health(client):
 
 
 def test_pages_render(client):
-    for path in ["/", "/faq", "/contact"]:
+    for path in ["/", "/faq", "/contact", "/history"]:
         assert client.get(path).status_code == 200
+
+
+def test_history_lists_jobs(client, monkeypatch):
+    monkeypatch.setattr(main, "handle_transcription", lambda *a, **k: True)
+    job_id = client.post(
+        "/transcribe",
+        data=_form(),
+        files={"media": ("clip.mp3", io.BytesIO(b"x"), "audio/mpeg")},
+    ).json()["pid"]
+    main.DB.update_transcription_status("Completed successfully!", "5.0", 100, job_id)
+    body = client.get("/history").text
+    assert f"/download?pid={job_id}" in body  # completed job has a download link
+    assert "Whisper Tiny" in body  # model label rendered
+
+
+def test_history_can_be_disabled(client, monkeypatch):
+    monkeypatch.setattr(main, "ENABLE_HISTORY", False)
+    assert client.get("/history").status_code == 404
 
 
 def test_unknown_route_is_404(client):

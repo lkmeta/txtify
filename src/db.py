@@ -248,6 +248,22 @@ class transcriptionsDB:
             ).fetchall()
             return [row[0] for row in rows]
 
+    def list_jobs(self, limit: int = 200):
+        """
+        Return recent job rows, newest first, for the history page. Capped so
+        the page stays bounded (retention already limits how many rows exist).
+
+        Args:
+            limit (int): Maximum rows to return.
+
+        Returns:
+            list[sqlite3.Row]: The job rows.
+        """
+        with closing(self._connect()) as conn, conn:
+            return conn.execute(
+                "SELECT * FROM transcriptions ORDER BY id DESC LIMIT ?", (limit,)
+            ).fetchall()
+
     def delete_transcription(self, job_id: int) -> None:
         """
         Delete a transcription record by job id.
