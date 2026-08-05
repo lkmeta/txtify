@@ -14,8 +14,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script async defer src="https://buttons.github.io/buttons.js"></script>
     <style>
-        .history-wrap { max-width: 1100px; margin: 0 auto; padding: 0 1rem 3rem; }
-        .history-sub { text-align: center; opacity: .75; margin-bottom: 1.5rem; }
+        /* margin-top clears the fixed navbar (matches .container_faq). */
+        .history-wrap { max-width: 1150px; margin: 100px auto 0; padding: 0 1rem 3rem; }
+        .history-sub { text-align: center; opacity: .75; margin-bottom: 1.25rem; }
+        .history-toolbar { display: flex; justify-content: flex-end; align-items: center; margin-bottom: .75rem; }
+        .clear-btn {
+            background: rgba(229, 72, 77, .12); color: #e5484d; border: 1px solid rgba(229, 72, 77, .4);
+            border-radius: 8px; padding: .45em .9em; font-weight: 700; cursor: pointer; font-family: inherit;
+        }
+        .clear-btn:hover { background: rgba(229, 72, 77, .22); }
         /* Solid panel so the table stays readable over the page background image. */
         .history-scroll {
             overflow-x: auto; border-radius: 10px; border: 1px solid rgba(127, 127, 127, .25);
@@ -37,6 +44,7 @@
         table.history tbody tr:hover { background: rgba(127, 127, 127, .16); }
         table.history td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
         table.history td.id { font-variant-numeric: tabular-nums; opacity: .7; }
+        td.source { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .badge {
             display: inline-block; padding: .18em .7em; border-radius: 999px;
             font-size: .78rem; font-weight: 700; white-space: nowrap; line-height: 1.4;
@@ -49,8 +57,17 @@
         body.dark-theme .badge.success { color: #4ac26b; }
         body.dark-theme .badge.canceled { color: #e2b53a; }
         body.dark-theme .badge.progress { color: #6aa8ff; }
-        .dl-link { color: var(--primary-color); font-weight: 700; white-space: nowrap; text-decoration: none; }
+        .dl-link { color: var(--primary-color); font-weight: 700; white-space: nowrap; text-decoration: none; margin-right: .6rem; }
         .dl-link:hover { text-decoration: underline; }
+        .del-btn { background: none; border: none; color: #e5484d; cursor: pointer; font-size: 1rem; padding: .2em .4em; border-radius: 6px; }
+        .del-btn:hover { background: rgba(229, 72, 77, .18); }
+        .pager { display: flex; gap: 1rem; align-items: center; justify-content: center; margin-top: 1.1rem; }
+        .pager button {
+            background: rgba(127, 127, 127, .12); border: 1px solid rgba(127, 127, 127, .35); color: inherit;
+            border-radius: 8px; padding: .4em .9em; cursor: pointer; font-family: inherit; font-weight: 700;
+        }
+        .pager button:disabled { opacity: .35; cursor: default; }
+        .pager #pageInfo { opacity: .8; font-variant-numeric: tabular-nums; }
         .history-empty { text-align: center; margin-top: 2.5rem; }
     </style>
 </head>
@@ -88,28 +105,33 @@
 
     <div class="history-wrap">
         <h1 style="text-align:center;">Transcription History</h1>
-        <p class="history-sub">Your past transcriptions on this machine — click a column to sort. Old jobs are removed automatically by the retention policy.</p>
+        <p class="history-sub">Your past transcriptions on this machine — click a column to sort, hover a status to read it in full. Old jobs are removed automatically by the retention policy.</p>
 
         {% if jobs %}
+        <div class="history-toolbar">
+            <button class="clear-btn" onclick="clearHistory()"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Clear all</button>
+        </div>
         <div class="history-scroll">
             <table class="history" id="historyTable">
                 <thead>
                     <tr>
                         <th class="sortable" data-type="number">#</th>
                         <th class="sortable sort-desc" data-type="number">When</th>
+                        <th class="sortable" data-type="text">Source</th>
                         <th class="sortable" data-type="number">Duration</th>
                         <th class="sortable" data-type="text">Model</th>
                         <th class="sortable" data-type="text">Language</th>
                         <th class="sortable" data-type="text">Translation</th>
                         <th class="sortable" data-type="text">Status</th>
-                        <th>Files</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for job in jobs %}
-                    <tr>
+                    <tr data-job-id="{{ job.id }}">
                         <td class="id" data-sort-value="{{ job.id }}">{{ job.id }}</td>
                         <td data-sort-value="{{ job.created_ts }}">{{ job.created }}</td>
+                        <td class="source" title="{{ job.source }}">{{ job.source }}</td>
                         <td class="num" data-sort-value="{{ job.duration_secs }}">{{ job.duration }}</td>
                         <td>{{ job.model }}</td>
                         <td>{{ job.language }}</td>
@@ -118,14 +140,20 @@
                         <td>
                             {% if job.downloadable %}
                             <a class="dl-link" href="/download?pid={{ job.id }}"><i class="fa-solid fa-download" aria-hidden="true"></i> .zip</a>
-                            {% else %}
-                            <span style="opacity:.4;">—</span>
                             {% endif %}
+                            <button class="del-btn" onclick="deleteJob({{ job.id }})" title="Delete this job and its files" aria-label="Delete job {{ job.id }}">
+                                <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+        <div class="pager">
+            <button id="prevPage">← Prev</button>
+            <span id="pageInfo"></span>
+            <button id="nextPage">Next →</button>
         </div>
         {% else %}
         <p class="history-empty">No transcriptions yet. <a class="dl-link" href="/">Start one →</a></p>

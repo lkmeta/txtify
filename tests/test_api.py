@@ -30,6 +30,48 @@ def test_history_lists_jobs(client, monkeypatch):
 def test_history_can_be_disabled(client, monkeypatch):
     monkeypatch.setattr(main, "ENABLE_HISTORY", False)
     assert client.get("/history").status_code == 404
+    assert client.post("/history/delete?pid=1").status_code == 404
+    assert client.post("/history/clear").status_code == 404
+
+
+def test_history_delete_removes_job_and_files(client, monkeypatch, tmp_path):
+    import utils
+    monkeypatch.setattr(utils, "OUTPUT_DIR", tmp_path)
+    job_id = _completed_job(client, monkeypatch, tmp_path)
+    assert (tmp_path / str(job_id)).exists()
+    r = client.post(f"/history/delete?pid={job_id}")
+    assert r.status_code == 200
+    assert main.DB.get_transcription(job_id) is None
+    assert not (tmp_path / str(job_id)).exists()
+
+
+def test_history_delete_refuses_running_job(client, monkeypatch):
+    monkeypatch.setattr(main, "handle_transcription", lambda *a, **k: True)
+    job_id = client.post(
+        "/transcribe",
+        data=_form(),
+        files={"media": ("a.mp3", io.BytesIO(b"x"), "audio/mpeg")},
+    ).json()["pid"]  # in-flight (progress 10)
+    r = client.post(f"/history/delete?pid={job_id}")
+    assert r.status_code == 409
+    assert main.DB.get_transcription(job_id) is not None  # not deleted
+
+
+def test_history_clear_removes_finished_only(client, monkeypatch, tmp_path):
+    import utils
+    monkeypatch.setattr(utils, "OUTPUT_DIR", tmp_path)
+    done = _completed_job(client, monkeypatch, tmp_path)
+    monkeypatch.setattr(main, "handle_transcription", lambda *a, **k: True)
+    running = client.post(
+        "/transcribe",
+        data=_form(),
+        files={"media": ("b.mp3", io.BytesIO(b"x"), "audio/mpeg")},
+    ).json()["pid"]
+    r = client.post("/history/clear")
+    assert r.status_code == 200
+    assert main.DB.get_transcription(done) is None  # finished job removed
+    assert main.DB.get_transcription(running) is not None  # running job kept
+    assert r.json()["skipped"] >= 1
 
 
 def test_unknown_route_is_404(client):

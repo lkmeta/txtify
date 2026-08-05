@@ -203,7 +203,7 @@ async def history(request: Request):
     if not ENABLE_HISTORY:
         raise HTTPException(status_code=404, detail="History is disabled.")
     jobs = []
-    for row in DB.list_jobs():
+    for row in DB.list_jobs(limit=1000):
         # Downloadable once the exports exist (progress 100) and the job is not
         # canceled/errored — covers both success and "translation failed".
         downloadable = row["progress"] >= 100 and not job_status.is_locked(row["status"])
@@ -217,6 +217,7 @@ async def history(request: Request):
                 "id": row["id"],
                 "created": _fmt_time(row["created_at"]),
                 "created_ts": created_ts,  # raw, for sorting
+                "source": row["youtube_url"] or row["media_path"] or "—",
                 "duration": f"{secs}s" if secs is not None else "—",
                 "duration_secs": secs if secs is not None else -1,  # raw, for sorting
                 "model": MODEL_LABELS.get(row["model"], row["model"]),
@@ -229,6 +230,48 @@ async def history(request: Request):
             }
         )
     return templates.TemplateResponse(request, "history.html", {"jobs": jobs})
+
+
+def _is_in_flight(row) -> bool:
+    """A job whose worker may still be writing files — never delete under it."""
+    return row["progress"] < 100 and not job_status.is_locked(row["status"])
+
+
+@app.post("/history/delete", response_class=JSONResponse)
+async def history_delete(pid: int):
+    """Delete one job's files and DB row. Refuses if it's still running."""
+    if not ENABLE_HISTORY:
+        raise HTTPException(status_code=404, detail="History is disabled.")
+    row = DB.get_transcription(pid)
+    if not row:
+        return JSONResponse(content={"message": "Job not found."}, status_code=404)
+    if _is_in_flight(row):
+        return JSONResponse(
+            content={"message": "Job is still running — cancel it first."},
+            status_code=409,
+        )
+    cleanup_files(pid)
+    DB.delete_transcription(pid)
+    return JSONResponse(content={"status": "success"})
+
+
+@app.post("/history/clear", response_class=JSONResponse)
+async def history_clear():
+    """Delete every finished job's files and DB row. Leaves running jobs alone."""
+    if not ENABLE_HISTORY:
+        raise HTTPException(status_code=404, detail="History is disabled.")
+    removed = 0
+    skipped = 0
+    for row in DB.list_jobs(limit=100000):
+        if _is_in_flight(row):
+            skipped += 1
+            continue
+        cleanup_files(row["id"])
+        DB.delete_transcription(row["id"])
+        removed += 1
+    return JSONResponse(
+        content={"status": "success", "removed": removed, "skipped": skipped}
+    )
 
 
 @app.post("/submit_contact")
