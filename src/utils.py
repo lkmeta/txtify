@@ -29,8 +29,10 @@ DB = transcriptionsDB(OUTPUT_DIR / "transcriptions.db")
 
 # User-facing limits, overridable per deployment. Keep the copy in
 # templates/index.html and templates/faq.html in sync when changing defaults.
-MAX_VIDEO_DURATION = int(os.getenv("MAX_VIDEO_DURATION", 15 * 60))  # seconds; longer videos are rejected
-MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB", 1000))  # uploads above this are rejected
+# 0 = unlimited (the default): it's your own machine, transcribe whatever you
+# want. Set a positive value to cap uploads/duration on a shared deployment.
+MAX_VIDEO_DURATION = int(os.getenv("MAX_VIDEO_DURATION", 0))  # seconds; 0 = no limit
+MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB", 0))  # MB; 0 = no limit
 
 # Job outputs (media, transcripts, zip, DB row) are never cleaned up otherwise,
 # so a long-running self-host slowly fills its disk. Sweep anything older than
@@ -114,18 +116,19 @@ def handle_transcription(
                         "preferredquality": "192",
                     }
                 ],
-                # Backstop truncation for media with no duration metadata
-                # (e.g. live streams); normal videos over the limit are
-                # rejected outright below.
-                "postprocessor_args": ["-t", str(MAX_VIDEO_DURATION)],
             }
+            # Only when a duration cap is set: backstop-truncate the audio (for
+            # media with no duration metadata, e.g. live streams). With no cap
+            # (0) we must NOT pass -t, or ffmpeg would truncate to 0 seconds.
+            if MAX_VIDEO_DURATION:
+                ydl_opts["postprocessor_args"] = ["-t", str(MAX_VIDEO_DURATION)]
 
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info_dict = ydl.extract_info(youtube_url, download=False)
                 sanitized_title = clean_filename(info_dict["title"])
 
             duration = info_dict.get("duration")
-            if duration and duration > MAX_VIDEO_DURATION:
+            if MAX_VIDEO_DURATION and duration and duration > MAX_VIDEO_DURATION:
                 DB.update_transcription_status(
                     status.error(f"video exceeds {MAX_VIDEO_DURATION // 60} minute limit"),
                     "",
@@ -154,14 +157,14 @@ def handle_transcription(
             # Prefix with the job id so concurrent jobs never share files.
             media_filename = clean_filename(media.filename)
             media_file_path = OUTPUT_DIR / f"{job_id}_{media_filename}"
-            max_bytes = MAX_UPLOAD_SIZE_MB * 1024 * 1024
+            max_bytes = MAX_UPLOAD_SIZE_MB * 1024 * 1024  # 0 = unlimited
             written = 0
             try:
                 # Stream to disk in chunks; never hold the whole upload in memory.
                 with open(media_file_path, "wb") as buffer:
                     while chunk := media.file.read(1024 * 1024):
                         written += len(chunk)
-                        if written > max_bytes:
+                        if max_bytes and written > max_bytes:
                             raise Exception(
                                 f"Uploaded file exceeds {MAX_UPLOAD_SIZE_MB} MB limit."
                             )

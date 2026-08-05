@@ -273,7 +273,7 @@ async def transcribe(
             return JSONResponse(
                 content={"message": "Invalid file type"}, status_code=400
             )
-        if media.size and media.size > MAX_UPLOAD_SIZE_MB * 1024 * 1024:
+        if MAX_UPLOAD_SIZE_MB and media.size and media.size > MAX_UPLOAD_SIZE_MB * 1024 * 1024:
             return JSONResponse(
                 content={
                     "message": f"Uploaded file exceeds {MAX_UPLOAD_SIZE_MB} MB limit."

@@ -67,10 +67,10 @@
             <span id="translation-languages" style="color: var(--primary-color); font-weight: bold;"></span>
             languages. Export in multiple formats including
             <span id="file-types" style="color: var(--primary-color); font-weight: bold;"></span>.
-            Files up to
-            <span style="color: var(--primary-color); font-weight: bold;">1000MB</span>
-            and YouTube videos up to
-            <span style="color: var(--primary-color); font-weight: bold;">15 minutes</span> by default, both configurable when you self-host.
+            Files of
+            <span style="color: var(--primary-color); font-weight: bold;">any size</span>
+            and YouTube videos of
+            <span style="color: var(--primary-color); font-weight: bold;">any length</span> by default — it's your machine. Set a cap via env vars if you run it on a shared server.
         </div>
 
         <div class="switch-case">
@@ -79,12 +79,12 @@
         </div>
         <div id="youtube-input" class="input-group">
             <label for="youtube-url">YouTube URL:</label>
-            <small>Enter the URL of the YouTube video you want to transcribe (default max 15 minutes — configurable).</small>
+            <small>Enter the URL of the YouTube video you want to transcribe (no length limit by default; configurable).</small>
             <input type="text" id="youtube-url" placeholder="Enter YouTube URL">
         </div>
         <div id="upload-input" class="input-group" style="display: none;">
             <label for="media-upload">Upload Audio/Video:</label>
-            <small>Upload an audio or video file from your device to transcribe (.mp3, .mp4, .m4a, .wav, .webm and more -- default max 1000MB, configurable).</small>
+            <small>Upload an audio or video file from your device to transcribe (.mp3, .mp4, .m4a, .wav, .webm and more -- no size limit by default, configurable).</small>
             <input type="file" id="media-upload" accept=".mp3,.mp4,.m4a,.wav,.webm,.ogg,.flac,.aac,.mov,.mkv,.avi">
         </div>
 

@@ -37,14 +37,26 @@ def test_transcribe_invalid_file_type(client):
 
 
 def test_transcribe_oversized_upload(client, monkeypatch):
-    monkeypatch.setattr(main, "MAX_UPLOAD_SIZE_MB", 0)
+    monkeypatch.setattr(main, "MAX_UPLOAD_SIZE_MB", 1)  # 1 MB cap
     r = client.post(
         "/transcribe",
         data=_form(),
-        files={"media": ("big.mp3", io.BytesIO(b"x" * 1024), "audio/mpeg")},
+        files={"media": ("big.mp3", io.BytesIO(b"x" * 2 * 1024 * 1024), "audio/mpeg")},
     )
     assert r.status_code == 400
     assert "exceeds" in r.json()["message"]
+
+
+def test_transcribe_upload_unlimited_when_zero(client, monkeypatch):
+    # 0 = unlimited: a large upload is not rejected on size.
+    monkeypatch.setattr(main, "MAX_UPLOAD_SIZE_MB", 0)
+    monkeypatch.setattr(main, "handle_transcription", lambda *a, **k: True)
+    r = client.post(
+        "/transcribe",
+        data=_form(),
+        files={"media": ("big.mp3", io.BytesIO(b"x" * 3 * 1024 * 1024), "audio/mpeg")},
+    )
+    assert r.status_code == 200
 
 
 def test_transcribe_returns_job_id_and_status(client, monkeypatch):
