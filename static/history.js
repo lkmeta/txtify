@@ -31,22 +31,29 @@
         return rows;
     }
 
+    function fillerRow(text) {
+        const tr = document.createElement('tr');
+        tr.className = 'filler-row';
+        const td = document.createElement('td');
+        td.colSpan = colCount;
+        if (text) { td.textContent = text; td.style.textAlign = 'center'; td.style.opacity = '.7'; }
+        else { td.innerHTML = '&nbsp;'; }
+        tr.appendChild(td);
+        return tr;
+    }
+
     function render() {
         const rows = visibleRows();
         const pages = Math.max(1, Math.ceil(rows.length / PER_PAGE));
         page = Math.min(Math.max(1, page), pages);
 
-        if (rows.length === 0) {
-            const tr = document.createElement('tr');
-            const td = document.createElement('td');
-            td.colSpan = colCount;
-            td.style.cssText = 'text-align:center;padding:1.6rem;opacity:.7;';
-            td.textContent = 'No jobs match this filter.';
-            tr.appendChild(td);
-            tbody.replaceChildren(tr);
-        } else {
-            tbody.replaceChildren(...rows.slice((page - 1) * PER_PAGE, page * PER_PAGE));
-        }
+        // Always render exactly PER_PAGE row-slots so the table's height never
+        // changes — short pages/filters are padded with empty rows.
+        const nodes = rows.length === 0
+            ? [fillerRow('No jobs match this filter.')]
+            : rows.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+        while (nodes.length < PER_PAGE) nodes.push(fillerRow());
+        tbody.replaceChildren(...nodes);
 
         // Stats always reflect the full set, not the current filter.
         const count = c => master.filter(r => r.dataset.status === c).length;

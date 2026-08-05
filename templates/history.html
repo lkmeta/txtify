@@ -53,8 +53,10 @@
         table.history th.sort-asc::after { content: " \25B2"; opacity: 1; }
         table.history th.sort-desc::after { content: " \25BC"; opacity: 1; }
         table.history td { padding: .55rem .8rem; border-top: 1px solid rgba(127, 127, 127, .18); vertical-align: middle; }
+        /* Uniform row height so a padded/short page is the same height as a full one. */
+        table.history tbody tr { height: 46px; }
         table.history tbody tr:nth-child(even) { background: rgba(127, 127, 127, .06); }
-        table.history tbody tr:hover { background: rgba(127, 127, 127, .16); }
+        table.history tbody tr:not(.filler-row):hover { background: rgba(127, 127, 127, .16); }
         table.history td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
         table.history td.id { font-variant-numeric: tabular-nums; opacity: .7; }
         td.source { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
