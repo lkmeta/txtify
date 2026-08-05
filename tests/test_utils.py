@@ -233,5 +233,5 @@ def test_limits_overridable_via_env(monkeypatch):
     monkeypatch.delenv("MAX_UPLOAD_SIZE_MB")
     monkeypatch.delenv("MAX_VIDEO_DURATION")
     importlib.reload(utils)
-    assert utils.MAX_UPLOAD_SIZE_MB == 1000
-    assert utils.MAX_VIDEO_DURATION == 900
+    assert utils.MAX_UPLOAD_SIZE_MB == 0  # 0 = unlimited by default
+    assert utils.MAX_VIDEO_DURATION == 0
