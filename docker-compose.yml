@@ -15,5 +15,12 @@ services:
       # Persist transcriptions and job state; never mount the whole repo over
       # /app — that masks the image's code with whatever is on the host.
       - ./output:/app/output
+      # Persist downloaded Whisper/torch models across container rebuilds, so a
+      # `docker compose up --build` doesn't re-download them (they live in
+      # /root/.cache, which is otherwise part of the throwaway container layer).
+      - model-cache:/root/.cache
     restart: unless-stopped
     # Healthcheck comes from the image (see Dockerfile HEALTHCHECK).
+
+volumes:
+  model-cache:
