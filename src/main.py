@@ -33,6 +33,7 @@ from db import transcriptionsDB
 from deepl_languages import SOURCE_LANGUAGES, TARGET_LANGUAGES
 from utils import (
     MAX_UPLOAD_SIZE_MB,
+    RETENTION_DAYS,
     cleanup_files,
     handle_transcription,
     is_valid_media_file,
@@ -171,7 +172,7 @@ MODEL_LABELS = {
 def _fmt_time(created_at: str) -> str:
     try:
         return datetime.fromtimestamp(float(created_at), timezone.utc).strftime(
-            "%Y-%m-%d %H:%M UTC"
+            "%Y-%m-%d %H:%M"
         )
     except (TypeError, ValueError):
         return "—"
@@ -212,24 +213,33 @@ async def history(request: Request):
             created_ts = float(row["created_at"])
         except (TypeError, ValueError):
             created_ts = 0.0
+        yt = row["youtube_url"]
+        translating = (row["translation"] or "").lower() not in ("", "none")
+        lang_display = (
+            f'{row["language"]} → {row["language_translation"]}'
+            if translating
+            else row["language"]
+        )
         jobs.append(
             {
                 "id": row["id"],
                 "created": _fmt_time(row["created_at"]),
                 "created_ts": created_ts,  # raw, for sorting
-                "source": row["youtube_url"] or row["media_path"] or "—",
+                "source_full": yt or row["media_path"] or "—",
+                "source_is_url": bool(yt),
                 "duration": f"{secs}s" if secs is not None else "—",
                 "duration_secs": secs if secs is not None else -1,  # raw, for sorting
                 "model": MODEL_LABELS.get(row["model"], row["model"]),
-                "language": row["language"],
-                "translation": row["translation"],
+                "lang": lang_display,
                 "status": row["status"],
                 "status_class": _status_class(row["status"], row["progress"]),
                 "progress": row["progress"],
                 "downloadable": downloadable,
             }
         )
-    return templates.TemplateResponse(request, "history.html", {"jobs": jobs})
+    return templates.TemplateResponse(
+        request, "history.html", {"jobs": jobs, "retention_days": RETENTION_DAYS}
+    )
 
 
 def _is_in_flight(row) -> bool:

@@ -15,14 +15,25 @@
     <script async defer src="https://buttons.github.io/buttons.js"></script>
     <style>
         /* margin-top clears the fixed navbar (matches .container_faq). */
-        .history-wrap { max-width: 1150px; margin: 100px auto 0; padding: 0 1rem 3rem; }
+        .history-wrap { max-width: 1180px; margin: 100px auto 0; padding: 0 1rem 3rem; }
         .history-sub { text-align: center; opacity: .75; margin-bottom: 1.25rem; }
-        .history-toolbar { display: flex; justify-content: flex-end; align-items: center; margin-bottom: .75rem; }
-        .clear-btn {
-            background: rgba(229, 72, 77, .12); color: #e5484d; border: 1px solid rgba(229, 72, 77, .4);
-            border-radius: 8px; padding: .45em .9em; font-weight: 700; cursor: pointer; font-family: inherit;
+        .history-sub code { font-size: .85em; }
+
+        /* Stats strip that also filters the table by status. */
+        .stats { display: flex; gap: .75rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+        .stat {
+            flex: 1; min-width: 110px; display: flex; flex-direction: column; align-items: center; gap: .1rem;
+            padding: .65rem 1rem; border-radius: 10px; cursor: pointer; font-family: inherit; color: inherit;
+            background: rgba(127, 127, 127, .10); border: 1px solid rgba(127, 127, 127, .22); transition: background .15s;
         }
-        .clear-btn:hover { background: rgba(229, 72, 77, .22); }
+        .stat:hover { background: rgba(127, 127, 127, .18); }
+        .stat.active { border-color: var(--primary-color); box-shadow: inset 0 0 0 1px var(--primary-color); }
+        .stat b { font-size: 1.45rem; font-variant-numeric: tabular-nums; }
+        .stat span { font-size: .8rem; opacity: .8; }
+        .stat[data-filter=success] b { color: #4ac26b; }
+        .stat[data-filter=error] b { color: #e5484d; }
+        .stat[data-filter=canceled] b { color: #e2b53a; }
+
         /* Solid panel so the table stays readable over the page background image. */
         .history-scroll {
             overflow-x: auto; border-radius: 10px; border: 1px solid rgba(127, 127, 127, .25);
@@ -33,22 +44,24 @@
         table.history td:nth-child(2) { white-space: nowrap; }
         table.history thead th {
             position: sticky; top: 0; background: var(--primary-color); color: #fff;
-            text-align: left; padding: .7rem .85rem; font-weight: 700; white-space: nowrap;
+            text-align: left; padding: .7rem .8rem; font-weight: 700; white-space: nowrap;
         }
         table.history th.sortable { cursor: pointer; user-select: none; }
         table.history th.sortable::after { content: " \2195"; opacity: .5; font-size: .85em; }
         table.history th.sort-asc::after { content: " \25B2"; opacity: 1; }
         table.history th.sort-desc::after { content: " \25BC"; opacity: 1; }
-        table.history td { padding: .6rem .85rem; border-top: 1px solid rgba(127, 127, 127, .18); vertical-align: middle; }
+        table.history td { padding: .55rem .8rem; border-top: 1px solid rgba(127, 127, 127, .18); vertical-align: middle; }
         table.history tbody tr:nth-child(even) { background: rgba(127, 127, 127, .06); }
         table.history tbody tr:hover { background: rgba(127, 127, 127, .16); }
         table.history td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
         table.history td.id { font-variant-numeric: tabular-nums; opacity: .7; }
-        td.source { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        td.source { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        td.source a { color: var(--primary-color); font-weight: 700; text-decoration: none; white-space: nowrap; }
+        td.source a:hover { text-decoration: underline; }
         .badge {
             display: inline-block; padding: .18em .7em; border-radius: 999px;
             font-size: .78rem; font-weight: 700; white-space: nowrap; line-height: 1.4;
-            max-width: 320px; overflow: hidden; text-overflow: ellipsis; vertical-align: middle;
+            max-width: 150px; overflow: hidden; text-overflow: ellipsis; vertical-align: middle;
         }
         .badge.success { color: #1a7f37; background: rgba(35, 134, 54, .16); }
         .badge.error   { color: #e5484d; background: rgba(229, 72, 77, .16); }
@@ -57,17 +70,32 @@
         body.dark-theme .badge.success { color: #4ac26b; }
         body.dark-theme .badge.canceled { color: #e2b53a; }
         body.dark-theme .badge.progress { color: #6aa8ff; }
-        .dl-link { color: var(--primary-color); font-weight: 700; white-space: nowrap; text-decoration: none; margin-right: .6rem; }
-        .dl-link:hover { text-decoration: underline; }
-        .del-btn { background: none; border: none; color: #e5484d; cursor: pointer; font-size: 1rem; padding: .2em .4em; border-radius: 6px; }
-        .del-btn:hover { background: rgba(229, 72, 77, .18); }
-        .pager { display: flex; gap: 1rem; align-items: center; justify-content: center; margin-top: 1.1rem; }
+        /* Clear, labeled row actions: green = download, red = delete. */
+        .actions-cell { display: flex; gap: .45rem; white-space: nowrap; }
+        .act {
+            display: inline-flex; align-items: center; gap: .35em; padding: .32em .6em; border-radius: 7px;
+            font-size: .8rem; font-weight: 700; text-decoration: none; cursor: pointer;
+            border: 1px solid transparent; font-family: inherit;
+        }
+        .act-dl { color: #1a7f37; background: rgba(35, 134, 54, .14); border-color: rgba(35, 134, 54, .4); }
+        .act-dl:hover { background: rgba(35, 134, 54, .24); }
+        .act-del { color: #e5484d; background: rgba(229, 72, 77, .12); border-color: rgba(229, 72, 77, .4); }
+        .act-del:hover { background: rgba(229, 72, 77, .22); }
+        body.dark-theme .act-dl { color: #4ac26b; }
+
+        .history-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 1.1rem; gap: 1rem; flex-wrap: wrap; }
+        .pager { display: flex; gap: 1rem; align-items: center; }
         .pager button {
             background: rgba(127, 127, 127, .12); border: 1px solid rgba(127, 127, 127, .35); color: inherit;
             border-radius: 8px; padding: .4em .9em; cursor: pointer; font-family: inherit; font-weight: 700;
         }
         .pager button:disabled { opacity: .35; cursor: default; }
         .pager #pageInfo { opacity: .8; font-variant-numeric: tabular-nums; }
+        .clear-btn {
+            background: rgba(229, 72, 77, .12); color: #e5484d; border: 1px solid rgba(229, 72, 77, .4);
+            border-radius: 8px; padding: .45em .9em; font-weight: 700; cursor: pointer; font-family: inherit;
+        }
+        .clear-btn:hover { background: rgba(229, 72, 77, .22); }
         .history-empty { text-align: center; margin-top: 2.5rem; }
     </style>
 </head>
@@ -105,58 +133,67 @@
 
     <div class="history-wrap">
         <h1 style="text-align:center;">Transcription History</h1>
-        <p class="history-sub">Your past transcriptions on this machine — click a column to sort, hover a status to read it in full. Old jobs are removed automatically by the retention policy.</p>
+        <p class="history-sub">Your past transcriptions on this machine — click a column to sort, a stat to filter, or a status to read it in full.<br>
+            {% if retention_days and retention_days > 0 %}Jobs and their files are automatically removed after {{ retention_days }} day{{ '' if retention_days == 1 else 's' }} (set <code>RETENTION_DAYS</code> to change).{% else %}Jobs are kept indefinitely (<code>RETENTION_DAYS=0</code>).{% endif %}</p>
 
         {% if jobs %}
-        <div class="history-toolbar">
-            <button class="clear-btn" onclick="clearHistory()"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Clear all</button>
+        <div class="stats" id="stats">
+            <button class="stat active" data-filter="all"><b id="statTotal">0</b><span>All</span></button>
+            <button class="stat" data-filter="success"><b id="statSuccess">0</b><span>Completed</span></button>
+            <button class="stat" data-filter="error"><b id="statError">0</b><span>Failed</span></button>
+            <button class="stat" data-filter="canceled"><b id="statCanceled">0</b><span>Canceled</span></button>
         </div>
+
         <div class="history-scroll">
             <table class="history" id="historyTable">
                 <thead>
                     <tr>
                         <th class="sortable" data-type="number">#</th>
-                        <th class="sortable sort-desc" data-type="number">When</th>
+                        <th class="sortable sort-desc" data-type="number">When (UTC)</th>
                         <th class="sortable" data-type="text">Source</th>
                         <th class="sortable" data-type="number">Duration</th>
                         <th class="sortable" data-type="text">Model</th>
                         <th class="sortable" data-type="text">Language</th>
-                        <th class="sortable" data-type="text">Translation</th>
                         <th class="sortable" data-type="text">Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for job in jobs %}
-                    <tr data-job-id="{{ job.id }}">
+                    <tr data-job-id="{{ job.id }}" data-status="{{ job.status_class }}">
                         <td class="id" data-sort-value="{{ job.id }}">{{ job.id }}</td>
                         <td data-sort-value="{{ job.created_ts }}">{{ job.created }}</td>
-                        <td class="source" title="{{ job.source }}">{{ job.source }}</td>
+                        <td class="source" data-sort-value="{{ job.source_full }}" title="{{ job.source_full }}">
+                            {% if job.source_is_url %}<a href="{{ job.source_full }}" target="_blank" rel="noopener"><i class="fa-brands fa-youtube" aria-hidden="true"></i> YouTube</a>{% else %}{{ job.source_full }}{% endif %}
+                        </td>
                         <td class="num" data-sort-value="{{ job.duration_secs }}">{{ job.duration }}</td>
                         <td>{{ job.model }}</td>
-                        <td>{{ job.language }}</td>
-                        <td>{{ job.translation }}</td>
+                        <td>{{ job.lang }}</td>
                         <td data-sort-value="{{ job.status }}"><span class="badge {{ job.status_class }}" title="{{ job.status }}">{{ job.status }}</span></td>
                         <td>
-                            {% if job.downloadable %}
-                            <a class="dl-link" href="/download?pid={{ job.id }}"><i class="fa-solid fa-download" aria-hidden="true"></i> .zip</a>
-                            {% endif %}
-                            <button class="del-btn" onclick="deleteJob({{ job.id }})" title="Delete this job and its files" aria-label="Delete job {{ job.id }}">
-                                <i class="fa-solid fa-trash" aria-hidden="true"></i>
-                            </button>
+                            <div class="actions-cell">
+                                {% if job.downloadable %}
+                                <a class="act act-dl" href="/download?pid={{ job.id }}"><i class="fa-solid fa-download" aria-hidden="true"></i> Download</a>
+                                {% endif %}
+                                <button class="act act-del" onclick="deleteJob({{ job.id }})"><i class="fa-solid fa-trash" aria-hidden="true"></i> Delete</button>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        <div class="pager">
-            <button id="prevPage">← Prev</button>
-            <span id="pageInfo"></span>
-            <button id="nextPage">Next →</button>
+
+        <div class="history-footer">
+            <div class="pager">
+                <button id="prevPage">← Prev</button>
+                <span id="pageInfo"></span>
+                <button id="nextPage">Next →</button>
+            </div>
+            <button class="clear-btn" onclick="clearHistory()"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Clear all</button>
         </div>
         {% else %}
-        <p class="history-empty">No transcriptions yet. <a class="dl-link" href="/">Start one →</a></p>
+        <p class="history-empty">No transcriptions yet. <a href="/" style="color: var(--primary-color); font-weight: bold;">Start one →</a></p>
         {% endif %}
     </div>
 

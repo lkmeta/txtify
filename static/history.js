@@ -1,39 +1,23 @@
-// History table: client-side sort + pagination + delete. All rows are already
-// on the page (retention keeps the count bounded), so this is cheap DOM work.
+// History table: client-side stats/filter + sort + pagination + delete. All
+// rows are already on the page (retention keeps the count bounded), so this is
+// cheap DOM work.
 (function () {
     const table = document.getElementById('historyTable');
     if (!table) return;
     const tbody = table.querySelector('tbody');
     const PER_PAGE = 10;
-    let rows = Array.from(tbody.querySelectorAll('tr'));
+    const colCount = table.querySelectorAll('thead th').length;
+    let master = Array.from(tbody.querySelectorAll('tr'));  // every row, unfiltered
+    let filter = 'all';
     let page = 1;
+    let sort = { index: 1, type: 'number', asc: false };  // default: When, newest first
 
-    function pageCount() {
-        return Math.max(1, Math.ceil(rows.length / PER_PAGE));
-    }
+    const byId = id => document.getElementById(id);
+    const cellValue = cell => cell.dataset.sortValue !== undefined ? cell.dataset.sortValue : cell.textContent.trim();
 
-    function render() {
-        page = Math.min(Math.max(1, page), pageCount());
-        tbody.replaceChildren(...rows.slice((page - 1) * PER_PAGE, page * PER_PAGE));
-        const info = document.getElementById('pageInfo');
-        if (info) info.textContent = `Page ${page} of ${pageCount()} · ${rows.length} job${rows.length === 1 ? '' : 's'}`;
-        const prev = document.getElementById('prevPage');
-        const next = document.getElementById('nextPage');
-        if (prev) prev.disabled = page <= 1;
-        if (next) next.disabled = page >= pageCount();
-    }
-
-    function cellValue(cell) {
-        return cell.dataset.sortValue !== undefined ? cell.dataset.sortValue : cell.textContent.trim();
-    }
-
-    function sortBy(th) {
-        const headers = Array.from(th.parentNode.children);
-        const index = headers.indexOf(th);
-        const type = th.dataset.type || 'text';
-        const asc = !th.classList.contains('sort-asc');
-        headers.forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
-        th.classList.add(asc ? 'sort-asc' : 'sort-desc');
+    function visibleRows() {
+        const rows = filter === 'all' ? master.slice() : master.filter(r => r.dataset.status === filter);
+        const { index, type, asc } = sort;
         rows.sort((a, b) => {
             let av = cellValue(a.children[index]);
             let bv = cellValue(b.children[index]);
@@ -44,21 +28,71 @@
             }
             return asc ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
         });
-        page = 1;
-        render();
+        return rows;
     }
 
-    table.querySelectorAll('th.sortable').forEach(th => th.addEventListener('click', () => sortBy(th)));
-    const prev = document.getElementById('prevPage');
-    const next = document.getElementById('nextPage');
-    if (prev) prev.addEventListener('click', () => { page--; render(); });
-    if (next) next.addEventListener('click', () => { page++; render(); });
+    function render() {
+        const rows = visibleRows();
+        const pages = Math.max(1, Math.ceil(rows.length / PER_PAGE));
+        page = Math.min(Math.max(1, page), pages);
 
+        if (rows.length === 0) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = colCount;
+            td.style.cssText = 'text-align:center;padding:1.6rem;opacity:.7;';
+            td.textContent = 'No jobs match this filter.';
+            tr.appendChild(td);
+            tbody.replaceChildren(tr);
+        } else {
+            tbody.replaceChildren(...rows.slice((page - 1) * PER_PAGE, page * PER_PAGE));
+        }
+
+        // Stats always reflect the full set, not the current filter.
+        const count = c => master.filter(r => r.dataset.status === c).length;
+        byId('statTotal').textContent = master.length;
+        byId('statSuccess').textContent = count('success');
+        byId('statError').textContent = count('error');
+        byId('statCanceled').textContent = count('canceled');
+
+        byId('pageInfo').textContent = `Page ${page} of ${pages}`;
+        byId('prevPage').disabled = page <= 1;
+        byId('nextPage').disabled = page >= pages;
+    }
+
+    // Sorting
+    table.querySelectorAll('th.sortable').forEach((th, i, all) => {
+        th.addEventListener('click', () => {
+            const index = Array.from(th.parentNode.children).indexOf(th);
+            // toggle direction on the same column; new column starts ascending
+            sort = { index, type: th.dataset.type || 'text', asc: sort.index === index ? !sort.asc : true };
+            all.forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+            th.classList.add(sort.asc ? 'sort-asc' : 'sort-desc');
+            page = 1;
+            render();
+        });
+    });
+
+    // Filtering via the stat cards
+    document.querySelectorAll('.stat').forEach(card => {
+        card.addEventListener('click', () => {
+            filter = card.dataset.filter;
+            document.querySelectorAll('.stat').forEach(c => c.classList.toggle('active', c === card));
+            page = 1;
+            render();
+        });
+    });
+
+    // Pagination
+    byId('prevPage').addEventListener('click', () => { page--; render(); });
+    byId('nextPage').addEventListener('click', () => { page++; render(); });
+
+    // Delete
     window.deleteJob = function (id) {
         if (!confirm(`Delete job #${id} and its files? This cannot be undone.`)) return;
         fetch(`/history/delete?pid=${id}`, { method: 'POST' }).then(r => {
             if (r.ok) {
-                rows = rows.filter(row => row.dataset.jobId != id);
+                master = master.filter(row => row.dataset.jobId != id);
                 render();
             } else {
                 r.json().then(d => alert(d.message || 'Could not delete the job.')).catch(() => alert('Could not delete the job.'));
