@@ -14,15 +14,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script async defer src="https://buttons.github.io/buttons.js"></script>
     <style>
-        /* margin-top clears the fixed navbar (matches .container_faq). A solid,
-           theme-flipping panel keeps all text readable in both themes (the page
-           background is always the dark hero image). */
+        /* Same panel color as every other window (.container / .container_faq),
+           so all text stays readable in both themes over the dark hero image. */
         .history-wrap {
             max-width: 1180px; margin: 100px auto 3rem; padding: 1.75rem 1.5rem 2rem;
-            background: rgba(18, 19, 24, .92); border: 1px solid rgba(127, 127, 127, .22);
-            border-radius: 16px; box-shadow: 0 8px 30px rgba(0, 0, 0, .35);
+            background: var(--background-color-dark);
+            border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.8s;
         }
-        body.light-theme .history-wrap { background: rgba(252, 252, 253, .96); }
         .history-sub { text-align: center; opacity: .75; margin-bottom: 1.25rem; }
         .history-sub code { font-size: .85em; }
 
