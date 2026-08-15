@@ -136,6 +136,16 @@ def test_purge_expired_jobs_removes_old_keeps_recent(tmp_path, monkeypatch):
     assert utils.purge_expired_jobs(retention_days=0) == 0
 
 
+def test_friendly_error_maps_common_cases():
+    yt = utils.friendly_error(Exception("ERROR: unable to download video data: HTTP Error 403: Forbidden"))
+    assert "YouTube" in yt and "try again" in yt.lower()
+    assert "available" in utils.friendly_error(Exception("Video unavailable")).lower()
+    assert "try again" in utils.friendly_error(Exception("HTTP Error 429: Too Many Requests")).lower()
+    assert "media file" in utils.friendly_error(Exception("Command '[ffmpeg ...]' returned non-zero")).lower()
+    # unknown errors fall back to the (trimmed) real message
+    assert utils.friendly_error(Exception("weird boom")).startswith("Transcription failed")
+
+
 def test_reap_workers_reaps_finished_but_keeps_running(monkeypatch):
     import os as _os
     import subprocess as _subprocess

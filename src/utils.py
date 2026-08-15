@@ -76,6 +76,28 @@ def is_valid_media_file(filename: str) -> bool:
     return filename.split(".")[-1].lower() in valid_extensions
 
 
+def friendly_error(exc: Exception) -> str:
+    """
+    Turn a download/processing exception into a short, actionable message for
+    the user. YouTube extraction fails intermittently (403 / bot-detection), so
+    the common cases nudge the user to just try again.
+    """
+    msg = str(exc)
+    low = msg.lower()
+    if "403" in msg or "forbidden" in low or "sign in to confirm" in low or "unable to download video data" in low:
+        return ("YouTube blocked this download (usually a temporary rate-limit or "
+                "bot check). Try again in a moment, or try a different video.")
+    if "video unavailable" in low or "private video" in low or "removed" in low or "not available" in low:
+        return "This video isn't available (private, removed, or region-locked)."
+    if "429" in msg or "too many requests" in low:
+        return "The source rate-limited us. Wait a moment and try again."
+    if "timed out" in low or "timeout" in low or "connection" in low or "network" in low:
+        return "Couldn't reach the source (network/timeout). Check the link and try again."
+    if "ffmpeg" in low:
+        return "Couldn't read the media file — it may be corrupt or not a valid audio/video file."
+    return f"Transcription failed: {msg[:200]}"
+
+
 def handle_transcription(
     job_id: int,
     youtube_url: str,
@@ -219,6 +241,9 @@ def handle_transcription(
 
     except Exception as e:
         logger.error(f"Transcription failed: {str(e)}")
+        # Surface a useful reason to the user instead of a generic failure, so
+        # they know whether to just retry (often the case for YouTube).
+        DB.update_transcription_status(status.error(friendly_error(e)), "", 0, job_id)
         return False
 
 

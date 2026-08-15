@@ -218,6 +218,25 @@ def test_transcribe_failure_returns_500(client, monkeypatch):
     assert r.status_code == 500
 
 
+def test_transcribe_surfaces_informative_error(client, monkeypatch):
+    # When handle_transcription records an informative "Error: ..." status, the
+    # endpoint returns 400 with that message (not the generic 500).
+    def failing(job_id, *a, **k):
+        main.DB.update_transcription_status(
+            "Error: YouTube blocked this download. Try again.", "", 0, job_id
+        )
+        return False
+
+    monkeypatch.setattr(main, "handle_transcription", failing)
+    r = client.post(
+        "/transcribe",
+        data=_form(),
+        files={"media": ("a.mp3", io.BytesIO(b"x"), "audio/mpeg")},
+    )
+    assert r.status_code == 400
+    assert "YouTube blocked" in r.json()["message"]
+
+
 def _form():
     return {
         "language": "en",

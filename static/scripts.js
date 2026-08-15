@@ -56,9 +56,19 @@ if (localStorage.getItem('theme') === 'light') {
     document.getElementById('themeToggle').checked = true;
 }
 
-function showAlert(title, message) {
+function showAlert(title, message, onRetry) {
     document.getElementById('alertTitle').innerText = title;
     document.getElementById('alertMessage').innerText = message;
+    const retryBtn = document.getElementById('alertRetry');
+    if (retryBtn) {
+        if (onRetry) {
+            retryBtn.style.display = '';
+            retryBtn.onclick = function () { closeAlert(); onRetry(); };
+        } else {
+            retryBtn.style.display = 'none';
+            retryBtn.onclick = null;
+        }
+    }
     document.getElementById('alertOverlay').style.display = 'flex';
 }
 
@@ -195,12 +205,13 @@ function transcribe() {
         } else {
             let message = 'Failed to transcribe the media.';
             try { message = JSON.parse(xhr.responseText).message || message; } catch (e) { }
-            showAlert('Error', message);
+            // Offer a one-click retry — these failures (esp. YouTube) are often transient.
+            showAlert('Error', message, transcribe);
             document.getElementById('progressOverlay').style.display = 'none';
         }
     };
     xhr.onerror = function () {
-        showAlert('Error', 'Network error while uploading. Please try again.');
+        showAlert('Error', 'Network error while uploading. Please try again.', transcribe);
         document.getElementById('progressOverlay').style.display = 'none';
     };
     xhr.send(formData);
