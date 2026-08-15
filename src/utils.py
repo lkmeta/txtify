@@ -107,6 +107,7 @@ def handle_transcription(
     translation: str,
     language_translation: str,
     file_export: str,
+    source_file: str = None,
 ) -> bool:
     """
     Handle the transcription process: download YouTube or handle uploaded media,
@@ -195,6 +196,15 @@ def handle_transcription(
                 media_file_path.unlink(missing_ok=True)
                 raise
             output_file = convert_to_mp3(media_file_path)
+
+        elif source_file:
+            # Retry of a previous upload: reuse the source still on disk, copied
+            # under this job's id so the two jobs own independent files.
+            src = Path(source_file)
+            dest = OUTPUT_DIR / f"{job_id}_{src.name}"
+            if src.resolve() != dest.resolve():
+                shutil.copy(src, dest)
+            output_file = convert_to_mp3(dest)
 
         logger.info(f"Transcription started for: {output_file}")
 

@@ -32,6 +32,46 @@ def test_history_can_be_disabled(client, monkeypatch):
     assert client.get("/history").status_code == 404
     assert client.post("/history/delete?pid=1").status_code == 404
     assert client.post("/history/clear").status_code == 404
+    assert client.post("/history/retry?pid=1").status_code == 404
+
+
+def _seed(status="Error", youtube_url="", media_path=""):
+    return main.DB.insert_transcription(
+        youtube_url, media_path, "en", "whisper_tiny", "none", "en",
+        "all", status, "1.0",
+    )
+
+
+def test_history_retry_youtube_starts_new_job(client, monkeypatch):
+    monkeypatch.setattr(main, "handle_transcription", lambda *a, **k: True)
+    old = _seed(youtube_url="https://youtu.be/abc")
+    r = client.post(f"/history/retry?pid={old}")
+    assert r.status_code == 200
+    new_pid = r.json()["pid"]
+    assert new_pid != old
+    assert main.DB.get_transcription(new_pid)["youtube_url"] == "https://youtu.be/abc"
+
+
+def test_history_retry_refuses_running(client, monkeypatch):
+    monkeypatch.setattr(main, "handle_transcription", lambda *a, **k: True)
+    job = _seed(status="Processing request...", youtube_url="https://youtu.be/abc")
+    main.DB.update_transcription_status("Transcribing...", "", 40, job)  # in-flight
+    assert client.post(f"/history/retry?pid={job}").status_code == 409
+
+
+def test_history_retry_upload_reuses_source(client, monkeypatch, tmp_path):
+    monkeypatch.setattr(main, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr(main, "handle_transcription", lambda *a, **k: True)
+    job = _seed(media_path="clip.mp3")
+    (tmp_path / f"{job}_clip.mp3").write_bytes(b"fake")  # source still on disk
+    assert client.post(f"/history/retry?pid={job}").status_code == 200
+
+
+def test_history_retry_upload_missing_source_is_410(client, monkeypatch, tmp_path):
+    monkeypatch.setattr(main, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr(main, "handle_transcription", lambda *a, **k: True)
+    job = _seed(media_path="clip.mp3")  # no file on disk
+    assert client.post(f"/history/retry?pid={job}").status_code == 410
 
 
 def test_history_delete_removes_job_and_files(client, monkeypatch, tmp_path):

@@ -90,7 +90,10 @@
         .act-dl:hover { background: rgba(35, 134, 54, .24); }
         .act-del { color: #e5484d; background: rgba(229, 72, 77, .12); border-color: rgba(229, 72, 77, .4); }
         .act-del:hover { background: rgba(229, 72, 77, .22); }
+        .act-retry { color: #2a6fdb; background: rgba(56, 132, 222, .12); border-color: rgba(56, 132, 222, .4); }
+        .act-retry:hover { background: rgba(56, 132, 222, .22); }
         body.dark-theme .act-dl { color: #4ac26b; }
+        body.dark-theme .act-retry { color: #6aa8ff; }
 
         .history-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 1.1rem; gap: 1rem; flex-wrap: wrap; }
         .pager { display: flex; gap: 1rem; align-items: center; }
@@ -193,6 +196,9 @@
                             <div class="actions-cell">
                                 {% if job.downloadable %}
                                 <a class="act act-dl" href="/download?pid={{ job.id }}"><i class="fa-solid fa-download" aria-hidden="true"></i> Download</a>
+                                {% endif %}
+                                {% if job.status_class in ['error', 'canceled'] %}
+                                <button class="act act-retry" onclick="retryJob({{ job.id }})"><i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Retry</button>
                                 {% endif %}
                                 <button class="act act-del" onclick="deleteJob({{ job.id }})"><i class="fa-solid fa-trash" aria-hidden="true"></i> Delete</button>
                             </div>

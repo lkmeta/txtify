@@ -284,6 +284,66 @@ async def history_clear():
     )
 
 
+@app.post("/history/retry", response_class=JSONResponse)
+async def history_retry(pid: int):
+    """
+    Re-run a past job with the same parameters as a NEW job. YouTube re-downloads
+    from the stored URL; an upload reuses its source file if still on disk.
+    """
+    if not ENABLE_HISTORY:
+        raise HTTPException(status_code=404, detail="History is disabled.")
+    old = DB.get_transcription(pid)
+    if not old:
+        return JSONResponse(content={"message": "Job not found."}, status_code=404)
+    if _is_in_flight(old):
+        return JSONResponse(
+            content={"message": "Job is still running."}, status_code=409
+        )
+    if _count_active_jobs() >= MAX_CONCURRENT_JOBS:
+        return JSONResponse(
+            content={"message": "Server busy — too many jobs running. Try again shortly."},
+            status_code=429,
+        )
+
+    youtube_url = old["youtube_url"] or ""
+    source_file = None
+    if not youtube_url:
+        # Reuse the previous upload's source if it hasn't been cleaned up.
+        candidates = [
+            f for f in OUTPUT_DIR.glob(f"{pid}_*")
+            if f.is_file() and not f.name.endswith("_logs.txt")
+        ]
+        mp3s = [f for f in candidates if f.suffix == ".mp3"]
+        chosen = mp3s or candidates
+        if not chosen:
+            return JSONResponse(
+                content={"message": "The uploaded file is no longer available — please re-upload it to run again."},
+                status_code=410,
+            )
+        source_file = str(chosen[0])
+
+    new_id = DB.insert_transcription(
+        youtube_url, old["media_path"], old["language"], old["model"],
+        old["translation"], old["language_translation"], old["file_export"],
+        job_status.PROCESSING, str(time.time()),
+    )
+    DB.update_transcription_status(job_status.PROCESSING, "", 10, new_id)
+    started = await run_in_threadpool(
+        handle_transcription, new_id, youtube_url or None, None,
+        old["language"], old["model"], old["translation"],
+        old["language_translation"], old["file_export"], source_file,
+    )
+    if not started:
+        row = DB.get_transcription(new_id)
+        msg = (
+            row["status"].removeprefix(f"{job_status.ERROR_PREFIX} ")
+            if row and row["status"].startswith(job_status.ERROR_PREFIX)
+            else "Retry failed to start."
+        )
+        return JSONResponse(content={"message": msg, "pid": new_id}, status_code=400)
+    return JSONResponse(content={"status": "success", "pid": new_id})
+
+
 @app.post("/submit_contact")
 async def submit_contact(
     name: str = Form(None),
