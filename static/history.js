@@ -107,6 +107,17 @@
         }).catch(() => alert('Could not delete the job.'));
     };
 
+    window.retryJob = function (id) {
+        if (!confirm(`Re-run job #${id} with the same settings?`)) return;
+        fetch(`/history/retry?pid=${id}`, { method: 'POST' }).then(r => {
+            if (r.ok) {
+                location.reload();  // the new job shows up (Processing)
+            } else {
+                r.json().then(d => alert(d.message || 'Could not retry the job.')).catch(() => alert('Could not retry the job.'));
+            }
+        }).catch(() => alert('Could not retry the job.'));
+    };
+
     window.clearHistory = function () {
         if (!confirm('Delete ALL finished jobs and their files? This cannot be undone. (Running jobs are kept.)')) return;
         fetch('/history/clear', { method: 'POST' }).then(() => location.reload()).catch(() => alert('Could not clear history.'));
