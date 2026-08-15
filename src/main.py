@@ -14,6 +14,7 @@ import os
 import time
 import uuid
 import zipfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -32,6 +33,7 @@ from db import transcriptionsDB
 from deepl_languages import SOURCE_LANGUAGES, TARGET_LANGUAGES
 from utils import (
     MAX_UPLOAD_SIZE_MB,
+    RETENTION_DAYS,
     cleanup_files,
     handle_transcription,
     is_valid_media_file,
@@ -111,6 +113,9 @@ async def _schedule_worker_reaper() -> None:
 RUNNING_LOCALLY = os.getenv("RUNNING_LOCALLY", "True").lower() == "true"
 # Each job is a full whisper process; uncapped concurrency OOMs the container.
 MAX_CONCURRENT_JOBS = int(os.getenv("MAX_CONCURRENT_JOBS", "2"))
+# The history page lists every past job by numeric id — fine for a single-user
+# self-host, but set ENABLE_HISTORY=False to hide it on a shared deployment.
+ENABLE_HISTORY = os.getenv("ENABLE_HISTORY", "True").lower() == "true"
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 CONTACT_EMAIL = os.getenv("CONTACT_EMAIL")
 if not RUNNING_LOCALLY:
@@ -153,6 +158,130 @@ async def contact(request: Request):
     Render the contact page.
     """
     return templates.TemplateResponse(request, "contact.html")
+
+
+MODEL_LABELS = {
+    "whisper_tiny": "Whisper Tiny",
+    "whisper_base": "Whisper Base",
+    "whisper_small": "Whisper Small",
+    "whisper_medium": "Whisper Medium",
+    "whisper_large": "Whisper Large",
+}
+
+
+def _fmt_time(created_at: str) -> str:
+    try:
+        return datetime.fromtimestamp(float(created_at), timezone.utc).strftime(
+            "%Y-%m-%d %H:%M"
+        )
+    except (TypeError, ValueError):
+        return "—"
+
+
+def _duration_secs(created_at: str, completed_at: str):
+    try:
+        return round(float(completed_at) - float(created_at), 1)
+    except (TypeError, ValueError):
+        return None
+
+
+def _status_class(status: str, progress: int) -> str:
+    """Category used for the status badge color on the history page."""
+    if job_status.is_canceled(status):
+        return "canceled"
+    if job_status.is_error(status):
+        return "error"
+    if progress >= 100:
+        return "success"
+    return "progress"
+
+
+@app.get("/history", response_class=HTMLResponse)
+async def history(request: Request):
+    """
+    Read-only list of past jobs (newest first) with links to their outputs.
+    """
+    if not ENABLE_HISTORY:
+        raise HTTPException(status_code=404, detail="History is disabled.")
+    jobs = []
+    for row in DB.list_jobs(limit=1000):
+        # Downloadable once the exports exist (progress 100) and the job is not
+        # canceled/errored — covers both success and "translation failed".
+        downloadable = row["progress"] >= 100 and not job_status.is_locked(row["status"])
+        secs = _duration_secs(row["created_at"], row["completed_at"])
+        try:
+            created_ts = float(row["created_at"])
+        except (TypeError, ValueError):
+            created_ts = 0.0
+        yt = row["youtube_url"]
+        translating = (row["translation"] or "").lower() not in ("", "none")
+        lang_display = (
+            f'{row["language"]} → {row["language_translation"]}'
+            if translating
+            else row["language"]
+        )
+        jobs.append(
+            {
+                "id": row["id"],
+                "created": _fmt_time(row["created_at"]),
+                "created_ts": created_ts,  # raw, for sorting
+                "source_full": yt or row["media_path"] or "—",
+                "source_is_url": bool(yt),
+                "duration": f"{secs}s" if secs is not None else "—",
+                "duration_secs": secs if secs is not None else -1,  # raw, for sorting
+                "model": MODEL_LABELS.get(row["model"], row["model"]),
+                "lang": lang_display,
+                "status": row["status"],
+                "status_class": _status_class(row["status"], row["progress"]),
+                "progress": row["progress"],
+                "downloadable": downloadable,
+            }
+        )
+    return templates.TemplateResponse(
+        request, "history.html", {"jobs": jobs, "retention_days": RETENTION_DAYS}
+    )
+
+
+def _is_in_flight(row) -> bool:
+    """A job whose worker may still be writing files — never delete under it."""
+    return row["progress"] < 100 and not job_status.is_locked(row["status"])
+
+
+@app.post("/history/delete", response_class=JSONResponse)
+async def history_delete(pid: int):
+    """Delete one job's files and DB row. Refuses if it's still running."""
+    if not ENABLE_HISTORY:
+        raise HTTPException(status_code=404, detail="History is disabled.")
+    row = DB.get_transcription(pid)
+    if not row:
+        return JSONResponse(content={"message": "Job not found."}, status_code=404)
+    if _is_in_flight(row):
+        return JSONResponse(
+            content={"message": "Job is still running — cancel it first."},
+            status_code=409,
+        )
+    cleanup_files(pid)
+    DB.delete_transcription(pid)
+    return JSONResponse(content={"status": "success"})
+
+
+@app.post("/history/clear", response_class=JSONResponse)
+async def history_clear():
+    """Delete every finished job's files and DB row. Leaves running jobs alone."""
+    if not ENABLE_HISTORY:
+        raise HTTPException(status_code=404, detail="History is disabled.")
+    removed = 0
+    skipped = 0
+    for row in DB.list_jobs(limit=100000):
+        if _is_in_flight(row):
+            skipped += 1
+            continue
+        cleanup_files(row["id"])
+        DB.delete_transcription(row["id"])
+        removed += 1
+    return JSONResponse(
+        content={"status": "success", "removed": removed, "skipped": skipped}
+    )
 
 
 @app.post("/submit_contact")

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Txtify — History</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Exo:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <style>
+        /* Same panel color as every other window (.container / .container_faq),
+           so all text stays readable in both themes over the dark hero image. */
+        .history-wrap {
+            max-width: 1180px; margin: 100px auto 3rem; padding: 1.75rem 1.5rem 2rem;
+            background: var(--background-color-dark);
+            border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.8s;
+        }
+        .history-sub { text-align: center; opacity: .75; margin-bottom: 1.25rem; }
+        .history-sub code { font-size: .85em; }
+
+        /* Stats strip that also filters the table by status. */
+        .stats { display: flex; gap: .75rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+        .stat {
+            flex: 1; min-width: 110px; display: flex; flex-direction: column; align-items: center; gap: .1rem;
+            padding: .65rem 1rem; border-radius: 10px; cursor: pointer; font-family: inherit; color: inherit;
+            background: rgba(127, 127, 127, .10); border: 1px solid rgba(127, 127, 127, .22); transition: background .15s;
+        }
+        .stat:hover { background: rgba(127, 127, 127, .18); }
+        .stat.active { border-color: var(--primary-color); box-shadow: inset 0 0 0 1px var(--primary-color); }
+        .stat b { font-size: 1.45rem; font-variant-numeric: tabular-nums; }
+        .stat span { font-size: .8rem; opacity: .8; }
+        /* Default (light theme): darker shades for contrast on the light panel. */
+        .stat[data-filter=success] b { color: #1a7f37; }
+        .stat[data-filter=error] b { color: #e5484d; }
+        .stat[data-filter=canceled] b { color: #bb8009; }
+        body.dark-theme .stat[data-filter=success] b { color: #4ac26b; }
+        body.dark-theme .stat[data-filter=canceled] b { color: #e2b53a; }
+
+        /* The table sits on the .history-wrap panel, so its own background is transparent. */
+        .history-scroll { overflow-x: auto; border-radius: 10px; border: 1px solid rgba(127, 127, 127, .25); }
+        /* Fixed layout: column widths stay put when filtering changes the rows. */
+        table.history { border-collapse: collapse; width: 100%; font-size: .92rem; table-layout: fixed; min-width: 900px; }
+        table.history td:nth-child(2) { white-space: nowrap; }
+        table.history td.model { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        table.history thead th {
+            position: sticky; top: 0; background: var(--primary-color); color: #fff;
+            text-align: left; padding: .7rem .8rem; font-weight: 700; white-space: nowrap;
+        }
+        table.history th.sortable { cursor: pointer; user-select: none; }
+        table.history th.sortable::after { content: " \2195"; opacity: .5; font-size: .85em; }
+        table.history th.sort-asc::after { content: " \25B2"; opacity: 1; }
+        table.history th.sort-desc::after { content: " \25BC"; opacity: 1; }
+        table.history td { padding: .55rem .8rem; border-top: 1px solid rgba(127, 127, 127, .18); vertical-align: middle; }
+        /* Uniform row height so a padded/short page is the same height as a full one. */
+        table.history tbody tr { height: 46px; }
+        table.history tbody tr:nth-child(even) { background: rgba(127, 127, 127, .06); }
+        table.history tbody tr:not(.filler-row):hover { background: rgba(127, 127, 127, .16); }
+        table.history td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        table.history td.id { font-variant-numeric: tabular-nums; opacity: .7; }
+        td.source { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        td.source a { color: var(--primary-color); font-weight: 700; text-decoration: none; white-space: nowrap; }
+        td.source a:hover { text-decoration: underline; }
+        .badge {
+            display: inline-block; padding: .18em .7em; border-radius: 999px;
+            font-size: .78rem; font-weight: 700; white-space: nowrap; line-height: 1.4;
+            max-width: 150px; overflow: hidden; text-overflow: ellipsis; vertical-align: middle;
+        }
+        .badge.success { color: #1a7f37; background: rgba(35, 134, 54, .16); }
+        .badge.error   { color: #e5484d; background: rgba(229, 72, 77, .16); }
+        .badge.canceled{ color: #bb8009; background: rgba(210, 153, 34, .18); }
+        .badge.progress{ color: #2a6fdb; background: rgba(56, 132, 222, .16); }
+        body.dark-theme .badge.success { color: #4ac26b; }
+        body.dark-theme .badge.canceled { color: #e2b53a; }
+        body.dark-theme .badge.progress { color: #6aa8ff; }
+        /* Clear, labeled row actions: green = download, red = delete. */
+        .actions-cell { display: flex; gap: .45rem; white-space: nowrap; }
+        .act {
+            display: inline-flex; align-items: center; gap: .35em; padding: .32em .6em; border-radius: 7px;
+            font-size: .8rem; font-weight: 700; text-decoration: none; cursor: pointer;
+            border: 1px solid transparent; font-family: inherit;
+        }
+        .act-dl { color: #1a7f37; background: rgba(35, 134, 54, .14); border-color: rgba(35, 134, 54, .4); }
+        .act-dl:hover { background: rgba(35, 134, 54, .24); }
+        .act-del { color: #e5484d; background: rgba(229, 72, 77, .12); border-color: rgba(229, 72, 77, .4); }
+        .act-del:hover { background: rgba(229, 72, 77, .22); }
+        body.dark-theme .act-dl { color: #4ac26b; }
+
+        .history-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 1.1rem; gap: 1rem; flex-wrap: wrap; }
+        .pager { display: flex; gap: 1rem; align-items: center; }
+        .pager button {
+            background: rgba(127, 127, 127, .12); border: 1px solid rgba(127, 127, 127, .35); color: inherit;
+            border-radius: 8px; padding: .4em .9em; cursor: pointer; font-family: inherit; font-weight: 700;
+        }
+        .pager button:disabled { opacity: .35; cursor: default; }
+        .pager #pageInfo { opacity: .8; font-variant-numeric: tabular-nums; }
+        .clear-btn {
+            background: rgba(229, 72, 77, .12); color: #e5484d; border: 1px solid rgba(229, 72, 77, .4);
+            border-radius: 8px; padding: .45em .9em; font-weight: 700; cursor: pointer; font-family: inherit;
+        }
+        .clear-btn:hover { background: rgba(229, 72, 77, .22); }
+        .history-empty { text-align: center; margin-top: 2.5rem; }
+    </style>
+</head>
+
+<body class="dark-theme">
+    <!-- Apply saved theme before first paint to avoid a dark→light flash -->
+    <script>if(localStorage.getItem('theme')==='light')document.body.classList.replace('dark-theme','light-theme');</script>
+    <nav class="navbar" aria-label="Main">
+        <div class="navbar-content">
+            <a href="/" class="logo">
+                <img src="/static/txtify_logo.png" alt="Txtify Logo" class="logo-image">
+                <span>Txtify</span>
+            </a>
+            <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="navLinks">
+                <i class="fa fa-bars" aria-hidden="true"></i>
+            </button>
+            <div class="nav-links" id="navLinks">
+                <a href="/">Application</a>
+                <a href="/history">History</a>
+                <a href="/faq">FAQ</a>
+                <a href="/contact">Contact</a>
+                <a class="github-button" href="https://github.com/lkmeta/txtify"
+                    data-color-scheme="no-preference: light; light: light; dark: dark;" data-size="large"
+                    aria-label="Star lkmeta/txtify on GitHub">Star</a>
+            </div>
+            <div class="theme-toggle-wrapper">
+                <label class="theme-toggle">
+                    <input type="checkbox" id="themeToggle" aria-label="Toggle light and dark theme">
+                    <div class="toggle-body"></div>
+                    <div class="celestial-body"></div>
+                </label>
+            </div>
+        </div>
+    </nav>
+
+    <div class="history-wrap">
+        <h1 style="text-align:center;">Transcription History</h1>
+        <p class="history-sub">Your past transcriptions on this machine — click a column to sort, a stat to filter, or a status to read it in full.<br>
+            {% if retention_days and retention_days > 0 %}Jobs and their files are automatically removed after {{ retention_days }} day{{ '' if retention_days == 1 else 's' }} (set <code>RETENTION_DAYS</code> to change).{% else %}Jobs are kept indefinitely (<code>RETENTION_DAYS=0</code>).{% endif %}</p>
+
+        {% if jobs %}
+        <div class="stats" id="stats">
+            <button class="stat active" data-filter="all"><b id="statTotal">0</b><span>All</span></button>
+            <button class="stat" data-filter="success"><b id="statSuccess">0</b><span>Completed</span></button>
+            <button class="stat" data-filter="error"><b id="statError">0</b><span>Failed</span></button>
+            <button class="stat" data-filter="canceled"><b id="statCanceled">0</b><span>Canceled</span></button>
+        </div>
+
+        <div class="history-scroll">
+            <table class="history" id="historyTable">
+                <colgroup>
+                    <col style="width:5%">   <!-- # -->
+                    <col style="width:13%">  <!-- When -->
+                    <col style="width:13%">  <!-- Source -->
+                    <col style="width:8%">   <!-- Duration -->
+                    <col style="width:13%">  <!-- Model -->
+                    <col style="width:10%">  <!-- Language -->
+                    <col style="width:17%">  <!-- Status -->
+                    <col style="width:21%">  <!-- Actions -->
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th class="sortable" data-type="number">#</th>
+                        <th class="sortable sort-desc" data-type="number">When (UTC)</th>
+                        <th class="sortable" data-type="text">Source</th>
+                        <th class="sortable" data-type="number">Duration</th>
+                        <th class="sortable" data-type="text">Model</th>
+                        <th class="sortable" data-type="text">Language</th>
+                        <th class="sortable" data-type="text">Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in jobs %}
+                    <tr data-job-id="{{ job.id }}" data-status="{{ job.status_class }}">
+                        <td class="id" data-sort-value="{{ job.id }}">{{ job.id }}</td>
+                        <td data-sort-value="{{ job.created_ts }}">{{ job.created }}</td>
+                        <td class="source" data-sort-value="{{ job.source_full }}" title="{{ job.source_full }}">
+                            {% if job.source_is_url %}<a href="{{ job.source_full }}" target="_blank" rel="noopener"><i class="fa-brands fa-youtube" aria-hidden="true"></i> YouTube</a>{% else %}{{ job.source_full }}{% endif %}
+                        </td>
+                        <td class="num" data-sort-value="{{ job.duration_secs }}">{{ job.duration }}</td>
+                        <td class="model" title="{{ job.model }}">{{ job.model }}</td>
+                        <td>{{ job.lang }}</td>
+                        <td data-sort-value="{{ job.status }}"><span class="badge {{ job.status_class }}" title="{{ job.status }}">{{ job.status }}</span></td>
+                        <td>
+                            <div class="actions-cell">
+                                {% if job.downloadable %}
+                                <a class="act act-dl" href="/download?pid={{ job.id }}"><i class="fa-solid fa-download" aria-hidden="true"></i> Download</a>
+                                {% endif %}
+                                <button class="act act-del" onclick="deleteJob({{ job.id }})"><i class="fa-solid fa-trash" aria-hidden="true"></i> Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="history-footer">
+            <div class="pager">
+                <button id="prevPage">← Prev</button>
+                <span id="pageInfo"></span>
+                <button id="nextPage">Next →</button>
+            </div>
+            <button class="clear-btn" onclick="clearHistory()"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Clear all</button>
+        </div>
+        {% else %}
+        <p class="history-empty">No transcriptions yet. <a href="/" style="color: var(--primary-color); font-weight: bold;">Start one →</a></p>
+        {% endif %}
+    </div>
+
+    <footer class="footer">
+        &copy; 2026 Txt<span style="color: var(--primary-color);">ify</span>. Created with <i
+            class="fa-solid fa-heart heart" aria-hidden="true"></i> by <a href="https://lkmeta.com" target="_blank">lkmeta</a>.
+    </footer>
+
+    <script src="/static/faq_scripts.js"></script>
+    <script src="/static/history.js"></script>
+</body>
+
+</html>
