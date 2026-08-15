@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir --upgrade pip
 # versions as requirements.txt — keep them identical, a torch/torchaudio
 # mismatch crashes the worker at import.
 RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu \
-    torch==2.9.1 torchaudio==2.9.1
+    torch==2.11.0 torchaudio==2.11.0
 
 # Install any dependencies specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
