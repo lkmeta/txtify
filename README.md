@@ -123,6 +123,12 @@ Open your web browser and navigate to `http://localhost:8011` to access Txtify.
 
 > **Note:** Txtify has no authentication — every job is reachable by its numeric id. Keep it on localhost or behind your own reverse proxy/auth if you expose it.
 
+### History
+
+Open **`/history`** (or the **History** link in the nav) to see your past transcriptions on this machine: source, model, language, duration, and status. You can sort by any column, filter by status, download a job's results, or delete a job (with its files); **Clear all** removes every finished job. Old jobs are pruned automatically after `RETENTION_DAYS`.
+
+> <sub>Because the page lists all jobs and there's no authentication, set `ENABLE_HISTORY=False` to hide it (and its delete endpoints) on a shared/exposed deployment.</sub>
+
 ### Logs
 
 To follow the application output and the transcription processes, view the logs of the running Docker container:
