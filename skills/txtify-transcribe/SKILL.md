@@ -172,9 +172,12 @@ curl -s -X POST "$BASE/cancel?pid=$JOB"
 
 Before writing, check each target path. If a file already exists, ask before overwriting or pick a new name. Build `NAME` from letters, digits, `-` and `_` only. Derive it from the media name, but never use the raw name or URL.
 
+**The folder goes into `OUT` in single quotes, the same way as `F` in step 4.** If the folder path contains a `'`, `"`, `\` or a line break, don't try to escape it. Ask the user for a different folder, or offer to save into a new plain-named one (e.g. `~/txtify-output`) and tell them where it is. Each snippet also checks that the folder exists and is writable before writing anything.
+
 ```sh
 BASE=http://127.0.0.1:8011; JOB=42
 OUT='/approved/folder'; NAME=my-talk; FMT=srt
+[ -d "$OUT" ] && [ -w "$OUT" ] || { echo "folder missing or not writable"; exit 1; }
 if [ -e "$OUT/$NAME.$FMT" ]; then echo "EXISTS: ask the user"; else
   curl -sf -o "$OUT/$NAME.$FMT" "$BASE/downloadPreview?pid=$JOB&format=$FMT" || echo "download failed"
 fi
@@ -188,6 +191,7 @@ Check that each saved file is non-empty and looks like what it claims (`.srt` st
 
   ```sh
   BASE=http://127.0.0.1:8011; JOB=42; OUT='/approved/folder'; NAME=my-talk
+  [ -d "$OUT" ] && [ -w "$OUT" ] || { echo "folder missing or not writable"; exit 1; }
   if [ -e "$OUT/$NAME.zip" ] || [ -e "$OUT/$NAME" ]; then echo "EXISTS: ask the user"; else
     curl -sf -o "$OUT/$NAME.zip" "$BASE/download?pid=$JOB" &&
       mkdir "$OUT/$NAME" && unzip -q -n "$OUT/$NAME.zip" -d "$OUT/$NAME" || echo "download failed"

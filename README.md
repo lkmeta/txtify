@@ -145,7 +145,7 @@ docker logs -f txtify_container
 
 ### Online Demo
 
-To see Txtify in action, visit the [Txtify Website](https://txtify.lkmeta.com/) and upload your media or enter a YouTube URL to transcribe it.
+To see how Txtify works, visit the [Txtify Website](https://txtify.lkmeta.com/). It's a live demo of the interface, not a place to process your own files: for real, private transcription, self-host Txtify as described above.
 
 ## Development
 

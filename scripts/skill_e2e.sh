@@ -169,13 +169,15 @@ SNIP5=$(snippet "### 5." 1 | sed "s/^JOB=42;/JOB=$J;/; s/sleep 10/sleep 1/")
 [ -n "$SNIP5" ] || fail "could not extract the step 5 snippet"
 R=$(run_fresh "$SNIP5")
 tail -n1 <<<"$R" | grep -q '"phase":"Completed successfully!"' && ok "step 5 poll snippet, verbatim, in fresh sh" || fail "step 5 snippet: $R"
-mkdir -p "$OUT/fresh"
-SNIP6=$(snippet "### 6." 1 | sed "s/JOB=42/JOB=$J/; s|OUT='/approved/folder'|OUT='$OUT/fresh'|")
-run_fresh "$SNIP6" && grep -qi 'quick brown fox' "$OUT/fresh/my-talk.srt" && ok "step 6 save snippet, verbatim, in fresh sh" || fail "step 6 snippet"
+FRESH="$OUT/fresh dir; v2"; mkdir -p "$FRESH"
+SNIP6=$(snippet "### 6." 1 | sed "s/JOB=42/JOB=$J/; s|OUT='/approved/folder'|OUT='$FRESH'|")
+run_fresh "$SNIP6" && grep -qi 'quick brown fox' "$FRESH/my-talk.srt" && ok "step 6 save snippet, verbatim, in fresh sh (folder has a space and ';')" || fail "step 6 snippet"
 R=$(run_fresh "$SNIP6"); [ "$R" = "EXISTS: ask the user" ] && ok "step 6 snippet refuses to overwrite on a second run" || fail "overwrite: $R"
-SNIPZ=$(snippet "### 6." 2 | sed "s/JOB=42/JOB=$J/; s|OUT='/approved/folder'|OUT='$OUT/fresh'|")
-run_fresh "$SNIPZ" >/dev/null && [ -s "$OUT/fresh/my-talk/final_transcription.srt" ] && ok "zip snippet downloads + extracts into a new folder" || fail "zip snippet"
+SNIPZ=$(snippet "### 6." 2 | sed "s/JOB=42/JOB=$J/; s|OUT='/approved/folder'|OUT='$FRESH'|")
+run_fresh "$SNIPZ" >/dev/null && [ -s "$FRESH/my-talk/final_transcription.srt" ] && ok "zip snippet downloads + extracts into a new folder" || fail "zip snippet"
 R=$(run_fresh "$SNIPZ" 2>&1); grep -q 'EXISTS: ask the user' <<<"$R" && ok "zip snippet refuses to overwrite on a second run" || fail "zip overwrite: $R"
+SNIPM=$(snippet "### 6." 1 | sed "s/JOB=42/JOB=$J/; s|OUT='/approved/folder'|OUT='$OUT/does-not-exist'|")
+R=$(run_fresh "$SNIPM"); [ "$R" = "folder missing or not writable" ] && [ ! -e "$OUT/does-not-exist" ] && ok "step 6 snippet refuses a missing folder, writes nothing" || fail "missing folder: $R"
 
 echo "== video: mp4 with a space and ';' in the name, whisper_base, auto"
 R=$(submit_file "$WORK/my talk; v2.mp4" whisper_base auto); J2=$(job_of "$R")
