@@ -35,7 +35,7 @@ For quick local work you don't need the ML stack: install `requirements-dev.txt`
 
 ## Invariants & known traps
 
-- `torch` and `torchaudio` must be pinned to the **same version** — a mismatch crashes the worker at import (`_torchaudio.abi3.so`), silently: status just sticks at 10%.
+- `torch` and `torchaudio` are pinned as a **verified pair**, identical in `requirements.txt` and the Dockerfile. An ABI-incompatible pair crashes the worker at import (`_torchaudio.abi3.so`), silently: status just sticks at 10%. torchaudio's latest release is 2.11.0 (no newer one as of 2026-10-26; stable-ts still imports it), so torch now moves ahead alone (2.14.1 + 2.11.0). That works because torchaudio 2.11.0 is built on torch's stable C ABI (`*.abi3.so`, only `aoti_torch_*` symbols, no `torch==` pin), unlike 2.10 and older, which pinned their exact torch. Any new torch needs `docker_e2e.sh` to prove the pair still works.
 - `stable-ts` must stay ≥ 2.19.1 so pip picks an `openai-whisper` that builds under modern setuptools.
 - PDF export uses fpdf2 with the bundled `static/fonts/DejaVuSans.ttf` — never reintroduce latin-1 encoding (Greek/Cyrillic output is a core use case). `multi_cell` needs `new_x="LMARGIN", new_y="NEXT"`.
 - `transformers`, `accelerate`, `srt`, `webvtt-py` were removed as unused — don't re-add without an actual import.
