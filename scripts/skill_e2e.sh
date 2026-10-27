@@ -18,14 +18,23 @@ set -u
 IMAGE="${IMAGE:?set IMAGE}"
 PLATFORM="${PLATFORM:-}"
 BASE=http://127.0.0.1:8011
-RUN_ID="$(date +%s)_$$"
+RUN_ID="${SKILL_E2E_RUN_ID:-$(date +%s)_$$_${RANDOM}}"  # override only to test the ownership guards
 NAME=txtify_skill_e2e_$RUN_ID
 VOL_OUT=txtify_skill_e2e_output_$RUN_ID
 VOL_CACHE=txtify_skill_e2e_cache_$RUN_ID
 FIX="$(cd "$(dirname "$0")/.." && pwd)/tests/fixtures/speech.mp3"
 WORK=$(mktemp -d)
 OUT="$WORK/out"; mkdir -p "$OUT"
-trap 'rm -rf "$WORK"' EXIT
+# Ownership: only names recorded here are ever removed, and a name is recorded
+# only after this run created it (or proved it was free and claimed it).
+OWNED_CTR=""; OWNED_VOLS=""
+cleanup() {
+  [ -n "$OWNED_CTR" ] && docker rm -f "$OWNED_CTR" >/dev/null 2>&1
+  for v in $OWNED_VOLS; do docker volume rm "$v" >/dev/null 2>&1; done
+  rm -rf "$WORK"
+}
+trap cleanup EXIT
+trap 'exit 130' INT TERM HUP
 
 
 # Prints the Nth ```sh block under the SKILL.md heading that starts with $1.
@@ -80,13 +89,13 @@ docker image inspect "$IMAGE" >/dev/null 2>&1 || fail "image not present locally
 DIGESTS=$(docker image inspect "$IMAGE" --format '{{join .RepoDigests " "}}')
 echo "   id $(docker image inspect "$IMAGE" --format '{{.Id}} arch {{.Architecture}} created {{.Created}}') digests [$DIGESTS]"
 case "$IMAGE" in lkmeta/*) [ -n "$DIGESTS" ] || fail "$IMAGE has no registry digest: it's a local build, not the published image" ;; esac
-docker ps -a --format '{{.Names}}' | grep -qx $NAME && fail "container $NAME already exists"
+docker container inspect $NAME >/dev/null 2>&1 && fail "container $NAME already exists; refusing to touch it"
 for v in $VOL_OUT $VOL_CACHE; do
   docker volume inspect $v >/dev/null 2>&1 && fail "volume $v already exists; refusing to touch it"
+  docker volume create $v >/dev/null || fail "volume create $v"
+  OWNED_VOLS="$OWNED_VOLS $v"
 done
-docker volume create $VOL_OUT >/dev/null && docker volume create $VOL_CACHE >/dev/null || fail "volume create"
-# From here on, everything removed on exit was created by this run.
-trap 'docker rm -f $NAME >/dev/null 2>&1; docker volume rm $VOL_OUT $VOL_CACHE >/dev/null 2>&1; rm -rf "$WORK"' EXIT
+OWNED_CTR=$NAME   # free a moment ago and unique to this run; docker run --name won't reuse it
 
 echo "== Txtify / Docker not available"
 curl -s --max-time 5 "$BASE/health" >/dev/null; rc=$?
@@ -187,12 +196,12 @@ R=$(run_fresh "$SNIPZ" 2>&1); grep -q 'EXISTS: ask the user' <<<"$R" && ok "zip 
 ln -s "$WORK/outside.srt" "$FRESH/evil.srt"; ln -s "$WORK/outside.zip" "$FRESH/evilz.zip"
 SNIPL=$(snippet "### 6." 1 | sed "s/JOB=42/JOB=$J/; s|OUT='/approved/folder'|OUT='$FRESH'|; s/NAME=my-talk/NAME=evil/")
 R=$(run_fresh "$SNIPL"); [ "$R" = "EXISTS: ask the user" ] && [ ! -e "$WORK/outside.srt" ] && ok "step 6 snippet treats a dangling symlink as taken" || fail "symlink: $R"
-R=$(run_fresh "$(grep -v 'EXISTS: ask the user' <<<"$SNIPL")")
+R=$(run_fresh "$(grep -v '^if \[ -e' <<<"$SNIPL")")
 [ "$R" = "download failed or name taken" ] && [ ! -e "$WORK/outside.srt" ] && ok "even with that check removed, ln refuses the symlink (nothing written outside)" || fail "ln symlink: $R"
 SNIPZL=$(snippet "### 6." 2 | sed "s/JOB=42/JOB=$J/; s|OUT='/approved/folder'|OUT='$FRESH'|; s/NAME=my-talk/NAME=evilz/")
 R=$(run_fresh "$SNIPZL"); [ "$R" = "EXISTS: ask the user" ] && [ ! -e "$WORK/outside.zip" ] && ok "zip snippet treats a dangling symlink as taken" || fail "zip symlink: $R"
-R=$(run_fresh "$(grep -v 'EXISTS: ask the user' <<<"$SNIPZL")")
-[ "$R" = "download failed or name taken" ] && [ ! -e "$WORK/outside.zip" ] && [ ! -e "$FRESH/evilz" ] && ok "zip: even with that check removed, ln refuses the symlink" || fail "zip ln symlink: $R"
+R=$(run_fresh "$(grep -v '^if \[ -e' <<<"$SNIPZL")")
+[ "$R" = "EXISTS: ask the user" ] && [ ! -e "$WORK/outside.zip" ] && [ ! -e "$FRESH/evilz" ] && ok "zip: even with that check removed, ln refuses the symlink" || fail "zip ln symlink: $R"
 ls -A "$FRESH" | grep -q '^\.txtify-' && fail "temp files left behind: $(ls -A "$FRESH")" || ok "no temp files left in the output folder"
 SNIPM=$(snippet "### 6." 1 | sed "s/JOB=42/JOB=$J/; s|OUT='/approved/folder'|OUT='$OUT/does-not-exist'|")
 R=$(run_fresh "$SNIPM"); [ "$R" = "folder missing or not writable" ] && [ ! -e "$OUT/does-not-exist" ] && ok "step 6 snippet refuses a missing folder, writes nothing" || fail "missing folder: $R"
