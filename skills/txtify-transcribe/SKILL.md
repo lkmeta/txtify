@@ -2,7 +2,7 @@
 name: txtify-transcribe
 description: Transcribe audio, video files, or YouTube links into text and subtitles (txt, srt, vtt, sbv, pdf) using the user's own self-hosted Txtify instance (open-source, Whisper-based, runs locally in Docker). Use when the user wants a transcript or subtitle file from media and is fine running Txtify on their machine, or already runs it on localhost:8011.
 summary: Turn audio, video, or a YouTube link into a transcript or subtitles (txt, srt, vtt, sbv, pdf) with your own self-hosted Txtify. Whisper runs on your machine in Docker, so your files don't go to a cloud transcription service.
-version: 1.1.0
+version: 1.2.0
 tags: [transcription, subtitles, whisper, speech-to-text, self-hosted, docker, youtube, privacy]
 keywords: [transcribe audio, transcribe video, youtube transcript, srt subtitles, vtt captions, whisper, local transcription, offline speech to text]
 use_cases:
@@ -176,12 +176,16 @@ Before writing, check each target path. If a file already exists, ask before ove
 
 ```sh
 BASE=http://127.0.0.1:8011; JOB=42
-OUT='/approved/folder'; NAME=my-talk; FMT=srt
+OUT='/approved/folder'; NAME=my-talk; FMT=srt; T="$OUT/$NAME.$FMT"
 [ -d "$OUT" ] && [ -w "$OUT" ] || { echo "folder missing or not writable"; exit 1; }
-if [ -e "$OUT/$NAME.$FMT" ]; then echo "EXISTS: ask the user"; else
-  curl -sf -o "$OUT/$NAME.$FMT" "$BASE/downloadPreview?pid=$JOB&format=$FMT" || echo "download failed"
-fi
+if [ -e "$T" ] || [ -L "$T" ]; then echo "EXISTS: ask the user"; exit 1; fi
+TMP=$(mktemp "$OUT/.txtify-XXXXXX") || exit 1
+if curl -sf -o "$TMP" "$BASE/downloadPreview?pid=$JOB&format=$FMT" && ln "$TMP" "$T"; then
+  echo "saved $T"; else echo "download failed or name taken"; fi
+rm -f "$TMP"
 ```
+
+Why it's built this way: an existing name, **including a symlink, even a broken one**, counts as taken (`-e` alone misses broken symlinks). The download goes into a new temp file that `mktemp` creates inside the folder, and `ln` publishes it under the final name. `ln` refuses any existing name and never follows a symlink, so nothing gets written outside the approved folder, even if the folder changes in between. If `ln` fails because the drive doesn't support hard links (some FAT/exFAT or network drives), ask the user for another folder.
 
 Check that each saved file is non-empty and looks like what it claims (`.srt` starts with `1` and has `-->` lines, `.vtt` starts with `WEBVTT`, `.pdf` starts with `%PDF`). If one doesn't, delete only that new file and report it.
 
@@ -191,14 +195,16 @@ Check that each saved file is non-empty and looks like what it claims (`.srt` st
 
   ```sh
   BASE=http://127.0.0.1:8011; JOB=42; OUT='/approved/folder'; NAME=my-talk
+  Z="$OUT/$NAME.zip"; D="$OUT/$NAME"
   [ -d "$OUT" ] && [ -w "$OUT" ] || { echo "folder missing or not writable"; exit 1; }
-  if [ -e "$OUT/$NAME.zip" ] || [ -e "$OUT/$NAME" ]; then echo "EXISTS: ask the user"; else
-    curl -sf -o "$OUT/$NAME.zip" "$BASE/download?pid=$JOB" &&
-      mkdir "$OUT/$NAME" && unzip -q -n "$OUT/$NAME.zip" -d "$OUT/$NAME" || echo "download failed"
-  fi
+  if [ -e "$Z" ] || [ -L "$Z" ] || [ -e "$D" ] || [ -L "$D" ]; then echo "EXISTS: ask the user"; exit 1; fi
+  TMP=$(mktemp "$OUT/.txtify-XXXXXX") || exit 1
+  if curl -sf -o "$TMP" "$BASE/download?pid=$JOB" && ln "$TMP" "$Z" &&
+     mkdir "$D" && unzip -q -n "$Z" -d "$D"; then echo "saved $Z and $D/"; else echo "download failed or name taken"; fi
+  rm -f "$TMP"
   ```
 
-  The zip holds `final_transcription.{txt,srt,vtt,sbv,pdf}` (translated, if translation ran), the raw `transcription.txt`, `en_transcription.srt` (the untranslated subtitles, always named `en_` whatever the language) and the job's `logs.txt`. It only extracts into a new folder, and `unzip -n` never overwrites a file.
+  The zip holds `final_transcription.{txt,srt,vtt,sbv,pdf}` (translated, if translation ran), the raw `transcription.txt`, `en_transcription.srt` (the untranslated subtitles, always named `en_` whatever the language) and the job's `logs.txt`. Same no-follow, no-overwrite approach as above. It only extracts into a folder it just created, and `unzip -n` never overwrites a file.
 - HTTP 404 `File not found` or `Transcription in progress or not found` means the result is missing: re-check `/status`. Don't invent content.
 - Afterwards, show the first few lines of the transcript, and give the saved paths and the model and language used.
 

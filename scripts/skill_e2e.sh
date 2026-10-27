@@ -11,15 +11,17 @@
 # The build is detected from /history (404 = v1.1, 200 = newer) and every
 # version-dependent check must match it. lkmeta/* images must carry a registry
 # digest: docker-compose tags local builds as lkmeta/txtify:latest too.
-# Needs port 8011 free (the skill's default). Uses its own container + volumes
-# and removes them on exit. Ends with "PASS: skill E2E complete".
+# Needs port 8011 free (the skill's default). Creates its own uniquely named
+# container + volumes, refuses to reuse existing ones, and removes only those
+# on exit. Ends with "PASS: skill E2E complete".
 set -u
 IMAGE="${IMAGE:?set IMAGE}"
 PLATFORM="${PLATFORM:-}"
 BASE=http://127.0.0.1:8011
-NAME=txtify_skill_e2e
-VOL_OUT=txtify_skill_e2e_output
-VOL_CACHE=txtify_skill_e2e_cache
+RUN_ID="$(date +%s)_$$"
+NAME=txtify_skill_e2e_$RUN_ID
+VOL_OUT=txtify_skill_e2e_output_$RUN_ID
+VOL_CACHE=txtify_skill_e2e_cache_$RUN_ID
 FIX="$(cd "$(dirname "$0")/.." && pwd)/tests/fixtures/speech.mp3"
 WORK=$(mktemp -d)
 OUT="$WORK/out"; mkdir -p "$OUT"
@@ -78,7 +80,13 @@ docker image inspect "$IMAGE" >/dev/null 2>&1 || fail "image not present locally
 DIGESTS=$(docker image inspect "$IMAGE" --format '{{join .RepoDigests " "}}')
 echo "   id $(docker image inspect "$IMAGE" --format '{{.Id}} arch {{.Architecture}} created {{.Created}}') digests [$DIGESTS]"
 case "$IMAGE" in lkmeta/*) [ -n "$DIGESTS" ] || fail "$IMAGE has no registry digest: it's a local build, not the published image" ;; esac
-docker ps -a --format '{{.Names}}' | grep -qx $NAME && fail "container $NAME already exists (another run?)"
+docker ps -a --format '{{.Names}}' | grep -qx $NAME && fail "container $NAME already exists"
+for v in $VOL_OUT $VOL_CACHE; do
+  docker volume inspect $v >/dev/null 2>&1 && fail "volume $v already exists; refusing to touch it"
+done
+docker volume create $VOL_OUT >/dev/null && docker volume create $VOL_CACHE >/dev/null || fail "volume create"
+# From here on, everything removed on exit was created by this run.
+trap 'docker rm -f $NAME >/dev/null 2>&1; docker volume rm $VOL_OUT $VOL_CACHE >/dev/null 2>&1; rm -rf "$WORK"' EXIT
 
 echo "== Txtify / Docker not available"
 curl -s --max-time 5 "$BASE/health" >/dev/null; rc=$?
@@ -90,7 +98,6 @@ echo "== step 2: start (MAX_CONCURRENT_JOBS=1 and MAX_UPLOAD_SIZE_MB=1 to reach 
 docker run -d --name $NAME ${PLATFORM:+--platform $PLATFORM} -p 127.0.0.1:8011:8011 \
   -e MAX_CONCURRENT_JOBS=1 -e MAX_UPLOAD_SIZE_MB=1 \
   -v $VOL_OUT:/app/output -v $VOL_CACHE:/root/.cache "$IMAGE" >/dev/null || fail "docker run"
-trap 'docker rm -f $NAME >/dev/null 2>&1; docker volume rm $VOL_OUT $VOL_CACHE >/dev/null 2>&1; rm -rf "$WORK"' EXIT
 [ "$(docker port $NAME)" = "8011/tcp -> 127.0.0.1:8011" ] && ok "bound to 127.0.0.1 only" || fail "binding: $(docker port $NAME)"
 
 echo "== step 1: detect"
@@ -176,6 +183,17 @@ R=$(run_fresh "$SNIP6"); [ "$R" = "EXISTS: ask the user" ] && ok "step 6 snippet
 SNIPZ=$(snippet "### 6." 2 | sed "s/JOB=42/JOB=$J/; s|OUT='/approved/folder'|OUT='$FRESH'|")
 run_fresh "$SNIPZ" >/dev/null && [ -s "$FRESH/my-talk/final_transcription.srt" ] && ok "zip snippet downloads + extracts into a new folder" || fail "zip snippet"
 R=$(run_fresh "$SNIPZ" 2>&1); grep -q 'EXISTS: ask the user' <<<"$R" && ok "zip snippet refuses to overwrite on a second run" || fail "zip overwrite: $R"
+# Dangling symlinks at the target name: refused, and nothing is written outside.
+ln -s "$WORK/outside.srt" "$FRESH/evil.srt"; ln -s "$WORK/outside.zip" "$FRESH/evilz.zip"
+SNIPL=$(snippet "### 6." 1 | sed "s/JOB=42/JOB=$J/; s|OUT='/approved/folder'|OUT='$FRESH'|; s/NAME=my-talk/NAME=evil/")
+R=$(run_fresh "$SNIPL"); [ "$R" = "EXISTS: ask the user" ] && [ ! -e "$WORK/outside.srt" ] && ok "step 6 snippet treats a dangling symlink as taken" || fail "symlink: $R"
+R=$(run_fresh "$(grep -v 'EXISTS: ask the user' <<<"$SNIPL")")
+[ "$R" = "download failed or name taken" ] && [ ! -e "$WORK/outside.srt" ] && ok "even with that check removed, ln refuses the symlink (nothing written outside)" || fail "ln symlink: $R"
+SNIPZL=$(snippet "### 6." 2 | sed "s/JOB=42/JOB=$J/; s|OUT='/approved/folder'|OUT='$FRESH'|; s/NAME=my-talk/NAME=evilz/")
+R=$(run_fresh "$SNIPZL"); [ "$R" = "EXISTS: ask the user" ] && [ ! -e "$WORK/outside.zip" ] && ok "zip snippet treats a dangling symlink as taken" || fail "zip symlink: $R"
+R=$(run_fresh "$(grep -v 'EXISTS: ask the user' <<<"$SNIPZL")")
+[ "$R" = "download failed or name taken" ] && [ ! -e "$WORK/outside.zip" ] && [ ! -e "$FRESH/evilz" ] && ok "zip: even with that check removed, ln refuses the symlink" || fail "zip ln symlink: $R"
+ls -A "$FRESH" | grep -q '^\.txtify-' && fail "temp files left behind: $(ls -A "$FRESH")" || ok "no temp files left in the output folder"
 SNIPM=$(snippet "### 6." 1 | sed "s/JOB=42/JOB=$J/; s|OUT='/approved/folder'|OUT='$OUT/does-not-exist'|")
 R=$(run_fresh "$SNIPM"); [ "$R" = "folder missing or not writable" ] && [ ! -e "$OUT/does-not-exist" ] && ok "step 6 snippet refuses a missing folder, writes nothing" || fail "missing folder: $R"
 
