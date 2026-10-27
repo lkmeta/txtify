@@ -22,7 +22,6 @@ Agensi's own docs, checked 2026-10-26: [quickstart](https://www.agensi.io/docs/c
   - **Outputs:** all five formats, the zip, the overwrite guards, and dangling symlinks at the target name (refused, nothing written outside the folder)
   - **Failures:** 400, 404, 422 and 429, missing file, unknown model, bad language (ends as `Error`), cancel, missing DeepL key, curl timeout, Txtify stopping mid-poll, and the `docker` client's error when no daemon is reachable
   - **Not covered:** the 500 response, an actual DeepL translation (needs a key) and YouTube's bot-check block (can't be triggered on purpose)
-- CI runs `scripts/skill_e2e.sh` (workflow `Skill E2E`) on every PR that touches the skill, the script or the app, against an image built from that PR.
 - `tests/test_skill.py` (runs in CI) fails when the app's models, formats, upload types, status strings or language lists drift away from what the skill says.
 
 ```sh
