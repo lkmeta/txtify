@@ -139,9 +139,13 @@ docker logs -f txtify_container
 
 > <sub>**Note:** The -f option follows the log output in real-time.</sub>
 
+### Agent skill
+
+[`skills/txtify-transcribe`](skills/txtify-transcribe/SKILL.md) is a standalone SKILL.md that lets an AI coding agent (Claude Code, Cursor, Codex and others) transcribe files or YouTube links with your local Txtify and save the subtitles where you want them. Copy the folder into your agent's skills directory.
+
 ### Online Demo
 
-To see Txtify in action, visit the [Txtify Website](https://txtify.lkmeta.com/) and upload your media or enter a YouTube URL to transcribe it.
+To see how Txtify works, visit the [Txtify Website](https://txtify.lkmeta.com/). It's a live demo of the interface, not a place to process your own files: for real, private transcription, self-host Txtify as described above.
 
 ## Development
 
