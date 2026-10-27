@@ -180,12 +180,18 @@ OUT='/approved/folder'; NAME=my-talk; FMT=srt; T="$OUT/$NAME.$FMT"
 [ -d "$OUT" ] && [ -w "$OUT" ] || { echo "folder missing or not writable"; exit 1; }
 if [ -e "$T" ] || [ -L "$T" ]; then echo "EXISTS: ask the user"; exit 1; fi
 TMP=$(mktemp "$OUT/.txtify-XXXXXX") || exit 1
+trap 'rm -f "$TMP"' EXIT; trap 'exit 130' INT TERM HUP
 if curl -sf -o "$TMP" "$BASE/downloadPreview?pid=$JOB&format=$FMT" && ln "$TMP" "$T"; then
-  echo "saved $T"; else echo "download failed or name taken"; fi
-rm -f "$TMP"
+  echo "saved $T"; else echo "download failed or name taken"; exit 1; fi
 ```
 
-Why it's built this way: an existing name, **including a symlink, even a broken one**, counts as taken (`-e` alone misses broken symlinks). The download goes into a new temp file that `mktemp` creates inside the folder, and `ln` publishes it under the final name. `ln` refuses any existing name and never follows a symlink, so nothing gets written outside the approved folder, even if the folder changes in between. If `ln` fails because the drive doesn't support hard links (some FAT/exFAT or network drives), ask the user for another folder.
+Why it's built this way:
+- An existing name, **including a symlink, even a broken one**, counts as taken (`-e` alone misses broken symlinks).
+- The download goes into a new temp file that `mktemp` creates inside the folder (exclusively, never through an existing path). Only a complete download gets published, by `ln`, under the final name.
+- `ln` is the real guard: it refuses any existing name and never follows a symlink, even if something appears between the check and the write. So nothing is written outside the approved folder, nothing gets overwritten, and two runs racing for the same name can't both win.
+- A failed or interrupted download leaves no file behind: the temp file is removed on exit, and on Ctrl-C.
+- Saved files are private to the user (`mktemp` creates them `0600`).
+- If `ln` fails because the drive doesn't support hard links (some FAT/exFAT or network drives), ask the user for another folder.
 
 Check that each saved file is non-empty and looks like what it claims (`.srt` starts with `1` and has `-->` lines, `.vtt` starts with `WEBVTT`, `.pdf` starts with `%PDF`). If one doesn't, delete only that new file and report it.
 
@@ -199,12 +205,15 @@ Check that each saved file is non-empty and looks like what it claims (`.srt` st
   [ -d "$OUT" ] && [ -w "$OUT" ] || { echo "folder missing or not writable"; exit 1; }
   if [ -e "$Z" ] || [ -L "$Z" ] || [ -e "$D" ] || [ -L "$D" ]; then echo "EXISTS: ask the user"; exit 1; fi
   TMP=$(mktemp "$OUT/.txtify-XXXXXX") || exit 1
-  if curl -sf -o "$TMP" "$BASE/download?pid=$JOB" && ln "$TMP" "$Z" &&
-     mkdir "$D" && unzip -q -n "$Z" -d "$D"; then echo "saved $Z and $D/"; else echo "download failed or name taken"; fi
-  rm -f "$TMP"
+  trap 'rm -f "$TMP"' EXIT; trap 'exit 130' INT TERM HUP
+  curl -sf -o "$TMP" "$BASE/download?pid=$JOB" && unzip -tq "$TMP" >/dev/null || { echo "download failed"; exit 1; }
+  unzip -Z1 "$TMP" | grep -qv '^[A-Za-z0-9_][A-Za-z0-9_.-]*$' && { echo "unexpected names in zip"; exit 1; }
+  mkdir "$D" || { echo "EXISTS: ask the user"; exit 1; }
+  ln "$TMP" "$Z" || { rmdir "$D"; echo "EXISTS: ask the user"; exit 1; }
+  unzip -q -n "$Z" -d "$D" && echo "saved $Z and $D/" || { echo "extract failed: $D may be incomplete"; exit 1; }
   ```
 
-  The zip holds `final_transcription.{txt,srt,vtt,sbv,pdf}` (translated, if translation ran), the raw `transcription.txt`, `en_transcription.srt` (the untranslated subtitles, always named `en_` whatever the language) and the job's `logs.txt`. Same no-follow, no-overwrite approach as above. It only extracts into a folder it just created, and `unzip -n` never overwrites a file.
+  The zip holds `final_transcription.{txt,srt,vtt,sbv,pdf}` (translated, if translation ran), the raw `transcription.txt`, `en_transcription.srt` (the untranslated subtitles, always named `en_` whatever the language) and the job's `logs.txt`. Same no-follow, no-overwrite approach as above. On top of that, the archive is integrity-checked and its entry names must be plain file names (no `/`, `..` or leading dot) before anything is created. It only extracts into a folder it just created (`mkdir` fails if the name exists, symlinks included), and `unzip -n` never overwrites a file.
 - HTTP 404 `File not found` or `Transcription in progress or not found` means the result is missing: re-check `/status`. Don't invent content.
 - Afterwards, show the first few lines of the transcript, and give the saved paths and the model and language used.
 

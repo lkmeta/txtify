@@ -22,6 +22,7 @@ Agensi's own docs, checked 2026-10-26: [quickstart](https://www.agensi.io/docs/c
   - **Outputs:** all five formats, the zip, the overwrite guards, and dangling symlinks at the target name (refused, nothing written outside the folder)
   - **Failures:** 400, 404, 422 and 429, missing file, unknown model, bad language (ends as `Error`), cancel, missing DeepL key, curl timeout, Txtify stopping mid-poll, and the `docker` client's error when no daemon is reachable
   - **Not covered:** the 500 response, an actual DeepL translation (needs a key) and YouTube's bot-check block (can't be triggered on purpose)
+- `tests/test_skill_snippets.py` (runs in CI, no Docker) runs the exact step 6 save snippets from SKILL.md in `sh` against a stub server: normal saves, existing files, symlinks (live and dangling, including one that appears after the check), folders with spaces and shell metacharacters, missing/unwritable folders, failed, truncated and interrupted downloads, racing writers, and zips that are corrupt or contain `../` or `sub/` entries. It also shows the pre-fix snippet writing through a dangling symlink.
 - `tests/test_skill.py` (runs in CI) fails when the app's models, formats, upload types, status strings or language lists drift away from what the skill says.
 
 ```sh
