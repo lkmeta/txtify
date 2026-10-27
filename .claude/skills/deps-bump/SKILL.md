@@ -7,7 +7,7 @@ description: Safely update Txtify dependencies or resolve Dependabot alerts. Use
 
 ## Ground rules
 
-1. **`torch` and `torchaudio` move together, same version.** A mismatch doesn't fail the build — it crashes the worker at import, and jobs just hang at 10%. This is the #1 trap.
+1. **`torch` and `torchaudio` are pinned as a verified pair, identical in `requirements.txt` and the Dockerfile.** A bad pair doesn't fail the build — it crashes the worker at import, and jobs just hang at 10%. This is the #1 trap. torchaudio's latest release is 2.11.0 (no newer one as of 2026-10-26), so torch moves ahead alone now (2.14.1 + 2.11.0 verified 2026-10-26). That's only possible because 2.11.0 is built on torch's stable C ABI (`*.abi3.so`, no `torch==` pin); if torchaudio ever ships again with an exact torch pin, move both together. Every torch bump must be proven by a real transcription in `docker_e2e.sh`, not just an import.
 2. **`stable-ts` ≥ 2.19.1** so pip resolves an `openai-whisper` that builds under modern setuptools (older ones import `pkg_resources` in setup.py and break the Docker build). Check stable-ts's `openai-whisper` constraint before bumping torch far ahead.
 3. Before adding any package, and before "fixing" an alert on one: check it's actually imported — `grep -rn '<pkg>' src/`. Unused packages get deleted, not bumped (transformers/accelerate/srt/webvtt-py died this way).
 4. `yt-dlp` rots fastest and breaks YouTube downloads silently. After bumping, verify with a **real download** (host venv is fine):
