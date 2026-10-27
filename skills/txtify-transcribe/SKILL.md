@@ -2,7 +2,7 @@
 name: txtify-transcribe
 description: Transcribe audio, video files, or YouTube links into text and subtitles (txt, srt, vtt, sbv, pdf) using the user's own self-hosted Txtify instance (open-source, Whisper-based, runs locally in Docker). Use when the user wants a transcript or subtitle file from media and is fine running Txtify on their machine, or already runs it on localhost:8011.
 summary: Turn audio, video, or a YouTube link into a transcript or subtitles (txt, srt, vtt, sbv, pdf) with your own self-hosted Txtify. Whisper runs on your machine in Docker, so your files don't go to a cloud transcription service.
-version: 1.2.0
+version: 1.3.0
 tags: [transcription, subtitles, whisper, speech-to-text, self-hosted, docker, youtube, privacy]
 keywords: [transcribe audio, transcribe video, youtube transcript, srt subtitles, vtt captions, whisper, local transcription, offline speech to text]
 use_cases:
@@ -195,25 +195,21 @@ Why it's built this way:
 
 Check that each saved file is non-empty and looks like what it claims (`.srt` starts with `1` and has `-->` lines, `.vtt` starts with `WEBVTT`, `.pdf` starts with `%PDF`). If one doesn't, delete only that new file and report it.
 
-- `FMT` is one of `txt`, `srt`, `vtt`, `sbv`, plus `pdf` on builds newer than `v1.1`. On `v1.1`, `pdf` returns 400, so take the PDF from the zip below.
-- **Plain text:** Txtify's `txt` export keeps the numbered timestamp blocks (it looks like SRT). For plain prose, strip the number lines, the `-->` lines and blank lines from the `.txt` yourself, and say that you did. When translation was `none`, the zip's `transcription.txt` already is plain prose. It's written **before** translation, though, so never hand it over for a translated job.
-- **Everything at once:**
+- `FMT` is one of `txt`, `srt`, `vtt`, `sbv`, plus `pdf` on builds newer than `v1.1`. On `v1.1`, `pdf` returns 400: save the zip below instead and tell the user the PDF is inside it (`final_transcription.pdf`).
+- **Plain text:** Txtify's `txt` export keeps the numbered timestamp blocks (it looks like SRT). For plain prose, strip the number lines, the `-->` lines and blank lines from the saved `.txt` yourself, and say that you did.
+- **Everything at once (zip):**
 
   ```sh
-  BASE=http://127.0.0.1:8011; JOB=42; OUT='/approved/folder'; NAME=my-talk
-  Z="$OUT/$NAME.zip"; D="$OUT/$NAME"
+  BASE=http://127.0.0.1:8011; JOB=42; OUT='/approved/folder'; NAME=my-talk; Z="$OUT/$NAME.zip"
   [ -d "$OUT" ] && [ -w "$OUT" ] || { echo "folder missing or not writable"; exit 1; }
-  if [ -e "$Z" ] || [ -L "$Z" ] || [ -e "$D" ] || [ -L "$D" ]; then echo "EXISTS: ask the user"; exit 1; fi
+  if [ -e "$Z" ] || [ -L "$Z" ]; then echo "EXISTS: ask the user"; exit 1; fi
   TMP=$(mktemp "$OUT/.txtify-XXXXXX") || exit 1
   trap 'rm -f "$TMP"' EXIT; trap 'exit 130' INT TERM HUP
-  curl -sf -o "$TMP" "$BASE/download?pid=$JOB" && unzip -tq "$TMP" >/dev/null || { echo "download failed"; exit 1; }
-  unzip -Z1 "$TMP" | grep -qv '^[A-Za-z0-9_][A-Za-z0-9_.-]*$' && { echo "unexpected names in zip"; exit 1; }
-  mkdir "$D" || { echo "EXISTS: ask the user"; exit 1; }
-  ln "$TMP" "$Z" || { rmdir "$D"; echo "EXISTS: ask the user"; exit 1; }
-  unzip -q -n "$Z" -d "$D" && echo "saved $Z and $D/" || { echo "extract failed: $D may be incomplete"; exit 1; }
+  if curl -sf -o "$TMP" "$BASE/download?pid=$JOB" && unzip -tq "$TMP" >/dev/null && ln "$TMP" "$Z"; then
+    echo "saved $Z"; else echo "download failed or name taken"; exit 1; fi
   ```
 
-  The zip holds `final_transcription.{txt,srt,vtt,sbv,pdf}` (translated, if translation ran), the raw `transcription.txt`, `en_transcription.srt` (the untranslated subtitles, always named `en_` whatever the language) and the job's `logs.txt`. Same no-follow, no-overwrite approach as above. On top of that, the archive is integrity-checked and its entry names must be plain file names (no `/`, `..` or leading dot) before anything is created. It only extracts into a folder it just created (`mkdir` fails if the name exists, symlinks included), and `unzip -n` never overwrites a file.
+  Same no-follow, no-overwrite approach as above, and only an archive that passes `unzip -t` is saved. It holds `final_transcription.{txt,srt,vtt,sbv,pdf}` (translated, if translation ran), the raw `transcription.txt`, `en_transcription.srt` (the untranslated subtitles) and the job's `logs.txt`. **Don't extract it.** Unpacking an archive safely needs more checks than this skill does, so leave that to the user. `unzip -l "$Z"` shows what's inside without writing anything. For a single file, use the export snippet above.
 - HTTP 404 `File not found` or `Transcription in progress or not found` means the result is missing: re-check `/status`. Don't invent content.
 - Afterwards, show the first few lines of the transcript, and give the saved paths and the model and language used.
 

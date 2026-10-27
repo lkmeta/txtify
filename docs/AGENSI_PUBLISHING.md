@@ -22,7 +22,7 @@ Agensi's own docs, checked 2026-10-26: [quickstart](https://www.agensi.io/docs/c
   - **Outputs:** all five formats, the zip, the overwrite guards, and dangling symlinks at the target name (refused, nothing written outside the folder)
   - **Failures:** 400, 404, 422 and 429, missing file, unknown model, bad language (ends as `Error`), cancel, missing DeepL key, curl timeout, Txtify stopping mid-poll, and the `docker` client's error when no daemon is reachable
   - **Not covered:** the 500 response, an actual DeepL translation (needs a key) and YouTube's bot-check block (can't be triggered on purpose)
-- `tests/test_skill_snippets.py` (runs in CI, no Docker) runs the exact step 6 save snippets from SKILL.md in `sh` against a stub server: normal saves, existing files, symlinks (live and dangling, including one that appears after the check), folders with spaces and shell metacharacters, missing/unwritable folders, failed, truncated and interrupted downloads, racing writers, and zips that are corrupt or contain `../` or `sub/` entries. It also shows the pre-fix snippet writing through a dangling symlink.
+- `tests/test_skill_snippets.py` (runs in CI, no Docker) runs the exact step 6 save snippets from SKILL.md in `sh` against a stub server: normal saves, existing files, symlinks (live and dangling, including one that appears after the check), folders with spaces and shell metacharacters, missing/unwritable folders, failed, truncated and interrupted downloads, racing writers, and corrupt zips. Zips are saved, never extracted. It also shows the pre-fix snippet writing through a dangling symlink.
 - `tests/test_skill.py` (runs in CI) fails when the app's models, formats, upload types, status strings or language lists drift away from what the skill says.
 
 ```sh
@@ -65,7 +65,7 @@ Your agent transcribes media with [Txtify](https://github.com/lkmeta/txtify), a 
 Give it a file path or a YouTube link. It checks whether Txtify is already running on `localhost:8011`, offers to start it if not (and asks first, since that's a 2-3 GB image), uploads to your local instance, waits for the job and saves the transcript or subtitles in the folder you pick.
 
 **What you get**
-- txt, srt, vtt and sbv files, plus pdf (pdf comes from the zip on the current Docker image)
+- txt, srt, vtt and sbv files, plus pdf (on the current Docker image the pdf ships inside the saved zip)
 - five Whisper models, from `tiny` (fast) to `large` (most accurate, needs ~10 GB RAM)
 - 72 spoken languages or auto-detect
 - optional translation to 34 languages through DeepL, with your own API key
@@ -133,7 +133,7 @@ https://github.com/lkmeta/txtify
 
 **How long does it take?** On CPU, a short clip takes seconds with `tiny`/`base`. Long recordings with `medium`/`large` can take longer than the recording itself. The skill waits up to 30 minutes, then asks before waiting longer.
 
-**Why is my .txt full of timestamps?** Txtify's txt export keeps the timestamp blocks. Ask for plain text and the skill strips them (for untranslated jobs it can also use the raw `transcription.txt`).
+**Why is my .txt full of timestamps?** Txtify's txt export keeps the timestamp blocks. Ask for plain text and the skill strips them.
 
 **Speaker labels, live transcription, playlists?** Not supported by Txtify today.
 ```

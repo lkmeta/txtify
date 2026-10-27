@@ -3,8 +3,9 @@ Runs the exact save snippets from skills/txtify-transcribe/SKILL.md (step 6)
 in `sh` against a stub HTTP server, so the filesystem-safety guarantees are
 checked in CI without Docker: no write outside the approved folder (symlinks,
 dangling or not), no overwrite, nothing left behind by failed or interrupted
-downloads, one winner when writers race, and zip archives vetted before
-extraction. scripts/skill_e2e.sh covers the same snippets against a real image.
+downloads, one winner when writers race, and zips saved (after unzip -t) but
+never extracted. scripts/skill_e2e.sh runs the same snippets against a real
+image.
 """
 
 import io
@@ -16,7 +17,6 @@ import subprocess
 import threading
 import time
 import zipfile
-from functools import partial
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -46,7 +46,7 @@ GOOD_ZIP = _zip(["final_transcription.srt", "final_transcription.txt", "logs.txt
 
 class Stub(BaseHTTPRequestHandler):
     """pid=1 ok, 404 not found, 7 truncated body, 9 hangs mid-body.
-    /download: 1 good zip, 2 not a zip, 3 '../' entry, 4 'sub/' entry."""
+    /download: 1 good zip, 2 not a zip."""
 
     def log_message(self, *a):
         pass
@@ -55,8 +55,7 @@ class Stub(BaseHTTPRequestHandler):
         u = urlparse(self.path)
         pid = parse_qs(u.query).get("pid", [""])[0]
         if u.path == "/download":
-            body = {"1": GOOD_ZIP, "2": b"not a zip at all",
-                    "3": _zip(["../evil.txt"]), "4": _zip(["sub/x.txt"])}.get(pid)
+            body = {"1": GOOD_ZIP, "2": b"not a zip at all"}.get(pid)
         else:
             body = SRT.encode() if pid in ("1", "7", "9") else None
         if body is None:
@@ -201,37 +200,38 @@ def test_single_missing_or_unwritable_folder(base, out, tmp_path):
             out.chmod(0o700)
 
 
-# --- zip export -----------------------------------------------------------
+# --- zip export (saved, never extracted) --------------------------------
 
-def test_zip_saves_and_extracts(base, out):
+def test_zip_saved_not_extracted(base, out):
     rc, msg = run(ZIPSNIP, base=base, out=out)
-    assert rc == 0 and msg.startswith("saved ")
-    assert (out / "talk" / "final_transcription.srt").read_text() == SRT
-    assert (out / "talk.zip").read_bytes() == GOOD_ZIP and not leftovers(out)
+    assert (rc, msg) == (0, f"saved {out}/talk.zip")
+    assert (out / "talk.zip").read_bytes() == GOOD_ZIP
+    assert sorted(p.name for p in out.iterdir()) == ["talk.zip"]  # nothing unpacked, no temp
 
 
-@pytest.mark.parametrize("what", ["zip", "dir", "zip-link", "dir-link"])
-def test_zip_refuses_existing_names(base, out, tmp_path, what):
-    target = tmp_path / "outside"
-    {"zip": lambda: (out / "talk.zip").write_text("keep"),
-     "dir": lambda: (out / "talk").mkdir(),
-     "zip-link": lambda: (out / "talk.zip").symlink_to(target),
-     "dir-link": lambda: (out / "talk").symlink_to(target)}[what]()
+@pytest.mark.parametrize("what", ["file", "dangling-link", "live-link"])
+def test_zip_refuses_existing_name(base, out, tmp_path, what):
+    target = tmp_path / "outside.zip"
+    if what == "file":
+        (out / "talk.zip").write_text("keep")
+    else:
+        if what == "live-link":
+            target.write_text("outside")
+        (out / "talk.zip").symlink_to(target)
     assert run(ZIPSNIP, base=base, out=out) == (1, "EXISTS: ask the user")
-    assert not target.exists() and not leftovers(out)
+    assert target.exists() is (what == "live-link") and not leftovers(out)
 
 
 def test_zip_ln_refuses_symlink_even_without_the_check(base, out, tmp_path):
     target = tmp_path / "outside.zip"
     (out / "talk.zip").symlink_to(target)
-    assert run(CHECK_LINE.sub("", ZIPSNIP), base=base, out=out) == (1, "EXISTS: ask the user")
-    assert not target.exists() and not (out / "talk").exists() and not leftovers(out)
+    assert run(CHECK_LINE.sub("", ZIPSNIP), base=base, out=out) == (1, "download failed or name taken")
+    assert not target.exists() and not leftovers(out)
 
 
-@pytest.mark.parametrize("job,msg", [(404, "download failed"), (2, "download failed"),
-                                     (3, "unexpected names in zip"), (4, "unexpected names in zip")])
-def test_zip_bad_download_or_archive_creates_nothing(base, out, job, msg):
-    assert run(ZIPSNIP, base=base, out=out, job=job) == (1, msg)
+@pytest.mark.parametrize("job", [404, 2])  # HTTP error, not a zip
+def test_zip_bad_download_saves_nothing(base, out, job):
+    assert run(ZIPSNIP, base=base, out=out, job=job) == (1, "download failed or name taken")
     assert sorted(p.name for p in out.iterdir()) == []
 
 
@@ -240,4 +240,4 @@ def test_zip_racing_writers_one_winner(base, out):
                               stdout=subprocess.PIPE, text=True) for _ in range(6)]
     results = [p.communicate(timeout=30)[0].strip() for p in procs]
     assert sum(r.startswith("saved ") for r in results) == 1, results
-    assert (out / "talk" / "final_transcription.srt").read_text() == SRT and not leftovers(out)
+    assert (out / "talk.zip").read_bytes() == GOOD_ZIP and not leftovers(out)

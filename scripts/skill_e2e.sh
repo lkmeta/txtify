@@ -190,7 +190,7 @@ SNIP6=$(snippet "### 6." 1 | sed "s/JOB=42/JOB=$J/; s|OUT='/approved/folder'|OUT
 run_fresh "$SNIP6" && grep -qi 'quick brown fox' "$FRESH/my-talk.srt" && ok "step 6 save snippet, verbatim, in fresh sh (folder has a space and ';')" || fail "step 6 snippet"
 R=$(run_fresh "$SNIP6"); [ "$R" = "EXISTS: ask the user" ] && ok "step 6 snippet refuses to overwrite on a second run" || fail "overwrite: $R"
 SNIPZ=$(snippet "### 6." 2 | sed "s/JOB=42/JOB=$J/; s|OUT='/approved/folder'|OUT='$FRESH'|")
-run_fresh "$SNIPZ" >/dev/null && [ -s "$FRESH/my-talk/final_transcription.srt" ] && ok "zip snippet downloads + extracts into a new folder" || fail "zip snippet"
+run_fresh "$SNIPZ" >/dev/null && unzip -Z1 "$FRESH/my-talk.zip" | grep -qx final_transcription.srt && [ ! -e "$FRESH/my-talk" ] && ok "zip snippet saves a valid zip and extracts nothing" || fail "zip snippet"
 R=$(run_fresh "$SNIPZ" 2>&1); grep -q 'EXISTS: ask the user' <<<"$R" && ok "zip snippet refuses to overwrite on a second run" || fail "zip overwrite: $R"
 # Dangling symlinks at the target name: refused, and nothing is written outside.
 ln -s "$WORK/outside.srt" "$FRESH/evil.srt"; ln -s "$WORK/outside.zip" "$FRESH/evilz.zip"
@@ -201,7 +201,7 @@ R=$(run_fresh "$(grep -v '^if \[ -e' <<<"$SNIPL")")
 SNIPZL=$(snippet "### 6." 2 | sed "s/JOB=42/JOB=$J/; s|OUT='/approved/folder'|OUT='$FRESH'|; s/NAME=my-talk/NAME=evilz/")
 R=$(run_fresh "$SNIPZL"); [ "$R" = "EXISTS: ask the user" ] && [ ! -e "$WORK/outside.zip" ] && ok "zip snippet treats a dangling symlink as taken" || fail "zip symlink: $R"
 R=$(run_fresh "$(grep -v '^if \[ -e' <<<"$SNIPZL")")
-[ "$R" = "EXISTS: ask the user" ] && [ ! -e "$WORK/outside.zip" ] && [ ! -e "$FRESH/evilz" ] && ok "zip: even with that check removed, ln refuses the symlink" || fail "zip ln symlink: $R"
+[ "$R" = "download failed or name taken" ] && [ ! -e "$WORK/outside.zip" ] && ok "zip: even with that check removed, ln refuses the symlink" || fail "zip ln symlink: $R"
 ls -A "$FRESH" | grep -q '^\.txtify-' && fail "temp files left behind: $(ls -A "$FRESH")" || ok "no temp files left in the output folder"
 SNIPM=$(snippet "### 6." 1 | sed "s/JOB=42/JOB=$J/; s|OUT='/approved/folder'|OUT='$OUT/does-not-exist'|")
 R=$(run_fresh "$SNIPM"); [ "$R" = "folder missing or not writable" ] && [ ! -e "$OUT/does-not-exist" ] && ok "step 6 snippet refuses a missing folder, writes nothing" || fail "missing folder: $R"
