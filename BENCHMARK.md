@@ -32,3 +32,22 @@ Notes:
   (network-dependent; may hit YouTube bot checks on shared IPs).
 - whisper_large needs more container memory than a default Docker Desktop
   allocation — raise Docker's memory limit to benchmark it.
+
+## 2026-10-26: torch 2.11.0 → 2.14.1 (torchaudio 2.11.0), same machine, warm cache
+
+Both runs back to back on Docker Desktop macOS (arm64), CPU, 7.7GB RAM, `BENCH_YOUTUBE=1`.
+Peak = highest `docker stats` memory sample over the whole run (it comes from the
+whisper_large load attempt, so it says little about the other models).
+
+| run | torch 2.11.0 | torch 2.14.1 | text ok / WER (both) |
+|-----|--------------|--------------|----------------------|
+| whisper_tiny | 5s | 5s | yes / 7% |
+| whisper_base | 5s | 5s | yes / 7% |
+| whisper_small | 10s | 10s | yes / 7% |
+| whisper_medium | 26s | 25s | yes / 7% |
+| whisper_large | OOM at model load | OOM at model load | - |
+| deepl en→el (base) | 10s | 10s | yes (identical Greek line) |
+| youtube (tiny) | 9s | 8s | yes |
+| peak container memory | 6882 MiB | 6152 MiB | - |
+
+Transcribed lines are identical to the 2026-07-16 table. No accuracy or speed change.

@@ -34,7 +34,7 @@ Builds the image, boots a container, checks `/health` + all pages + 404s, upload
 
 ## Reading failures
 
-- Status stuck at **10%** → worker crashed at import (classic cause: torch/torchaudio version mismatch). Reproduce inside the container:
+- Status stuck at **10%** → worker crashed at import (classic cause: an incompatible torch/torchaudio pair). Reproduce inside the container:
   `docker exec <name> python /app/src/transcribe_process.py 99 output/<clip> en whisper_tiny none en all`
 - Status stuck at **30%** for a long time → model download in progress; not a failure yet.
 - Job errors mid-run → `docker exec <name> cat output/<job id>_logs.txt` (the server log won't show worker errors).

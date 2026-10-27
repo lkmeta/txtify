@@ -21,10 +21,11 @@ RUN pip install --no-cache-dir --upgrade pip
 
 # CPU-only torch first: the default amd64 wheels bundle ~2.5 GB of CUDA
 # libraries this app never uses (inference is CPU-only). Same pinned
-# versions as requirements.txt — keep them identical, a torch/torchaudio
-# mismatch crashes the worker at import.
+# versions as requirements.txt. torchaudio has no release after 2.11.0 (as of
+# 2026-10-26), so torch moves ahead alone: only pin a pair that docker_e2e.sh
+# has proven, an ABI-incompatible pair crashes the worker at import.
 RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu \
-    torch==2.11.0 torchaudio==2.11.0
+    torch==2.14.1 torchaudio==2.11.0
 
 # Install any dependencies specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
